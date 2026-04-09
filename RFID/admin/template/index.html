@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}RFID Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl">
+    <h1 class="text-5xl font-semibold text-slate-900 tracking-tighter">
+        RFID Monitoring
+    </h1>
+    <p class="mt-3 text-2xl text-blue-600 font-medium">
+        Real-time Scan System
+    </p>
+    <p class="text-xl text-slate-600">
+        Arduino + Flask + PostgreSQL
+    </p>
+
+    <!-- Latest Scan Cards -->
+    <div class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+            <p class="text-sm text-slate-500">Status</p>
+            <p id="message" class="mt-2 text-lg font-semibold text-slate-800">
+                {{ data.message }}
+            </p>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+            <p class="text-sm text-slate-500">UID</p>
+            <p id="uid" class="mt-2 text-lg font-semibold text-blue-600 break-all">
+                {{ data.uid or '—' }}
+            </p>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+            <p class="text-sm text-slate-500">Scan Time</p>
+            <p id="time" class="mt-2 text-lg font-semibold text-green-600">
+                {{ data.time or '—' }}
+            </p>
+        </div>
+    </div>
+
+    <div class="mt-6 flex gap-3">
+        <button onclick="checkDB()"
+            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">
+            Test Database
+        </button>
+    </div>
+
+    <div id="dbResult" class="mt-4 text-sm text-slate-700"></div>
+
+    <!-- All UIDs Table -->
+    <div class="mt-10">
+        <h2 class="text-2xl font-semibold text-slate-800 tracking-tight">Scanned Cards</h2>
+        <p class="text-sm text-slate-500 mt-1">All UIDs stored in the database</p>
+
+        <div class="mt-4 bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
+            <table class="w-full text-sm text-left">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="px-6 py-4 text-slate-500 font-medium">#</th>
+                        <th class="px-6 py-4 text-slate-500 font-medium">UID</th>
+                        <th class="px-6 py-4 text-slate-500 font-medium">Scanned At</th>
+                    </tr>
+                </thead>
+                <tbody id="uid-table-body">
+                    <tr>
+                        <td colspan="3" class="px-6 py-6 text-center text-slate-400">
+                            Loading...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function refreshData() {
+        try {
+            const response = await fetch('/admin/get_latest');
+            const data = await response.json();
+
+            document.getElementById('message').textContent = data.message || 'Waiting for scan...';
+            document.getElementById('uid').textContent = data.uid || '—';
+            document.getElementById('time').textContent = data.time || '—';
+        } catch (error) {
+            console.error('Error fetching latest scan:', error);
+        }
+    }
+
+    async function refreshTable() {
+        try {
+            const response = await fetch('/admin/get_all_uids');
+            const rows = await response.json();
+            const tbody = document.getElementById('uid-table-body');
+
+            if (rows.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="3" class="px-6 py-6 text-center text-slate-400">
+                            No cards scanned yet.
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            tbody.innerHTML = rows.map(row => `
+                <tr class="border-t border-slate-100 hover:bg-slate-50 transition">
+                    <td class="px-6 py-4 text-slate-400">${row.id}</td>
+                    <td class="px-6 py-4 font-semibold text-blue-600">${row.uid}</td>
+                    <td class="px-6 py-4 text-slate-600">${row.created_at}</td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            console.error('Error fetching UIDs:', error);
+        }
+    }
+
+    async function checkDB() {
+        try {
+            const response = await fetch('/admin/test_db');
+            const data = await response.json();
+
+            document.getElementById('dbResult').innerHTML = `
+                <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                    <p><strong>Status:</strong> ${data.status}</p>
+                    <p><strong>Message:</strong> ${data.message}</p>
+                    ${data.server_time ? `<p><strong>Server Time:</strong> ${data.server_time}</p>` : ''}
+                </div>
+            `;
+        } catch (error) {
+            console.error('Database test error:', error);
+        }
+    }
+
+    refreshData();
+    refreshTable();
+    setInterval(refreshData, 1000);
+    setInterval(refreshTable, 2000);
+</script>
+{% endblock %}
