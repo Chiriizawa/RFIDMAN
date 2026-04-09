@@ -92,7 +92,7 @@ def save_uid_to_db(uid):
     try:
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO rfid_cards (uid) VALUES (%s) ON CONFLICT (uid) DO NOTHING;",
+            "INSERT INTO rfid_cards (uid) VALUES (%s);",
             (uid,)
         )
         cur.close()
