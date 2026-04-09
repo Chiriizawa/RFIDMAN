@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Register Student{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-100 p-6">
+  <div class="max-w-7xl mx-auto">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <div class="bg-gradient-to-br from-blue-700 via-cyan-600 to-teal-500 rounded-3xl p-8 text-white shadow-xl">
+        <div class="mb-8">
+          <h1 class="text-4xl font-extrabold leading-tight">
+            Attendance Monitoring System
+          </h1>
+          <p class="mt-3 text-white/90 text-lg">
+            Register students manually or import CSV / Excel for bulk student records.
+          </p>
+        </div>
+
+        <div class="space-y-4">
+          <div class="bg-white/10 rounded-2xl p-4 border border-white/15">
+            <h2 class="font-semibold text-lg mb-1">Manual Registration</h2>
+            <p class="text-sm text-white/85">
+              Add one student at a time with complete information.
+            </p>
+          </div>
+
+          <div class="bg-white/10 rounded-2xl p-4 border border-white/15">
+            <h2 class="font-semibold text-lg mb-1">CSV / Excel Import</h2>
+            <p class="text-sm text-white/85">
+              Upload multiple students using a CSV or Excel file.
+            </p>
+          </div>
+
+          <div class="bg-white/10 rounded-2xl p-4 border border-white/15">
+            <h2 class="font-semibold text-lg mb-1">Required Fields</h2>
+            <p class="text-sm text-white/85">
+              Full Name, Birthday, Contact Number, Email, and Schedule.
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-8 bg-white/10 rounded-2xl p-5 border border-white/15">
+          <h3 class="font-semibold text-lg mb-3">Excel / CSV Format Example</h3>
+          <div class="text-sm text-white/90 overflow-x-auto">
+<pre class="whitespace-pre-wrap break-words">full_name,birthday,contact_number,email,schedule
+Juan Dela Cruz,2005-03-27,09123456789,juan@email.com,"Mon 7:00 AM - 9:00 AM | IT101 | Room 201"
+Maria Santos,2004-08-15,09987654321,maria@email.com,"Tue 10:00 AM - 12:00 PM | CS102 | Room 305"</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-3xl shadow-xl p-8">
+
+        <div class="mb-6">
+          <h2 class="text-3xl font-bold text-slate-800">Register Student</h2>
+          <p class="text-slate-500 mt-2">
+            Fill out the form or upload a CSV / Excel file for bulk import.
+          </p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="mb-6 space-y-3">
+              {% for category, message in messages %}
+                <div class="px-4 py-3 rounded-xl text-sm font-medium
+                  {% if category == 'success' %}
+                    bg-green-100 text-green-700 border border-green-200
+                  {% elif category == 'error' %}
+                    bg-red-100 text-red-700 border border-red-200
+                  {% else %}
+                    bg-blue-100 text-blue-700 border border-blue-200
+                  {% endif %}
+                ">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <div class="mb-8 border-2 border-dashed border-blue-300 bg-blue-50 rounded-2xl p-5">
+          <div>
+            <h3 class="text-lg font-semibold text-blue-700">Import CSV / Excel</h3>
+            <p class="text-sm text-blue-600 mt-1">
+              Upload CSV or Excel file (.csv, .xlsx, .xls) for bulk student registration.
+            </p>
+          </div>
+
+          <form action="{{ url_for('admin_bp.import_csv') }}" method="POST" enctype="multipart/form-data" class="mt-4 flex flex-col sm:flex-row gap-3">
+            <input
+              type="file"
+              name="csv_file"
+              accept=".csv,.xlsx,.xls"
+              required
+              class="flex-1 w-full border border-blue-300 bg-white rounded-xl px-4 py-3 text-slate-700"
+            >
+            <button
+              type="submit"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition"
+            >
+              Upload File
+            </button>
+          </form>
+
+          <p class="text-xs text-slate-500 mt-3">
+            Required columns:
+            <span class="font-semibold">full_name, birthday, contact_number, email, schedule</span>
+          </p>
+        </div>
+
+        <form action="{{ url_for('admin_bp.register') }}" method="POST" class="space-y-5">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Full Name</label>
+            <input
+              type="text"
+              name="full_name"
+              placeholder="Enter full name"
+              class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            >
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">Birthday</label>
+              <input
+                type="date"
+                name="birthday"
+                class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              >
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">Contact Number</label>
+              <input
+                type="text"
+                name="contact_number"
+                placeholder="09XXXXXXXXX"
+                class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              >
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Email</label>
+            <input
+              type="email"
+              name="email"
+              placeholder="student@email.com"
+              class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            >
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Schedule</label>
+            <textarea
+              name="schedule"
+              rows="6"
+              placeholder="Example:
+Mon 7:00 AM - 9:00 AM | IT101 | Room 201
+Tue 10:00 AM - 12:00 PM | CS102 | Room 305"
+              class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              required
+            ></textarea>
+            <p class="text-xs text-slate-500 mt-2">
+              You can put one or multiple schedule lines here.
+            </p>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-3 pt-2">
+            <button
+              type="submit"
+              class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition"
+            >
+              Register Student
+            </button>
+
+            <button
+              type="reset"
+              class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-3 rounded-xl transition"
+            >
+              Clear Form
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="mt-8 bg-white rounded-3xl shadow-xl p-6">
+      <div class="mb-4">
+        <h3 class="text-2xl font-bold text-slate-800">Registered Students</h3>
+        <p class="text-slate-500 text-sm">Latest saved student records</p>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm text-left">
+          <thead>
+            <tr class="border-b border-slate-200 text-slate-600">
+              <th class="px-4 py-3 font-semibold">Full Name</th>
+              <th class="px-4 py-3 font-semibold">Birthday</th>
+              <th class="px-4 py-3 font-semibold">Contact Number</th>
+              <th class="px-4 py-3 font-semibold">Email</th>
+              <th class="px-4 py-3 font-semibold">Schedule</th>
+              <th class="px-4 py-3 font-semibold">Created At</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if students %}
+              {% for student in students %}
+              <tr class="border-b border-slate-100 align-top hover:bg-slate-50">
+                <td class="px-4 py-3 font-medium text-slate-800">{{ student[1] }}</td>
+                <td class="px-4 py-3 text-slate-700">{{ student[2] }}</td>
+                <td class="px-4 py-3 text-slate-700">{{ student[3] }}</td>
+                <td class="px-4 py-3 text-slate-700">{{ student[4] }}</td>
+                <td class="px-4 py-3 text-slate-700 whitespace-pre-line">{{ student[5] }}</td>
+                <td class="px-4 py-3 text-slate-500">{{ student[6] }}</td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="6" class="px-4 py-8 text-center text-slate-500">
+                  No students registered yet.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
