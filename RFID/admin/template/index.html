@@ -3,19 +3,8 @@
 {% block title %}RFID Dashboard{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl">
-    <h1 class="text-5xl font-semibold text-slate-900 tracking-tighter">
-        RFID Monitoring
-    </h1>
-    <p class="mt-3 text-2xl text-blue-600 font-medium">
-        Real-time Scan System
-    </p>
-    <p class="text-xl text-slate-600">
-        Arduino + Flask + PostgreSQL
-    </p>
-
-    <!-- Latest Scan Cards -->
-    <div class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="max-w-5xl">
+    <div class="mt-10 grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
             <p class="text-sm text-slate-500">Status</p>
             <p id="message" class="mt-2 text-lg font-semibold text-slate-800">
@@ -31,10 +20,28 @@
         </div>
 
         <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+            <p class="text-sm text-slate-500">Name</p>
+            <p id="name" class="mt-2 text-lg font-semibold text-purple-600">
+                {{ data.name or '—' }}
+            </p>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
             <p class="text-sm text-slate-500">Scan Time</p>
             <p id="time" class="mt-2 text-lg font-semibold text-green-600">
                 {{ data.time or '—' }}
             </p>
+        </div>
+    </div>
+
+    <div id="nameBanner" class="mt-6 hidden">
+        <div class="p-5 bg-indigo-50 border border-indigo-200 rounded-3xl flex items-center gap-4">
+            <div class="text-4xl">👤</div>
+            <div>
+                <p class="text-sm text-indigo-400 font-medium uppercase tracking-wide">Registered Student</p>
+                <p id="bannerName" class="text-2xl font-bold text-indigo-700">—</p>
+                <p id="bannerTime" class="text-sm text-indigo-400 mt-0.5">—</p>
+            </div>
         </div>
     </div>
 
@@ -47,7 +54,6 @@
 
     <div id="dbResult" class="mt-4 text-sm text-slate-700"></div>
 
-    <!-- All UIDs Table -->
     <div class="mt-10">
         <h2 class="text-2xl font-semibold text-slate-800 tracking-tight">Scanned Cards</h2>
         <p class="text-sm text-slate-500 mt-1">All UIDs stored in the database</p>
@@ -58,12 +64,13 @@
                     <tr>
                         <th class="px-6 py-4 text-slate-500 font-medium">#</th>
                         <th class="px-6 py-4 text-slate-500 font-medium">UID</th>
+                        <th class="px-6 py-4 text-slate-500 font-medium">Name</th>
                         <th class="px-6 py-4 text-slate-500 font-medium">Scanned At</th>
                     </tr>
                 </thead>
                 <tbody id="uid-table-body">
                     <tr>
-                        <td colspan="3" class="px-6 py-6 text-center text-slate-400">
+                        <td colspan="4" class="px-6 py-6 text-center text-slate-400">
                             Loading...
                         </td>
                     </tr>
@@ -74,6 +81,9 @@
 </div>
 
 <script>
+    let lastUID = '';
+    let bannerTimeout = null;
+
     async function refreshData() {
         try {
             const response = await fetch('/admin/get_latest');
@@ -81,10 +91,30 @@
 
             document.getElementById('message').textContent = data.message || 'Waiting for scan...';
             document.getElementById('uid').textContent = data.uid || '—';
+            document.getElementById('name').textContent = data.name || '—';
             document.getElementById('time').textContent = data.time || '—';
+
+            if (data.uid && data.uid !== lastUID) {
+                lastUID = data.uid;
+                showNameBanner(data.name, data.time);
+            }
         } catch (error) {
             console.error('Error fetching latest scan:', error);
         }
+    }
+
+    function showNameBanner(name, time) {
+        const banner = document.getElementById('nameBanner');
+        document.getElementById('bannerName').textContent = name || 'No linked student';
+        document.getElementById('bannerTime').textContent = time || '';
+
+        banner.classList.remove('hidden');
+
+        if (bannerTimeout) clearTimeout(bannerTimeout);
+
+        bannerTimeout = setTimeout(() => {
+            banner.classList.add('hidden');
+        }, 5000);
     }
 
     async function refreshTable() {
@@ -96,7 +126,7 @@
             if (rows.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="3" class="px-6 py-6 text-center text-slate-400">
+                        <td colspan="4" class="px-6 py-6 text-center text-slate-400">
                             No cards scanned yet.
                         </td>
                     </tr>`;
@@ -107,6 +137,7 @@
                 <tr class="border-t border-slate-100 hover:bg-slate-50 transition">
                     <td class="px-6 py-4 text-slate-400">${row.id}</td>
                     <td class="px-6 py-4 font-semibold text-blue-600">${row.uid}</td>
+                    <td class="px-6 py-4 font-medium text-slate-700">${row.full_name}</td>
                     <td class="px-6 py-4 text-slate-600">${row.created_at}</td>
                 </tr>
             `).join('');

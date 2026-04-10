@@ -21,14 +21,14 @@
           <div class="bg-white/10 rounded-2xl p-4 border border-white/15">
             <h2 class="font-semibold text-lg mb-1">Manual Registration</h2>
             <p class="text-sm text-white/85">
-              Add one student at a time with complete information.
+              Add one student at a time with complete information and link an available RFID UID.
             </p>
           </div>
 
           <div class="bg-white/10 rounded-2xl p-4 border border-white/15">
             <h2 class="font-semibold text-lg mb-1">CSV / Excel Import</h2>
             <p class="text-sm text-white/85">
-              Upload multiple students using a CSV or Excel file.
+              Upload multiple students using a CSV or Excel file. The system will auto-link them to available UID cards.
             </p>
           </div>
 
@@ -44,8 +44,8 @@
           <h3 class="font-semibold text-lg mb-3">Excel / CSV Format Example</h3>
           <div class="text-sm text-white/90 overflow-x-auto">
 <pre class="whitespace-pre-wrap break-words">full_name,birthday,contact_number,email,schedule
-Juan Dela Cruz,2005-03-27,09123456789,juan@email.com,"Mon 7:00 AM - 9:00 AM | IT101 | Room 201"
-Maria Santos,2004-08-15,09987654321,maria@email.com,"Tue 10:00 AM - 12:00 PM | CS102 | Room 305"</pre>
+Raymund Bucton,2005-03-27,9761017571,bergoniaraymund@gmail.com,"Tue 7:00-8:30 IT3217, Wed 7:00-8:30 SD3203, Thu 10:00-11:30 IT3219, Fri 7:00-8:30 SD3204"
+Khayzie Abarquez,2005-05-24,9460614446,kzabarquez24@gmail.com,"Mon 5:00-6:00 BL3 Managing Business OL, Tue 7:00-8:30 AIS6 AV304a, Wed 7:00-8:30 AIS4 AV304a, Thu 10:00-11:30 AIS5, Fri 7:00-8:30 AIS6 AV404a"</pre>
           </div>
         </div>
       </div>
@@ -107,9 +107,33 @@ Maria Santos,2004-08-15,09987654321,maria@email.com,"Tue 10:00 AM - 12:00 PM | C
             Required columns:
             <span class="font-semibold">full_name, birthday, contact_number, email, schedule</span>
           </p>
+          <p class="text-xs text-slate-500 mt-1">
+            Note:
+            <span class="font-semibold">UID is not needed in the file.</span>
+            The system will automatically assign available RFID UID cards.
+          </p>
         </div>
 
         <form action="{{ url_for('admin_bp.register') }}" method="POST" class="space-y-5">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Available UID</label>
+            <select
+              name="uid"
+              class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            >
+              <option value="">Select available UID</option>
+              {% if available_uids %}
+                {% for uid in available_uids %}
+                  <option value="{{ uid }}">{{ uid }}</option>
+                {% endfor %}
+              {% endif %}
+            </select>
+            <p class="text-xs text-slate-500 mt-2">
+              Only UID cards without student details are shown here.
+            </p>
+          </div>
+
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-2">Full Name</label>
             <input
@@ -161,13 +185,12 @@ Maria Santos,2004-08-15,09987654321,maria@email.com,"Tue 10:00 AM - 12:00 PM | C
               name="schedule"
               rows="6"
               placeholder="Example:
-Mon 7:00 AM - 9:00 AM | IT101 | Room 201
-Tue 10:00 AM - 12:00 PM | CS102 | Room 305"
+Tue 7:00-8:30 IT3217, Wed 7:00-8:30 SD3203, Thu 10:00-11:30 IT3219, Fri 7:00-8:30 SD3204"
               class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
               required
             ></textarea>
             <p class="text-xs text-slate-500 mt-2">
-              You can put one or multiple schedule lines here.
+              You can put one line or multiple schedule lines here.
             </p>
           </div>
 
@@ -200,6 +223,7 @@ Tue 10:00 AM - 12:00 PM | CS102 | Room 305"
         <table class="min-w-full text-sm text-left">
           <thead>
             <tr class="border-b border-slate-200 text-slate-600">
+              <th class="px-4 py-3 font-semibold">UID</th>
               <th class="px-4 py-3 font-semibold">Full Name</th>
               <th class="px-4 py-3 font-semibold">Birthday</th>
               <th class="px-4 py-3 font-semibold">Contact Number</th>
@@ -212,17 +236,18 @@ Tue 10:00 AM - 12:00 PM | CS102 | Room 305"
             {% if students %}
               {% for student in students %}
               <tr class="border-b border-slate-100 align-top hover:bg-slate-50">
-                <td class="px-4 py-3 font-medium text-slate-800">{{ student[1] }}</td>
-                <td class="px-4 py-3 text-slate-700">{{ student[2] }}</td>
+                <td class="px-4 py-3 font-medium text-blue-700">{{ student[1] }}</td>
+                <td class="px-4 py-3 font-medium text-slate-800">{{ student[2] }}</td>
                 <td class="px-4 py-3 text-slate-700">{{ student[3] }}</td>
                 <td class="px-4 py-3 text-slate-700">{{ student[4] }}</td>
-                <td class="px-4 py-3 text-slate-700 whitespace-pre-line">{{ student[5] }}</td>
-                <td class="px-4 py-3 text-slate-500">{{ student[6] }}</td>
+                <td class="px-4 py-3 text-slate-700">{{ student[5] }}</td>
+                <td class="px-4 py-3 text-slate-700 whitespace-pre-line">{{ student[6] }}</td>
+                <td class="px-4 py-3 text-slate-500">{{ student[7] }}</td>
               </tr>
               {% endfor %}
             {% else %}
               <tr>
-                <td colspan="6" class="px-4 py-8 text-center text-slate-500">
+                <td colspan="7" class="px-4 py-8 text-center text-slate-500">
                   No students registered yet.
                 </td>
               </tr>
