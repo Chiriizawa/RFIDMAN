@@ -5,6 +5,10 @@ import threading
 import time
 from datetime import datetime
 import pandas as pd
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # Load variables from .env file
 
 admin_bp = Blueprint("admin_bp", __name__, template_folder="template")
 
@@ -15,19 +19,44 @@ latest_scan = {
     "time": ""
 }
 
+# =========================
+# DB CONNECTION
+# =========================
+
+def get_connection():
+    return psycopg2.connect(
+        host=os.getenv("DB_HOST", "localhost"),
+        database=os.getenv("DB_NAME", "RFID"),
+        user=os.getenv("DB_USER", "postgres"),
+        password=os.getenv("DB_PASSWORD", ""),
+        port=os.getenv("DB_PORT", "5432")
+    )
+
+
 conn = None
 try:
-    conn = psycopg2.connect(
-        host="localhost",
-        database="RFID",
-        user="postgres",
-        password="12345678",
-        port="5432"
-    )
+    conn = get_connection()
     conn.autocommit = True
     print("Connected to PostgreSQL successfully.")
 except Exception as e:
     print("Database connection error:", e)
+
+
+def ensure_connection():
+    global conn
+    try:
+        if conn is None or conn.closed != 0:
+            conn = get_connection()
+            conn.autocommit = True
+            print("Reconnected to PostgreSQL.")
+    except Exception as e:
+        print("Reconnect failed:", e)
+        conn = None
+
+
+# =========================
+# SERIAL CONNECTION
+# =========================
 
 ser = None
 try:
@@ -37,6 +66,10 @@ try:
 except Exception as e:
     print("Serial connection error:", e)
 
+
+# =========================
+# HELPER FUNCTIONS
+# =========================
 
 def normalize_uid(uid):
     if not uid:
@@ -101,6 +134,7 @@ def get_latest():
 
 @admin_bp.route('/get_all_uids')
 def get_all_uids():
+    ensure_connection()
     if conn is None:
         return jsonify([])
 
@@ -137,6 +171,7 @@ def get_all_uids():
 
 @admin_bp.route('/test_db')
 def test_db():
+    ensure_connection()
     if conn is None:
         return jsonify({"status": "error", "message": "Database not connected"})
 
@@ -160,6 +195,7 @@ def test_db():
 # =========================
 
 def save_uid_to_db(uid):
+    ensure_connection()
     if conn is None:
         print("No database connection.")
         return
@@ -195,6 +231,7 @@ def save_uid_to_db(uid):
 
 
 def get_student_name_by_uid(uid):
+    ensure_connection()
     if conn is None:
         return ""
 
@@ -273,6 +310,7 @@ threading.Thread(target=listen, daemon=True).start()
 # =========================
 
 def get_unlinked_uids():
+    ensure_connection()
     if conn is None:
         return []
 
@@ -296,6 +334,7 @@ def get_unlinked_uids():
 
 
 def find_existing_student(full_name, birthday, contact_number, email):
+    ensure_connection()
     if conn is None:
         return None
 
@@ -360,6 +399,7 @@ def find_existing_student(full_name, birthday, contact_number, email):
 
 
 def save_student_to_db(uid, full_name, birthday, contact_number, email, schedule_text):
+    ensure_connection()
     if conn is None:
         raise Exception("Database not connected")
 
@@ -411,6 +451,7 @@ def save_student_to_db(uid, full_name, birthday, contact_number, email, schedule
 
 
 def get_all_students():
+    ensure_connection()
     if conn is None:
         return []
 

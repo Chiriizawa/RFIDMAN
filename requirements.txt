@@ -1,5 +1,6 @@
 flask
-psycopg2
+psycopg2-binary
 pyserial
 pandas
 openpyxl
+python-dotenv
