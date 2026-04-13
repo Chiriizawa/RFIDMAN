@@ -9,5 +9,6 @@ def create_app():
 
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(sadmin, url_prefix='/superadmin')
+    
 
     return app

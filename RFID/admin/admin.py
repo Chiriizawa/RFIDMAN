@@ -613,3 +613,27 @@ def import_csv():
         flash(f"Import failed: {str(e)}", "error")
 
     return redirect(url_for('admin_bp.register'))
+
+# =========================
+# REGISTERED STUDENTS PAGE (Mga na-scan at naka-register na students)
+# =========================
+
+@admin_bp.route('/registered_students')
+def registered_students():
+    students = get_all_students()   # Gamitin ang existing function mo
+
+    # I-convert para madaling gamitin sa HTML
+    student_list = []
+    for row in students:
+        student_list.append({
+            "id": row[0],
+            "uid": format_uid(row[1]) if row[1] else "—",
+            "full_name": row[2] or "—",
+            "birthday": str(row[3]) if row[3] else "—",
+            "contact_number": row[4] or "—",
+            "email": row[5] or "—",
+            "schedule": row[6] or "—",
+            "created_at": row[7].strftime("%b %d, %Y  %I:%M %p") if row[7] else "—"
+        })
+
+    return render_template('registered_students.html', students=student_list)
