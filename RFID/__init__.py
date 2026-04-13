@@ -1,5 +1,6 @@
 from flask import Flask
 from RFID.admin.admin import admin_bp
+from RFID.superadmin.sadmin import sadmin
 
 
 def create_app():
@@ -7,5 +8,6 @@ def create_app():
     app.config['SECRET_KEY'] = 'ray'
 
     app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(sadmin, url_prefix='/superadmin')
 
     return app

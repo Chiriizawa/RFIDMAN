@@ -1,7 +1,7 @@
 # sadmin.py
-from flask import Blueprint, render_template, ect # pyright: ignore[reportMissingImports]redir
+from flask import Blueprint, render_template
 
-sadmin = Blueprint('sadmin', __name__, url_prefix='/sadmin')
+sadmin = Blueprint("sadmin", __name__, template_folder="template")
 
 @sadmin.route('/')
 def index():

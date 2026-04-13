@@ -1,4 +1,3 @@
-# Add this temporarily in run.py to verify
 from RFID import create_app
 
 app = create_app()
