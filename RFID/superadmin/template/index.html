@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="bg-white rounded-3xl shadow-xl p-12 text-center">
+    <div class="max-w-md mx-auto">
+        <div class="text-6xl mb-6">🛠️</div>
+        <h1 class="text-3xl font-semibold text-slate-900 mb-3">Super Admin Dashboard</h1>
+        <p class="text-slate-500 mb-8">
+            Welcome back, Super Admin.<br>
+            Select a section from the navigation above to get started.
+        </p>
+        
+        <div class="grid grid-cols-2 gap-4 text-left">
+            <a href="#" class="block p-6 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-colors">
+                <i class="fa-solid fa-box text-2xl text-blue-600 mb-3 block"></i>
+                <div class="font-medium">Products</div>
+                <div class="text-xs text-slate-500">Manage catalog</div>
+            </a>
+            <a href="#" class="block p-6 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-colors">
+                <i class="fa-solid fa-cart-shopping text-2xl text-emerald-600 mb-3 block"></i>
+                <div class="font-medium">Orders</div>
+                <div class="text-xs text-slate-500">View & manage orders</div>
+            </a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

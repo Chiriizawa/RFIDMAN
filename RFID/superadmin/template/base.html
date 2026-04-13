@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoShopping • Super Admin</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        
+        .nav-tab {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .nav-tab.active {
+            background-color: #eff6ff;
+            color: #1e40af;
+            border-bottom: 3px solid #1e40af;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-800 to-blue-600 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-8 py-4 flex items-center justify-between">
+            <!-- Logo -->
+            <div class="flex items-center gap-x-3">jasdhjagvsdksadbhjasda
+                <div class="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-blue-700 text-3xl shadow">
+                    🛒
+                </div>
+                <span class="text-3xl font-semibold tracking-tight">GoShopping</span>
+            </div>
+
+            <!-- Top Right -->
+            <div class="flex items-center gap-x-6">
+                <a href="#" class="flex items-center gap-x-2 hover:text-blue-100 transition-colors">
+                    <i class="fa-solid fa-eye"></i>
+                    <span class="text-sm font-medium">View my site</span>
+                </a>
+                <a href="#" class="flex items-center gap-x-2 hover:text-blue-100 transition-colors">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    <span class="text-sm font-medium">Logout</span>
+                </a>
+                
+                <div class="flex items-center gap-x-3">
+                    <div class="text-right text-sm">
+                        <div class="font-semibold">Super Admin</div>
+                        <div class="text-blue-100 text-xs">admin@goshopping.com</div>
+                    </div>
+                    <div class="w-9 h-9 bg-white/20 rounded-2xl flex items-center justify-center text-xl border border-white/30">
+                        👨‍💼
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="max-w-7xl mx-auto px-8 bg-white/10">
+            <div class="flex items-center">
+                <a href="{{ url_for('sadmin.index') }}" 
+                   class="nav-tab active flex items-center gap-x-3 px-8 py-5 text-sm font-semibold rounded-t-3xl">
+                    <i class="fa-solid fa-pencil"></i>
+                    <span>Products</span>
+                </a>
+                <a href="#" class="nav-tab flex items-center gap-x-3 px-8 py-5 text-sm font-semibold text-white hover:bg-white/10">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span>Orders</span>
+                </a>
+                <a href="#" class="nav-tab flex items-center gap-x-3 px-8 py-5 text-sm font-semibold text-white hover:bg-white/10">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Customers</span>
+                </a>
+                <a href="#" class="nav-tab flex items-center gap-x-3 px-8 py-5 text-sm font-semibold text-white hover:bg-white/10">
+                    <i class="fa-solid fa-chart-column"></i>
+                    <span>Reports</span>
+                </a>
+                <a href="#" class="nav-tab flex items-center gap-x-3 px-8 py-5 text-sm font-semibold text-white hover:bg-white/10">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-8 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+</body>
+</html>
