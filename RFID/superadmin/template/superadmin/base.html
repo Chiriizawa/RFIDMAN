@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}GoShopping Superadmin{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+        * {
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        .header-gradient {
+            background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%);
+        }
+
+        .nav-tab {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nav-tab.active {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        .nav-tab:hover:not(.active) {
+            background-color: #f1f5f9;
+        }
+    </style>
+</head>
+<body class="bg-slate-50">
+
+    <!-- HEADER -->
+    <header class="header-gradient text-white">
+        <div class="max-w-screen-2xl mx-auto px-8 py-5 flex items-center justify-between">
+
+            <!-- Logo -->
+            <div class="flex items-center gap-x-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-9 h-9" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor" stroke-width="2.25">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <h1 class="text-3xl font-semibold tracking-[-0.5px]">SUPERADMIN</h1>
+            </div>
+
+            <!-- Right side -->
+            <div class="flex items-center gap-x-7">
+                <a href="#" class="flex items-center gap-x-2 text-sm font-medium hover:text-white/80 transition-colors">
+                    <i class="fa-solid fa-eye text-lg"></i>
+                    View my site
+                </a>
+                <a href="#"
+                    class="flex items-center gap-x-2 text-sm font-medium hover:text-white/80 transition-colors">
+                    <i class="fa-solid fa-arrow-right-from-bracket text-lg"></i>
+                    Logout
+                </a>
+                <div
+                    class="w-9 h-9 bg-white text-[#1e40af] rounded-2xl flex items-center justify-center font-bold text-lg shadow-inner border border-white/30">
+                    HD
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- NAVIGATION -->
+    <div class="bg-white border-b sticky top-0 z-50 shadow-sm">
+        <div class="max-w-screen-2xl mx-auto px-8">
+            <div class="flex items-center justify-center gap-x-3 pt-6 pb-3">
+
+                <a href="#"
+                    class="nav-tab {% if request.endpoint == 'admin_bp.dashboard' %}active{% endif %} flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
+                    <i class="fa-solid fa-pencil text-xl"></i>
+                    Dashboard
+                </a>
+
+                <a href="#"
+                    class="nav-tab {% if request.endpoint == 'admin_bp.orders' %}active{% endif %} flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
+                    <i class="fa-solid fa-book text-xl"></i>
+                    Orders
+                </a>
+
+                <a href="#"
+                    class="nav-tab {% if request.endpoint == 'admin_bp.customers' %}active{% endif %} flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
+                    <i class="fa-solid fa-users text-xl"></i>
+                    Customers
+                </a>
+
+                <a href="#"
+                    class="nav-tab flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
+                    <i class="fa-solid fa-chart-column text-xl"></i>
+                    Students
+                </a>
+
+                <a href="#"
+                    class="nav-tab {% if request.endpoint == 'admin_bp.users' %}active{% endif %} flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
+                    <i class="fa-solid fa-wrench text-xl"></i>
+                    Users
+                </a>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE CONTENT -->
+    {% block content %}{% endblock %}
+
+</body>
+</html>
