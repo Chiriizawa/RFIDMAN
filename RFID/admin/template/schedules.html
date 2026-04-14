@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Registered Students{% endblock %}
+{% block title %}Schedules{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-6 py-8">
@@ -10,16 +10,15 @@
 
         <!-- Blue Gradient Header -->
         <div class="bg-gradient-to-r from-blue-600 to-sky-600 px-10 py-8 text-white">
-            <h1 class="text-3xl font-semibold">Registered Students</h1>
-            <p class="text-blue-100 mt-1">Students linked with RFID cards</p>
+            <h1 class="text-3xl font-semibold">Student Schedules</h1>
+            <p class="text-blue-100 mt-1">Class schedules of registered students with RFID</p>
         </div>
 
-        <!-- Content -->
+        <!-- Content Area -->
         <div class="p-8">
 
-            {% if students and students|length > 0 %}
+            {% if schedules and schedules|length > 0 %}
 
-            <!-- Table -->
             <div class="overflow-x-auto">
                 <table class="w-full min-w-full text-sm">
                     <thead>
@@ -27,16 +26,15 @@
                             <th class="px-6 py-4 text-left font-medium text-slate-600 w-32">UID</th>
                             <th class="px-6 py-4 text-left font-medium text-slate-600">Full Name</th>
                             <th class="px-6 py-4 text-left font-medium text-slate-600 w-32">Birthday</th>
-                            <th class="px-6 py-4 text-left font-medium text-slate-600 w-40">Contact Number</th>
+                            <th class="px-6 py-4 text-left font-medium text-slate-600">Contact Number</th>
                             <th class="px-6 py-4 text-left font-medium text-slate-600">Email</th>
                             <th class="px-6 py-4 text-left font-medium text-slate-600">Schedule</th>
                             <th class="px-6 py-4 text-left font-medium text-slate-600 w-44">Registered On</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
-                        {% for s in students %}
+                        {% for s in schedules %}
                         <tr class="hover:bg-blue-50 transition-colors">
-                            <!-- Fixed UID: Single line, horizontal, with proper spacing -->
                             <td class="px-6 py-5">
                                 <span class="font-mono font-medium text-blue-700 tracking-widest bg-blue-50 px-3 py-1.5 rounded-xl inline-block">
                                     {{ s.uid }}
@@ -46,8 +44,8 @@
                             <td class="px-6 py-5 text-slate-600">{{ s.birthday }}</td>
                             <td class="px-6 py-5 text-slate-600 font-medium">{{ s.contact_number }}</td>
                             <td class="px-6 py-5 text-slate-600 text-sm break-all">{{ s.email }}</td>
-                            <td class="px-6 py-5 text-slate-600 text-sm leading-relaxed max-w-xs">
-                                {{ s.schedule|truncate(65) }}
+                            <td class="px-6 py-5 text-slate-700 text-sm leading-relaxed">
+                                {{ s.schedule }}
                             </td>
                             <td class="px-6 py-5 text-slate-600 text-sm">{{ s.created_at }}</td>
                         </tr>
@@ -59,7 +57,7 @@
             <!-- Total Count -->
             <div class="mt-10 flex justify-center">
                 <div class="bg-slate-100 border border-slate-200 text-slate-700 px-8 py-3 rounded-3xl text-sm font-medium shadow-sm">
-                    Total Registered Students: <span class="font-semibold text-slate-900">{{ students|length }}</span>
+                    Total Students with Schedule: <span class="font-semibold text-slate-900">{{ schedules|length }}</span>
                 </div>
             </div>
 
@@ -67,10 +65,10 @@
 
             <!-- Empty State -->
             <div class="bg-slate-50 border border-slate-200 rounded-3xl p-20 text-center">
-                <div class="text-7xl mb-6 opacity-70">👥</div>
-                <h3 class="text-2xl font-semibold text-slate-700">No Registered Students Yet</h3>
+                <div class="text-7xl mb-6">📅</div>
+                <h3 class="text-2xl font-semibold text-slate-700">No Schedules Yet</h3>
                 <p class="text-slate-500 mt-4 max-w-md mx-auto">
-                    Students will appear here once they are registered and linked to an RFID card.
+                    Student schedules will appear here once students are registered with their class schedule.
                 </p>
             </div>
 

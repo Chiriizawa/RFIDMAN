@@ -3,77 +3,88 @@
 {% block title %}RFID Dashboard{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl">
-    <div class="mt-10 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
-            <p class="text-sm text-slate-500">Status</p>
-            <p id="message" class="mt-2 text-lg font-semibold text-slate-800">
-                {{ data.message }}
-            </p>
+<div class="max-w-5xl mx-auto">
+
+    <!-- Main Card -->
+    <div class="bg-white border border-blue-100 rounded-3xl shadow-sm overflow-hidden">
+
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-sky-600 px-10 py-8 text-white">
+            <h1 class="text-3xl font-semibold">RFID Dashboard</h1>
+            <p class="text-blue-100 mt-2">Real-time attendance monitoring system</p>
         </div>
 
-        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
-            <p class="text-sm text-slate-500">UID</p>
-            <p id="uid" class="mt-2 text-lg font-semibold text-blue-600 break-all">
-                {{ data.uid or '—' }}
-            </p>
-        </div>
+        <!-- Side-by-Side Information Boxes -->
+        <div class="p-10">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
-        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
-            <p class="text-sm text-slate-500">Name</p>
-            <p id="name" class="mt-2 text-lg font-semibold text-purple-600">
-                {{ data.name or '—' }}
-            </p>
-        </div>
+                <!-- Current Status -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6">
+                    <p class="text-base font-medium text-slate-600">CURRENT STATUS</p>
+                    <p id="message" class="mt-4 text-2xl font-semibold text-slate-800">
+                        Waiting for scan...
+                    </p>
+                </div>
 
-        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
-            <p class="text-sm text-slate-500">Scan Time</p>
-            <p id="time" class="mt-2 text-lg font-semibold text-green-600">
-                {{ data.time or '—' }}
-            </p>
-        </div>
-    </div>
+                <!-- Scanned UID -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6">
+                    <p class="text-base font-medium text-slate-600">SCANNED UID</p>
+                    <p id="uid" class="mt-4 text-2xl font-semibold text-blue-700 font-mono break-all">
+                        —
+                    </p>
+                </div>
 
-    <div id="nameBanner" class="mt-6 hidden">
-        <div class="p-5 bg-indigo-50 border border-indigo-200 rounded-3xl flex items-center gap-4">
-            <div class="text-4xl">👤</div>
-            <div>
-                <p class="text-sm text-indigo-400 font-medium uppercase tracking-wide">Registered Student</p>
-                <p id="bannerName" class="text-2xl font-bold text-indigo-700">—</p>
-                <p id="bannerTime" class="text-sm text-indigo-400 mt-0.5">—</p>
+                <!-- Student Name -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6">
+                    <p class="text-base font-medium text-slate-600">STUDENT NAME</p>
+                    <p id="name" class="mt-4 text-2xl font-semibold text-slate-800">
+                        —
+                    </p>
+                </div>
+
+                <!-- Scan Time -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6">
+                    <p class="text-base font-medium text-slate-600">SCAN TIME</p>
+                    <p id="time" class="mt-4 text-2xl font-semibold text-slate-800">
+                        —
+                    </p>
+                </div>
+
             </div>
+
+            <!-- Success Banner -->
+            <div id="nameBanner" class="mt-10 hidden bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-3xl p-7">
+                <div class="flex items-center gap-6">
+                    <div class="text-6xl">✅</div>
+                    <div>
+                        <p class="text-emerald-600 font-semibold uppercase tracking-widest text-sm">Student Successfully Detected</p>
+                        <p id="bannerName" class="text-3xl font-bold text-slate-800 mt-2">—</p>
+                        <p id="bannerTime" class="text-blue-600 mt-1">—</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="dbResult" class="mt-6"></div>
         </div>
     </div>
 
-    <div class="mt-6 flex gap-3">
-        <button onclick="checkDB()"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">
-            Test Database
-        </button>
-    </div>
+    <!-- Recent Scanned Cards Table -->
+    <div class="mt-12">
+        <h2 class="text-2xl font-semibold text-slate-800 mb-2">Recent Scanned Cards</h2>
+        <p class="text-slate-600 mb-6">Last 60 seconds only • Real-time updates</p>
 
-    <div id="dbResult" class="mt-4 text-sm text-slate-700"></div>
-
-    <div class="mt-10">
-        <h2 class="text-2xl font-semibold text-slate-800 tracking-tight">Scanned Cards</h2>
-        <p class="text-sm text-slate-500 mt-1">All UIDs stored in the database</p>
-
-        <div class="mt-4 bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
-            <table class="w-full text-sm text-left">
-                <thead class="bg-slate-50 border-b border-slate-200">
+        <div class="bg-white border border-blue-100 rounded-3xl shadow-sm overflow-hidden">
+            <table class="w-full text-base">
+                <thead class="bg-blue-50 border-b border-blue-100">
                     <tr>
-                        <th class="px-6 py-4 text-slate-500 font-medium">#</th>
-                        <th class="px-6 py-4 text-slate-500 font-medium">UID</th>
-                        <th class="px-6 py-4 text-slate-500 font-medium">Name</th>
-                        <th class="px-6 py-4 text-slate-500 font-medium">Scanned At</th>
+                        <th class="px-8 py-5 text-left font-medium text-slate-600">#</th>
+                        <th class="px-8 py-5 text-left font-medium text-slate-600">UID</th>
+                        <th class="px-8 py-5 text-left font-medium text-slate-600">Student Name</th>
+                        <th class="px-8 py-5 text-left font-medium text-slate-600">Scanned At</th>
                     </tr>
                 </thead>
-                <tbody id="uid-table-body">
-                    <tr>
-                        <td colspan="4" class="px-6 py-6 text-center text-slate-400">
-                            Loading...
-                        </td>
-                    </tr>
+                <tbody id="uid-table-body" class="divide-y divide-slate-100">
+                    <!-- Populated by JavaScript -->
                 </tbody>
             </table>
         </div>
@@ -83,6 +94,11 @@
 <script>
     let lastUID = '';
     let bannerTimeout = null;
+    let expirationTimeout = null;
+    let tableTimeout = null;           // New: for clearing recent table
+    let recentScans = [];              // Store recent scans in memory
+
+    const TABLE_EXPIRATION_TIME = 60 * 1000; // 60 seconds (1 minute)
 
     async function refreshData() {
         try {
@@ -94,9 +110,24 @@
             document.getElementById('name').textContent = data.name || '—';
             document.getElementById('time').textContent = data.time || '—';
 
-            if (data.uid && data.uid !== lastUID) {
+            if (data.uid && data.uid !== lastUID && data.uid !== '') {
                 lastUID = data.uid;
+
+                // Add to recent scans list
+                recentScans.unshift({
+                    id: Date.now(),
+                    uid: data.uid,
+                    full_name: data.name || 'No linked student',
+                    created_at: data.time || new Date().toLocaleString()
+                });
+
+                // Keep only last 10 entries
+                if (recentScans.length > 10) recentScans.pop();
+
                 showNameBanner(data.name, data.time);
+                startExpirationTimer();
+                refreshRecentTable();        // Update table immediately
+                startTableExpirationTimer(); // Reset 60-second timer
             }
         } catch (error) {
             console.error('Error fetching latest scan:', error);
@@ -106,44 +137,55 @@
     function showNameBanner(name, time) {
         const banner = document.getElementById('nameBanner');
         document.getElementById('bannerName').textContent = name || 'No linked student';
-        document.getElementById('bannerTime').textContent = time || '';
+        document.getElementById('bannerTime').textContent = time || 'Just now';
 
         banner.classList.remove('hidden');
 
         if (bannerTimeout) clearTimeout(bannerTimeout);
-
-        bannerTimeout = setTimeout(() => {
-            banner.classList.add('hidden');
-        }, 5000);
+        bannerTimeout = setTimeout(() => banner.classList.add('hidden'), 8000);
     }
 
-    async function refreshTable() {
-        try {
-            const response = await fetch('/admin/get_all_uids');
-            const rows = await response.json();
-            const tbody = document.getElementById('uid-table-body');
+    function startExpirationTimer() {
+        if (expirationTimeout) clearTimeout(expirationTimeout);
+        expirationTimeout = setTimeout(resetDashboard, 5 * 60 * 1000); // 5 minutes
+    }
 
-            if (rows.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="4" class="px-6 py-6 text-center text-slate-400">
-                            No cards scanned yet.
-                        </td>
-                    </tr>`;
-                return;
-            }
+    function resetDashboard() {
+        lastUID = '';
+        document.getElementById('message').textContent = 'Waiting for scan...';
+        document.getElementById('uid').textContent = '—';
+        document.getElementById('name').textContent = '—';
+        document.getElementById('time').textContent = '—';
+        document.getElementById('nameBanner').classList.add('hidden');
+    }
 
-            tbody.innerHTML = rows.map(row => `
-                <tr class="border-t border-slate-100 hover:bg-slate-50 transition">
-                    <td class="px-6 py-4 text-slate-400">${row.id}</td>
-                    <td class="px-6 py-4 font-semibold text-blue-600">${row.uid}</td>
-                    <td class="px-6 py-4 font-medium text-slate-700">${row.full_name}</td>
-                    <td class="px-6 py-4 text-slate-600">${row.created_at}</td>
-                </tr>
-            `).join('');
-        } catch (error) {
-            console.error('Error fetching UIDs:', error);
+    // New: Refresh only the recent scans table (in-memory)
+    function refreshRecentTable() {
+        const tbody = document.getElementById('uid-table-body');
+
+        if (recentScans.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="px-8 py-12 text-center text-slate-400">No recent scans in the last minute...</td></tr>`;
+            return;
         }
+
+        tbody.innerHTML = recentScans.map((row, index) => `
+            <tr class="hover:bg-sky-50 transition">
+                <td class="px-8 py-5 text-slate-500">${index + 1}</td>
+                <td class="px-8 py-5 font-mono font-medium text-blue-700">${row.uid}</td>
+                <td class="px-8 py-5 font-medium text-slate-700">${row.full_name}</td>
+                <td class="px-8 py-5 text-slate-600">${row.created_at}</td>
+            </tr>
+        `).join('');
+    }
+
+    // New: Clear the recent table after 60 seconds of no new scan
+    function startTableExpirationTimer() {
+        if (tableTimeout) clearTimeout(tableTimeout);
+
+        tableTimeout = setTimeout(() => {
+            recentScans = [];           // Clear memory
+            refreshRecentTable();       // Update UI to show empty state
+        }, TABLE_EXPIRATION_TIME);
     }
 
     async function checkDB() {
@@ -151,21 +193,25 @@
             const response = await fetch('/admin/test_db');
             const data = await response.json();
 
-            document.getElementById('dbResult').innerHTML = `
-                <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
-                    <p><strong>Status:</strong> ${data.status}</p>
-                    <p><strong>Message:</strong> ${data.message}</p>
-                    ${data.server_time ? `<p><strong>Server Time:</strong> ${data.server_time}</p>` : ''}
-                </div>
-            `;
+            let html = `<div class="p-6 bg-white border border-blue-100 rounded-3xl shadow-sm">`;
+            html += `<p class="font-medium">Status: <span class="text-emerald-600">${data.status}</span></p>`;
+            html += `<p>Message: ${data.message}</p>`;
+            if (data.server_time) html += `<p>Server Time: ${data.server_time}</p>`;
+            html += `</div>`;
+
+            document.getElementById('dbResult').innerHTML = html;
         } catch (error) {
-            console.error('Database test error:', error);
+            document.getElementById('dbResult').innerHTML = `
+                <div class="p-6 bg-red-50 border border-red-200 rounded-3xl text-red-700">
+                    Failed to connect to database.
+                </div>`;
         }
     }
 
+    // Initialize
     refreshData();
-    refreshTable();
-    setInterval(refreshData, 1000);
-    setInterval(refreshTable, 2000);
+    refreshRecentTable();
+    setInterval(refreshData, 1000);        // Real-time latest scan
+    // No more auto refreshTable() every 3s — we now control it manually for 60-second expiration
 </script>
 {% endblock %}

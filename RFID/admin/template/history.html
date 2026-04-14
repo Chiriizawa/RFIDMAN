@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Scan History{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-8">
+
+    <div class="bg-white rounded-3xl shadow-sm overflow-hidden border border-slate-100">
+
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-sky-600 px-10 py-8 text-white flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-semibold">Scan History</h1>
+                <p class="text-blue-100 mt-1">Daily & Monthly RFID attendance records</p>
+            </div>
+            
+            <div class="flex gap-3">
+                <button onclick="downloadTodayPDF()" 
+                        class="bg-white text-blue-700 hover:bg-blue-50 px-5 py-3 rounded-2xl font-medium flex items-center gap-2 shadow-sm transition">
+                    <i class="fa-solid fa-download"></i>
+                    Today’s PDF
+                </button>
+                <button onclick="downloadMonthPDF()" 
+                        class="bg-emerald-600 text-white hover:bg-emerald-700 px-5 py-3 rounded-2xl font-medium flex items-center gap-2 shadow-sm transition">
+                    <i class="fa-solid fa-download"></i>
+                    Whole Month PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="p-8 border-b border-slate-100 bg-slate-50">
+            <div class="flex flex-wrap gap-4 items-end">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Select Specific Date</label>
+                    <input type="date" id="dateFilter" 
+                           class="px-4 py-2.5 border border-slate-300 rounded-2xl focus:outline-none focus:border-blue-500"
+                           onchange="filterByDate()">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Or Select Month</label>
+                    <input type="month" id="monthFilter" 
+                           class="px-4 py-2.5 border border-slate-300 rounded-2xl focus:outline-none focus:border-blue-500"
+                           onchange="filterByMonth()">
+                </div>
+
+                <button onclick="showAllRecords()" 
+                        class="px-6 py-2.5 bg-white border border-slate-300 rounded-2xl hover:bg-slate-100 transition">
+                    Show All History
+                </button>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="p-8">
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-full text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200">
+                            <th class="px-6 py-4 text-left font-medium text-slate-600 w-10">#</th>
+                            <th class="px-6 py-4 text-left font-medium text-slate-600 w-36">UID</th>
+                            <th class="px-6 py-4 text-left font-medium text-slate-600">Student Name</th>
+                            <th class="px-6 py-4 text-left font-medium text-slate-600">Scanned At</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
+
+            <div class="mt-8 flex justify-center">
+                <div id="totalCount" class="bg-slate-100 border border-slate-200 text-slate-700 px-8 py-3 rounded-3xl text-sm font-medium">
+                    Total Records: <span class="font-semibold text-slate-900">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const allHistory = {{ history | tojson | safe }};
+
+// Robust date extractor for format: "April 13, 2026 11:10 PM"
+function getYYYYMMDD(timestamp) {
+    if (!timestamp) return '';
+    
+    try {
+        // Replace multiple spaces and "  " with single space
+        let clean = timestamp.replace(/\s+/g, ' ').trim();
+        
+        // Take only the date part before the time
+        let dateStr = clean.split(' ')[0] + ' ' + clean.split(' ')[1] + ' ' + clean.split(' ')[2];
+        
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return '';
+        
+        return date.toISOString().split('T')[0]; // "2026-04-13"
+    } catch (e) {
+        return '';
+    }
+}
+
+function renderTable(data) {
+    const tbody = document.getElementById('historyBody');
+    const totalEl = document.getElementById('totalCount').querySelector('span');
+
+    if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="px-8 py-16 text-center text-slate-400">No records found.</td></tr>`;
+        totalEl.textContent = "0";
+        return;
+    }
+
+    tbody.innerHTML = data.map((entry, index) => `
+        <tr class="hover:bg-blue-50 transition-colors">
+            <td class="px-6 py-5 text-slate-500">${index + 1}</td>
+            <td class="px-6 py-5">
+                <span class="font-mono font-medium text-blue-700 tracking-widest bg-blue-50 px-4 py-2 rounded-2xl inline-block">
+                    ${entry.uid}
+                </span>
+            </td>
+            <td class="px-6 py-5 font-semibold text-slate-800">${entry.full_name}</td>
+            <td class="px-6 py-5 text-slate-600">${entry.timestamp}</td>
+        </tr>
+    `).join('');
+
+    totalEl.textContent = data.length;
+}
+
+function filterByDate() {
+    const selected = document.getElementById('dateFilter').value;
+    if (!selected) return renderTable(allHistory);
+
+    const filtered = allHistory.filter(entry => getYYYYMMDD(entry.timestamp) === selected);
+    renderTable(filtered);
+}
+
+function filterByMonth() {
+    const monthInput = document.getElementById('monthFilter').value;
+    if (!monthInput) return renderTable(allHistory);
+
+    const [year, month] = monthInput.split('-').map(Number);
+    const filtered = allHistory.filter(entry => {
+        const d = new Date(entry.timestamp);
+        return !isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === month;
+    });
+    renderTable(filtered);
+}
+
+function showAllRecords() {
+    document.getElementById('dateFilter').value = '';
+    document.getElementById('monthFilter').value = '';
+    renderTable(allHistory);
+}
+
+// Today's PDF
+function downloadTodayPDF() {
+    const today = new Date().toISOString().split('T')[0];
+    const todayScans = allHistory.filter(entry => getYYYYMMDD(entry.timestamp) === today);
+
+    if (todayScans.length === 0) {
+        alert("No scans recorded today yet.");
+        return;
+    }
+
+    renderTable(todayScans);
+    document.title = `Scan_History_Today_${today}`;
+    window.print();
+
+    setTimeout(() => {
+        document.title = "Scan History";
+        showAllRecords();
+    }, 800);
+}
+
+// Whole Month PDF
+function downloadMonthPDF() {
+    let monthInput = document.getElementById('monthFilter').value;
+    if (!monthInput) {
+        const now = new Date();
+        monthInput = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    }
+
+    const [year, month] = monthInput.split('-').map(Number);
+    const monthName = new Date(year, month-1).toLocaleString('default', { month: 'long' });
+
+    const monthScans = allHistory.filter(entry => {
+        const d = new Date(entry.timestamp);
+        return !isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === month;
+    });
+
+    if (monthScans.length === 0) {
+        alert(`No scans found in ${monthName} ${year}.`);
+        return;
+    }
+
+    renderTable(monthScans);
+    document.title = `Scan_History_${monthName}_${year}`;
+    window.print();
+
+    setTimeout(() => {
+        document.title = "Scan History";
+        showAllRecords();
+    }, 800);
+}
+
+// Initialize
+renderTable(allHistory);
+
+// Auto select today and show today's scans
+const todayStr = new Date().toISOString().split('T')[0];
+document.getElementById('dateFilter').value = todayStr;
+filterByDate();   // This should now correctly show today's scans
+</script>
+{% endblock %}
