@@ -1,9 +1,10 @@
-from flask import Blueprint, render_template, jsonify, request
+from flask import Blueprint, render_template, jsonify, request, redirect, url_for, flash
 import psycopg2
 import serial
 import threading
 import time
 from datetime import datetime
+import pandas as pd
 from dotenv import load_dotenv
 import os
 
@@ -79,6 +80,21 @@ def format_uid(uid):
         return f"{uid[0:2]} {uid[2:4]} {uid[4:6]} {uid[6:8]}"
     return uid
 
+def normalize_text(value):
+    if value is None:
+        return ""
+    return " ".join(str(value).strip().upper().split())
+
+def normalize_email(email):
+    if not email:
+        return ""
+    return str(email).strip().lower()
+
+def normalize_contact(contact):
+    if not contact:
+        return ""
+    return "".join(ch for ch in str(contact) if ch.isdigit())
+
 def is_valid_uid(uid):
     uid = normalize_uid(uid)
     if not uid:
@@ -142,8 +158,7 @@ def save_uid_to_db(uid):
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT id
-            FROM rfid_cards
+            SELECT id FROM rfid_cards 
             WHERE UPPER(REPLACE(REPLACE(REPLACE(TRIM(uid), ' ', ''), '-', ''), ':', '')) = %s
             LIMIT 1;
         """, (uid,))
@@ -166,8 +181,7 @@ def get_student_name_by_uid(uid):
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT full_name
-            FROM students
+            SELECT full_name FROM students 
             WHERE UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(uid, '')), ' ', ''), '-', ''), ':', '')) = %s
             LIMIT 1;
         """, (uid,))
@@ -184,7 +198,6 @@ def listen():
         try:
             if ser and ser.is_open and ser.in_waiting > 0:
                 raw = ser.readline().decode('utf-8', errors='ignore').strip()
-
                 if not raw or not raw.upper().startswith("UID:"):
                     time.sleep(0.2)
                     continue
@@ -202,17 +215,145 @@ def listen():
                     "name": student_name if student_name else "No linked student",
                     "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
-
         except Exception as e:
             print("Serial read error:", e)
-
         time.sleep(0.2)
 
 threading.Thread(target=listen, daemon=True).start()
 
 
 # =========================
-# HISTORY PAGE
+# STUDENT & REGISTER ROUTES
+# =========================
+
+def get_unlinked_uids():
+    ensure_connection()
+    if conn is None:
+        return []
+
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT r.uid FROM rfid_cards r
+            LEFT JOIN students s ON UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(r.uid, '')), ' ', ''), '-', ''), ':', '')) 
+                                 = UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(s.uid, '')), ' ', ''), '-', ''), ':', ''))
+            WHERE s.uid IS NULL
+            ORDER BY r.id ASC;
+        """)
+        rows = cur.fetchall()
+        cur.close()
+        return [format_uid(row[0]) for row in rows]
+    except Exception as e:
+        print("get_unlinked_uids error:", e)
+        return []
+
+def get_all_students():
+    ensure_connection()
+    if conn is None:
+        return []
+
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id, uid, full_name, birthday, contact_number, email, schedule, created_at
+            FROM students ORDER BY id DESC
+        """)
+        rows = cur.fetchall()
+        cur.close()
+        return rows
+    except Exception as e:
+        print("get_all_students error:", e)
+        return []
+
+@admin_bp.route('/Register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        # ... (your existing register logic remains the same)
+        uid = normalize_uid(request.form.get('uid', '').strip())
+        full_name = request.form.get('full_name', '').strip()
+        birthday = request.form.get('birthday', '').strip()
+        contact_number = request.form.get('contact_number', '').strip()
+        email = request.form.get('email', '').strip()
+        schedule_text = request.form.get('schedule', '').strip()
+
+        if not all([uid, full_name, birthday, contact_number, email, schedule_text]):
+            flash("Please fill in all fields including UID.", "error")
+            return redirect(url_for('admin_bp.register'))
+
+        if not is_valid_uid(uid):
+            flash("Invalid UID format.", "error")
+            return redirect(url_for('admin_bp.register'))
+
+        try:
+            save_student_to_db(uid, full_name, birthday, contact_number, email, schedule_text)
+            flash("Student registered successfully.", "success")
+        except Exception as e:
+            flash(str(e), "error")
+        return redirect(url_for('admin_bp.register'))
+
+    students = get_all_students()
+    available_uids = get_unlinked_uids()
+    return render_template('register.html', students=students, available_uids=available_uids)
+
+
+# =========================
+# OTHER PAGES
+# =========================
+
+@admin_bp.route('/registered_students')
+def registered_students():
+    students = get_all_students()
+    student_list = []
+    for row in students:
+        student_list.append({
+            "id": row[0],
+            "uid": format_uid(row[1]) if row[1] else "—",
+            "full_name": row[2] or "—",
+            "birthday": str(row[3]) if row[3] else "—",
+            "contact_number": row[4] or "—",
+            "email": row[5] or "—",
+            "schedule": row[6] or "—",
+            "created_at": row[7].strftime("%b %d, %Y  %I:%M %p") if row[7] else "—"
+        })
+    return render_template('registered_students.html', students=student_list)
+
+
+@admin_bp.route('/schedules')
+def schedules():
+    ensure_connection()
+    if conn is None:
+        return render_template('schedules.html', schedules=[])
+
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id, uid, full_name, birthday, contact_number, email, schedule, created_at
+            FROM students 
+            WHERE schedule IS NOT NULL AND TRIM(schedule) != ''
+            ORDER BY full_name ASC;
+        """)
+        rows = cur.fetchall()
+        cur.close()
+
+        schedule_list = [{
+            "id": row[0],
+            "uid": format_uid(row[1]) if row[1] else "—",
+            "full_name": row[2] or "—",
+            "birthday": str(row[3]) if row[3] else "—",
+            "contact_number": row[4] or "—",
+            "email": row[5] or "—",
+            "schedule": row[6] or "—",
+            "created_at": row[7].strftime("%b %d, %Y  %I:%M %p") if row[7] else "—"
+        } for row in rows]
+
+        return render_template('schedules.html', schedules=schedule_list)
+    except Exception as e:
+        print("Schedules error:", e)
+        return render_template('schedules.html', schedules=[])
+
+
+# =========================
+# HISTORY PAGE - Updated for Specific Date
 # =========================
 
 @admin_bp.route('/history')
@@ -224,14 +365,14 @@ def history():
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT
+            SELECT 
                 r.id,
                 r.uid,
                 COALESCE(s.full_name, 'Unregistered Card') AS full_name,
                 r.created_at
             FROM rfid_cards r
-            LEFT JOIN students s
-                ON UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(r.uid, '')), ' ', ''), '-', ''), ':', ''))
+            LEFT JOIN students s 
+                ON UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(r.uid, '')), ' ', ''), '-', ''), ':', '')) 
                  = UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(s.uid, '')), ' ', ''), '-', ''), ':', ''))
             ORDER BY r.created_at DESC;
         """)
@@ -252,10 +393,11 @@ def history():
         return render_template('history.html', history=[])
 
 
+# New: API for filtering history by specific date
 @admin_bp.route('/history/filter')
 def history_filter():
     ensure_connection()
-    selected_date = request.args.get('date')
+    selected_date = request.args.get('date')  # Format: YYYY-MM-DD
 
     if not selected_date:
         return jsonify([])
@@ -263,14 +405,14 @@ def history_filter():
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT
+            SELECT 
                 r.id,
                 r.uid,
                 COALESCE(s.full_name, 'Unregistered Card') AS full_name,
                 r.created_at
             FROM rfid_cards r
-            LEFT JOIN students s
-                ON UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(r.uid, '')), ' ', ''), '-', ''), ':', ''))
+            LEFT JOIN students s 
+                ON UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(r.uid, '')), ' ', ''), '-', ''), ':', '')) 
                  = UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(s.uid, '')), ' ', ''), '-', ''), ':', ''))
             WHERE DATE(r.created_at) = %s
             ORDER BY r.created_at DESC;
