@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Login - Tap & Know</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * { font-family: 'Inter', system-ui, sans-serif; }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        /* ✅ Same background image as base.html — consistent across the whole app */
+        body {
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-image: url("{{ url_for('static', filename='images/geminilogo.png') }}");
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1.5rem;
+        }
+
+        /* Dark overlay matching sidebar gradient */
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(10,20,60,0.85) 0%, rgba(0,0,0,0.70) 100%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .login-wrapper {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 440px;
+            animation: fadeInUp 0.5s ease;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .glass-card {
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .glass-input {
+            background: rgba(255,255,255,0.10);
+            border: 1px solid rgba(255,255,255,0.20);
+            color: #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 0.85rem 1.25rem;
+            width: 100%;
+            outline: none;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+        
+        .glass-input:focus { 
+            border-color: #facc15;
+            background: rgba(255,255,255,0.15);
+            box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.1);
+        }
+        
+        .glass-input::placeholder { 
+            color: rgba(148,163,184,0.7);
+        }
+        
+        /* Login button matching admin panel theme */
+        .login-btn {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .login-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .login-btn:hover::before {
+            left: 100%;
+        }
+        
+        .login-btn:hover {
+            background: linear-gradient(135deg, #1e40af 0%, #2e2a6e 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(30, 58, 138, 0.4);
+        }
+        
+        .login-btn:active {
+            transform: translateY(0);
+        }
+        
+        /* Toast notification style */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            max-width: 450px;
+            padding: 16px 20px;
+            border-radius: 16px;
+            background: rgba(30, 58, 138, 0.95);
+            backdrop-filter: blur(18px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideInRight 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        
+        .toast.success {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95));
+        }
+        
+        .toast.error {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95));
+        }
+        
+        .toast-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        
+        .toast-content {
+            flex: 1;
+        }
+        
+        .toast-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 14px;
+            color: white;
+        }
+        
+        .toast-message {
+            font-size: 13px;
+            opacity: 0.95;
+            color: white;
+        }
+        
+        .toast-close {
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+            font-size: 18px;
+            flex-shrink: 0;
+            color: white;
+        }
+        
+        .toast-close:hover {
+            opacity: 1;
+        }
+        
+        /* Loading spinner for button */
+        .btn-loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        
+        .btn-loading::after {
+            content: "";
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            top: 50%;
+            right: 20px;
+            margin-top: -9px;
+            border: 2px solid white;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Password toggle button */
+        .password-wrapper {
+            position: relative;
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.6);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .password-toggle:hover {
+            color: #facc15;
+        }
+        
+        /* Footer link styling */
+        .footer-link {
+            transition: color 0.2s ease;
+        }
+        
+        .footer-link:hover {
+            color: #facc15;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-wrapper">
+
+        <!-- Logo with animation -->
+        <div class="flex justify-center mb-8">
+            <div class="w-24 h-24 bg-yellow-400 rounded-3xl flex items-center justify-center shadow-2xl transform transition hover:scale-105 duration-300">
+                <span class="text-blue-900 text-5xl font-bold">▶</span>
+            </div>
+        </div>
+
+        <div class="glass-card p-10">
+            <h2 class="text-3xl font-semibold text-center text-white mb-2">
+                <i class="fa-solid fa-chalkboard-user mr-2 text-yellow-400"></i>
+                Teacher Login
+            </h2>
+            <p class="text-center text-blue-300 mb-8">Access your teaching profile</p>
+
+            <form id="loginForm" method="POST" action="{{ url_for('admin_bp.teacher_login') }}" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-medium text-blue-200 mb-2">
+                        <i class="fa-solid fa-envelope mr-1 text-yellow-400/70"></i>
+                        Email Address
+                    </label>
+                    <input type="email" name="identifier" id="email" required
+                           placeholder="you@school.edu"
+                           class="glass-input">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-blue-200 mb-2">
+                        <i class="fa-solid fa-lock mr-1 text-yellow-400/70"></i>
+                        Password
+                    </label>
+                    <div class="password-wrapper">
+                        <input type="password" name="password" id="password" required
+                               placeholder="••••••••"
+                               class="glass-input pr-12">
+                        <button type="button" class="password-toggle" onclick="togglePassword()">
+                            <i class="fa-regular fa-eye" id="toggleIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" id="loginBtn"
+                        class="login-btn w-full text-white font-semibold py-4 rounded-2xl transition">
+                    <i class="fa-solid fa-sign-in-alt mr-2"></i>
+                    Sign In
+                </button>
+            </form>
+
+            <!-- Flash messages styled as toasts -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="mt-6 p-4 rounded-2xl text-center text-sm
+                                {% if category == 'error' %}bg-red-500/20 text-red-200 border border-red-400/30{% else %}bg-emerald-500/20 text-emerald-200 border border-emerald-400/30{% endif %}">
+                        <i class="fa-solid fa-{% if category == 'error' %}exclamation-circle{% else %}check-circle{% endif %} mr-2"></i>
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <p class="text-center text-blue-400/60 text-sm mt-6">
+            <i class="fa-regular fa-shield-alt mr-1"></i>
+            Only for registered teachers
+        </p>
+    </div>
+
+    <script>
+        // Toast notification function
+        function showToast(message, type = 'success', title = '') {
+            const titles = {
+                success: '✓ Success!',
+                error: '✗ Error!',
+                info: 'ℹ Info',
+                warning: '⚠ Warning'
+            };
+            
+            const icons = {
+                success: '✅',
+                error: '❌',
+                info: 'ℹ️',
+                warning: '⚠️'
+            };
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div class="toast-icon">${icons[type] || icons.success}</div>
+                <div class="toast-content">
+                    <div class="toast-title">${title || titles[type]}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <div class="toast-close" onclick="this.parentElement.remove()">✕</div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                if (toast && toast.parentElement) {
+                    toast.style.animation = 'slideOutRight 0.3s ease';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 3000);
+            
+            toast.addEventListener('click', (e) => {
+                if (e.target === toast || toast.contains(e.target)) {
+                    toast.style.animation = 'slideOutRight 0.3s ease';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            });
+        }
+        
+        // Toggle password visibility
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('toggleIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+        
+        // Form validation and loading state
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const loginBtn = document.getElementById('loginBtn');
+            
+            // Client-side validation
+            if (!email) {
+                e.preventDefault();
+                showToast('Please enter your email address', 'warning', 'Missing Field');
+                document.getElementById('email').focus();
+                return;
+            }
+            
+            if (!password) {
+                e.preventDefault();
+                showToast('Please enter your password', 'warning', 'Missing Field');
+                document.getElementById('password').focus();
+                return;
+            }
+            
+            // Basic email format validation
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(email)) {
+                e.preventDefault();
+                showToast('Please enter a valid email address', 'warning', 'Invalid Email');
+                document.getElementById('email').focus();
+                return;
+            }
+            
+            // Show loading state
+            loginBtn.classList.add('btn-loading');
+            loginBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Signing In...';
+        });
+        
+        // Add keyboard support (Enter key)
+        document.getElementById('loginForm').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.submit();
+            }
+        });
+        
+        // Optional: Auto-focus on email field
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('email').focus();
+            
+            // Check for flash messages and show as toasts instead
+            const flashMessages = document.querySelectorAll('.mt-6.p-4');
+            flashMessages.forEach(msg => {
+                const text = msg.textContent;
+                const isError = msg.classList.contains('bg-red-500/20');
+                showToast(text, isError ? 'error' : 'success', isError ? 'Login Failed' : 'Notice');
+                msg.style.display = 'none'; // Hide the original flash message
+            });
+        });
+        
+        // Demo credentials hint (optional - remove in production)
+        console.log('Teacher Login Page - Enter your credentials to access the dashboard');
+    </script>
+</body>
+</html>

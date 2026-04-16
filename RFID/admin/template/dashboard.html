@@ -1,0 +1,590 @@
+{% extends "base.html" %}
+
+{% block title %}RFID Dashboard{% endblock %}
+
+{% block content %}
+<style>
+    /* Toast Notification Styles */
+    .toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+        max-width: 450px;
+        padding: 16px 20px;
+        border-radius: 16px;
+        background: rgba(30, 58, 138, 0.95);
+        backdrop-filter: blur(18px);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        animation: slideInRight 0.3s ease;
+        border: 1px solid rgba(255,255,255,0.15);
+    }
+    
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+    
+    .toast.success {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95));
+    }
+    
+    .toast.error {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95));
+    }
+    
+    .toast.info {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.95));
+    }
+    
+    .toast.warning {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95));
+    }
+    
+    .toast-icon {
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+    
+    .toast-content {
+        flex: 1;
+    }
+    
+    .toast-title {
+        font-weight: 600;
+        margin-bottom: 4px;
+        font-size: 14px;
+        color: white;
+    }
+    
+    .toast-message {
+        font-size: 13px;
+        opacity: 0.95;
+        color: white;
+    }
+    
+    .toast-close {
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+        font-size: 18px;
+        flex-shrink: 0;
+        color: white;
+    }
+    
+    .toast-close:hover {
+        opacity: 1;
+    }
+    
+    /* Glass card matching the admin panel */
+    .glass-card {
+        background: rgba(255,255,255,0.08);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 1.5rem;
+        overflow: hidden;
+    }
+    
+    /* Status card animations */
+    .status-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .status-card:hover {
+        transform: translateY(-5px);
+        background: rgba(255,255,255,0.15);
+        border-color: rgba(250, 204, 21, 0.3);
+    }
+    
+    /* Success banner */
+    .success-banner {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2));
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        animation: pulse 0.5s ease;
+    }
+    
+    @keyframes pulse {
+        0% {
+            transform: scale(0.95);
+            opacity: 0;
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+    
+    /* Table styles */
+    .table-header {
+        background: rgba(30, 58, 138, 0.4);
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .table-header th {
+        color: rgba(255,255,255,0.9);
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .table-row {
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        transition: all 0.2s ease;
+    }
+    
+    .table-row:hover {
+        background: rgba(255,255,255,0.05);
+    }
+    
+    /* UID badge */
+    .uid-badge {
+        background: rgba(250, 204, 21, 0.15);
+        color: #facc15;
+        font-family: monospace;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.75rem;
+        display: inline-block;
+        border: 1px solid rgba(250, 204, 21, 0.3);
+        font-size: 0.875rem;
+    }
+    
+    /* Scanning animation */
+    @keyframes scanPulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.4);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(250, 204, 21, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(250, 204, 21, 0);
+        }
+    }
+    
+    .scanning {
+        animation: scanPulse 1.5s infinite;
+    }
+    
+    /* Empty state */
+    .empty-state {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 1rem;
+    }
+</style>
+
+<div class="max-w-7xl mx-auto">
+
+    <!-- Main Card -->
+    <div class="glass-card overflow-hidden">
+
+        <!-- Header with gradient matching sidebar -->
+        <div class="bg-gradient-to-r from-blue-900 to-indigo-900 px-10 py-8 text-white border-b border-white/10">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-semibold flex items-center gap-3">
+                        <i class="fa-solid fa-rfid text-yellow-400"></i>
+                        RFID Dashboard
+                    </h1>
+                    <p class="text-blue-200 mt-2">Real-time attendance monitoring system</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                    <span class="text-blue-300 text-sm">Live Monitoring Active</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Boxes -->
+        <div class="p-10">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+                <!-- Current Status -->
+                <div class="status-card bg-white/10 border border-white/15 rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-sm font-medium text-blue-200 uppercase tracking-wider">
+                            <i class="fa-solid fa-circle-info mr-1 text-yellow-400"></i>
+                            Current Status
+                        </p>
+                        <i class="fa-solid fa-waveform text-yellow-400/50 text-xl"></i>
+                    </div>
+                    <p id="message" class="mt-2 text-lg font-semibold text-white">
+                        <i class="fa-regular fa-clock mr-2"></i>
+                        Waiting for scan...
+                    </p>
+                </div>
+
+                <!-- Scanned UID -->
+                <div class="status-card bg-white/10 border border-white/15 rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-sm font-medium text-blue-200 uppercase tracking-wider">
+                            <i class="fa-solid fa-id-card mr-1 text-yellow-400"></i>
+                            Scanned UID
+                        </p>
+                        <i class="fa-solid fa-qrcode text-yellow-400/50 text-xl"></i>
+                    </div>
+                    <p id="uid" class="mt-2 text-lg font-semibold text-yellow-300 font-mono break-all">
+                        —
+                    </p>
+                </div>
+
+                <!-- Student Name -->
+                <div class="status-card bg-white/10 border border-white/15 rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-sm font-medium text-blue-200 uppercase tracking-wider">
+                            <i class="fa-solid fa-user-graduate mr-1 text-yellow-400"></i>
+                            Student Name
+                        </p>
+                        <i class="fa-solid fa-user text-yellow-400/50 text-xl"></i>
+                    </div>
+                    <p id="name" class="mt-2 text-lg font-semibold text-white">
+                        —
+                    </p>
+                </div>
+
+                <!-- Scan Time -->
+                <div class="status-card bg-white/10 border border-white/15 rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-sm font-medium text-blue-200 uppercase tracking-wider">
+                            <i class="fa-regular fa-clock mr-1 text-yellow-400"></i>
+                            Scan Time
+                        </p>
+                        <i class="fa-regular fa-calendar text-yellow-400/50 text-xl"></i>
+                    </div>
+                    <p id="time" class="mt-2 text-lg font-semibold text-white">
+                        —
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- Success Banner -->
+            <div id="nameBanner" class="mt-10 hidden success-banner rounded-3xl p-7">
+                <div class="flex items-center gap-6">
+                    <div class="text-6xl animate-bounce">✅</div>
+                    <div>
+                        <p class="text-emerald-300 font-semibold uppercase tracking-widest text-sm">
+                            <i class="fa-solid fa-check-circle mr-1"></i>
+                            Student Successfully Detected
+                        </p>
+                        <p id="bannerName" class="text-3xl font-bold text-white mt-2">—</p>
+                        <p id="bannerTime" class="text-blue-300 mt-1">
+                            <i class="fa-regular fa-clock mr-1"></i>
+                            —
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="dbResult" class="mt-6"></div>
+        </div>
+    </div>
+
+    <!-- Recent Scanned Cards Table -->
+    <div class="mt-8">
+        <div class="flex justify-between items-end mb-6">
+            <div>
+                <h2 class="text-2xl font-semibold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-history text-yellow-400"></i>
+                    Recent Scanned Cards
+                </h2>
+                <p class="text-blue-300 mt-1 text-sm">
+                    <i class="fa-regular fa-hourglass-half mr-1"></i>
+                    Last 60 seconds only • Real-time updates
+                </p>
+            </div>
+            <div class="text-blue-300 text-sm">
+                <i class="fa-regular fa-bell mr-1"></i>
+                Auto-refreshing every second
+            </div>
+        </div>
+
+        <div class="glass-card overflow-hidden">
+            <table class="w-full text-base">
+                <thead class="table-header">
+                    <tr>
+                        <th class="px-8 py-5 text-left font-medium w-20">
+                            <i class="fa-solid fa-hashtag mr-1 text-yellow-400/70"></i>#
+                        </th>
+                        <th class="px-8 py-5 text-left font-medium">
+                            <i class="fa-solid fa-id-card mr-1 text-yellow-400/70"></i>UID
+                        </th>
+                        <th class="px-8 py-5 text-left font-medium">
+                            <i class="fa-solid fa-user-graduate mr-1 text-yellow-400/70"></i>Student Name
+                        </th>
+                        <th class="px-8 py-5 text-left font-medium">
+                            <i class="fa-regular fa-clock mr-1 text-yellow-400/70"></i>Scanned At
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="uid-table-body" class="divide-y divide-white/10">
+                    <!-- Populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    let lastUID = '';
+    let bannerTimeout = null;
+    let expirationTimeout = null;
+    let tableTimeout = null;
+    let recentScans = [];
+    let connectionStatus = true;
+    let reconnectAttempts = 0;
+
+    const TABLE_EXPIRATION_TIME = 60 * 1000;
+
+    // Toast notification function
+    function showToast(message, type = 'success', title = '') {
+        const titles = {
+            success: '✓ Success!',
+            error: '✗ Error!',
+            info: 'ℹ Info',
+            warning: '⚠ Warning'
+        };
+        
+        const icons = {
+            success: '✅',
+            error: '❌',
+            info: 'ℹ️',
+            warning: '⚠️'
+        };
+        
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `
+            <div class="toast-icon">${icons[type] || icons.success}</div>
+            <div class="toast-content">
+                <div class="toast-title">${title || titles[type]}</div>
+                <div class="toast-message">${message}</div>
+            </div>
+            <div class="toast-close" onclick="this.parentElement.remove()">✕</div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast && toast.parentElement) {
+                toast.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }
+        }, 3000);
+        
+        toast.addEventListener('click', (e) => {
+            if (e.target === toast || toast.contains(e.target)) {
+                toast.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }
+        });
+    }
+
+    async function refreshData() {
+        try {
+            const response = await fetch('/admin/get_latest');
+            const data = await response.json();
+
+            // Update connection status
+            if (!connectionStatus) {
+                connectionStatus = true;
+                showToast('Connection restored', 'success', 'Reconnected');
+            }
+            reconnectAttempts = 0;
+
+            // Update UI with animation for new data
+            const messageEl = document.getElementById('message');
+            const uidEl = document.getElementById('uid');
+            const nameEl = document.getElementById('name');
+            const timeEl = document.getElementById('time');
+
+            if (data.uid && data.uid !== lastUID && data.uid !== '') {
+                // Add scanning animation
+                uidEl.classList.add('scanning');
+                setTimeout(() => uidEl.classList.remove('scanning'), 500);
+                
+                lastUID = data.uid;
+
+                recentScans.unshift({
+                    id: Date.now(),
+                    uid: data.uid,
+                    full_name: data.name || 'No linked student',
+                    created_at: data.time || new Date().toLocaleString()
+                });
+
+                if (recentScans.length > 10) recentScans.pop();
+
+                showNameBanner(data.name, data.time);
+                startExpirationTimer();
+                refreshRecentTable();
+                startTableExpirationTimer();
+                
+                // Play notification sound (optional - uncomment if you want)
+                // playNotificationSound();
+            }
+
+            messageEl.innerHTML = data.message ? `<i class="fa-regular fa-clock mr-2"></i>${data.message}` : '<i class="fa-regular fa-clock mr-2"></i>Waiting for scan...';
+            uidEl.innerHTML = data.uid || '—';
+            nameEl.innerHTML = data.name || '—';
+            timeEl.innerHTML = data.time || '—';
+
+        } catch (error) {
+            console.error('Error fetching latest scan:', error);
+            if (connectionStatus) {
+                connectionStatus = false;
+                reconnectAttempts++;
+                if (reconnectAttempts >= 3) {
+                    showToast('Connection lost. Check if server is running.', 'error', 'Connection Error');
+                }
+            }
+            document.getElementById('message').innerHTML = '<i class="fa-solid fa-exclamation-triangle mr-2"></i>Connection lost...';
+        }
+    }
+
+    function showNameBanner(name, time) {
+        const banner = document.getElementById('nameBanner');
+        document.getElementById('bannerName').textContent = name || 'No linked student';
+        document.getElementById('bannerTime').innerHTML = `<i class="fa-regular fa-clock mr-1"></i>${time || 'Just now'}`;
+        banner.classList.remove('hidden');
+        
+        // Show toast notification for new scan
+        if (name && name !== 'No linked student') {
+            showToast(`${name} has been detected`, 'success', 'New Scan');
+        }
+        
+        if (bannerTimeout) clearTimeout(bannerTimeout);
+        bannerTimeout = setTimeout(() => banner.classList.add('hidden'), 8000);
+    }
+
+    function startExpirationTimer() {
+        if (expirationTimeout) clearTimeout(expirationTimeout);
+        expirationTimeout = setTimeout(resetDashboard, 5 * 60 * 1000);
+    }
+
+    function resetDashboard() {
+        lastUID = '';
+        document.getElementById('message').innerHTML = '<i class="fa-regular fa-clock mr-2"></i>Waiting for scan...';
+        document.getElementById('uid').textContent = '—';
+        document.getElementById('name').textContent = '—';
+        document.getElementById('time').textContent = '—';
+        document.getElementById('nameBanner').classList.add('hidden');
+        showToast('Dashboard reset due to inactivity', 'info', 'Session Expired');
+    }
+
+    function refreshRecentTable() {
+        const tbody = document.getElementById('uid-table-body');
+
+        if (recentScans.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="px-8 py-12 text-center">
+                        <div class="empty-state p-8">
+                            <i class="fa-regular fa-clock text-4xl text-blue-300/50 mb-3"></i>
+                            <p class="text-blue-300/60">No recent scans in the last minute...</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = recentScans.map((row, index) => `
+            <tr class="table-row transition">
+                <td class="px-8 py-5 text-blue-300 font-medium">${index + 1}</td>
+                <td class="px-8 py-5">
+                    <span class="uid-badge">
+                        <i class="fa-solid fa-id-card mr-1 text-xs"></i>
+                        ${row.uid}
+                    </span>
+                </td>
+                <td class="px-8 py-5 font-medium text-white">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-yellow-400/20 rounded-full flex items-center justify-center">
+                            <i class="fa-solid fa-user text-yellow-400 text-sm"></i>
+                        </div>
+                        ${row.full_name}
+                    </div>
+                </td>
+                <td class="px-8 py-5 text-blue-200">
+                    <i class="fa-regular fa-clock mr-1"></i>
+                    ${row.created_at}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function startTableExpirationTimer() {
+        if (tableTimeout) clearTimeout(tableTimeout);
+        tableTimeout = setTimeout(() => {
+            recentScans = [];
+            refreshRecentTable();
+            showToast('Recent scans list has been cleared', 'info', 'List Refreshed');
+        }, TABLE_EXPIRATION_TIME);
+    }
+
+    // Optional: Play notification sound on new scan
+    function playNotificationSound() {
+        const audio = new Audio('data:audio/wav;base64,U3RlYWx0aCBzb3VuZA==');
+        audio.volume = 0.3;
+        audio.play().catch(e => console.log('Audio play failed:', e));
+    }
+
+    // Manual refresh button (optional)
+    function manualRefresh() {
+        refreshData();
+        showToast('Manual refresh triggered', 'info', 'Refreshing');
+    }
+
+    // Clear recent scans manually
+    function clearRecentScans() {
+        recentScans = [];
+        refreshRecentTable();
+        showToast('Recent scans cleared', 'success', 'List Cleared');
+    }
+
+    // Keyboard shortcut: Ctrl+R to refresh, Ctrl+C to clear
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'r') {
+            e.preventDefault();
+            manualRefresh();
+        } else if (e.ctrlKey && e.key === 'c') {
+            e.preventDefault();
+            clearRecentScans();
+        }
+    });
+
+    // Initialize
+    refreshData();
+    refreshRecentTable();
+    setInterval(refreshData, 1000);
+    
+    // Log keyboard shortcuts
+    console.log('RFID Dashboard loaded - Keyboard shortcuts: Ctrl+R (Refresh), Ctrl+C (Clear scans)');
+</script>
+{% endblock %}

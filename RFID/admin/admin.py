@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, jsonify, request, redirect, url_for, flash
+from flask import Blueprint, render_template, jsonify, request, redirect, url_for, flash, session
 import psycopg2
 import serial
 import threading
@@ -7,6 +7,8 @@ from datetime import datetime
 import pandas as pd
 from dotenv import load_dotenv
 import os
+from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 
 load_dotenv()
 
@@ -46,7 +48,6 @@ def ensure_connection():
         if conn is None or conn.closed != 0:
             conn = get_connection()
             conn.autocommit = True
-            print("Reconnected to PostgreSQL.")
     except Exception as e:
         print("Reconnect failed:", e)
         conn = None
@@ -80,103 +81,45 @@ def format_uid(uid):
         return f"{uid[0:2]} {uid[2:4]} {uid[4:6]} {uid[6:8]}"
     return uid
 
-def normalize_text(value):
-    if value is None:
-        return ""
-    return " ".join(str(value).strip().upper().split())
-
-def normalize_email(email):
-    if not email:
-        return ""
-    return str(email).strip().lower()
-
-def normalize_contact(contact):
-    if not contact:
-        return ""
-    return "".join(ch for ch in str(contact) if ch.isdigit())
-
 def is_valid_uid(uid):
     uid = normalize_uid(uid)
     if not uid:
         return False
-
     allowed = "0123456789ABCDEF"
     for ch in uid:
         if ch not in allowed:
             return False
-
     if len(uid) not in [8, 14]:
         return False
-
     return True
 
 
-# =========================
-# BASIC ROUTES
-# =========================
-
-@admin_bp.route('/')
-def index():
-    return render_template("index.html", data=latest_scan)
-
-@admin_bp.route('/get_latest')
-def get_latest():
-    return jsonify(latest_scan)
-
-@admin_bp.route('/test_db')
-def test_db():
+def get_all_students():
     ensure_connection()
     if conn is None:
-        return jsonify({"status": "error", "message": "Database not connected"})
-
-    try:
-        cur = conn.cursor()
-        cur.execute("SELECT NOW();")
-        result = cur.fetchone()
-        cur.close()
-
-        return jsonify({
-            "status": "success",
-            "message": "Database connected successfully",
-            "server_time": str(result[0])
-        })
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
-
-
-# =========================
-# RFID LISTEN & SAVE
-# =========================
-
-def save_uid_to_db(uid):
-    ensure_connection()
-    if conn is None:
-        return
-
-    uid = normalize_uid(uid)
+        print("Database connection failed in get_all_students")
+        return []
 
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT id FROM rfid_cards 
-            WHERE UPPER(REPLACE(REPLACE(REPLACE(TRIM(uid), ' ', ''), '-', ''), ':', '')) = %s
-            LIMIT 1;
-        """, (uid,))
-        if cur.fetchone():
-            cur.close()
-            return
-
-        cur.execute("INSERT INTO rfid_cards (uid) VALUES (%s);", (uid,))
+            SELECT id, uid, full_name, birthday, contact_number, 
+                   email, schedule, created_at
+            FROM students 
+            ORDER BY full_name ASC;
+        """)
+        rows = cur.fetchall()
         cur.close()
-        print(f"UID saved: {uid}")
+        return rows
     except Exception as e:
-        print("Database insert error:", e)
+        print("get_all_students error:", e)
+        return []
+
 
 def get_student_name_by_uid(uid):
     ensure_connection()
     if conn is None:
         return ""
-
     uid = normalize_uid(uid)
     try:
         cur = conn.cursor()
@@ -191,6 +134,62 @@ def get_student_name_by_uid(uid):
     except Exception as e:
         print("get_student_name_by_uid error:", e)
         return ""
+
+
+def save_uid_to_db(uid):
+    ensure_connection()
+    if conn is None:
+        return
+    uid = normalize_uid(uid)
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id FROM rfid_cards 
+            WHERE UPPER(REPLACE(REPLACE(REPLACE(TRIM(uid), ' ', ''), '-', ''), ':', '')) = %s
+            LIMIT 1;
+        """, (uid,))
+        if cur.fetchone():
+            cur.close()
+            return
+        cur.execute("INSERT INTO rfid_cards (uid) VALUES (%s);", (uid,))
+        cur.close()
+        print(f"UID saved: {uid}")
+    except Exception as e:
+        print("Database insert error:", e)
+
+
+def save_student_to_db(uid, full_name, birthday, contact_number, email, schedule_text):
+    ensure_connection()
+    if conn is None:
+        raise Exception("Database not connected")
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO students (uid, full_name, birthday, contact_number, email, schedule, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, NOW())
+        """, (uid, full_name, birthday, contact_number, email, schedule_text))
+        cur.close()
+    except Exception as e:
+        print("Save student error:", e)
+        raise
+
+
+# =========================
+# LOGIN REQUIRED DECORATOR
+# =========================
+def login_required(f):
+    def decorated_function(*args, **kwargs):
+        if not session.get('teacher_logged_in'):
+            flash('Please login first.', 'error')
+            return redirect(url_for('admin_bp.teacher_login'))
+        return f(*args, **kwargs)
+    decorated_function.__name__ = f.__name__
+    return decorated_function
+
+
+# =========================
+# RFID LISTEN & SAVE (Background Thread)
+# =========================
 
 def listen():
     global latest_scan
@@ -223,84 +222,50 @@ threading.Thread(target=listen, daemon=True).start()
 
 
 # =========================
-# STUDENT & REGISTER ROUTES
+# BASIC ROUTES
 # =========================
 
-def get_unlinked_uids():
+@admin_bp.route('/')
+@admin_bp.route('/admin/')
+def index():
+    """Main RFID Dashboard"""
+    if not session.get('teacher_logged_in'):
+        return redirect(url_for('admin_bp.teacher_login'))
+    
+    return render_template('dashboard.html')
+
+
+@admin_bp.route('/get_latest')
+def get_latest():
+    return jsonify(latest_scan)
+
+
+@admin_bp.route('/test_db')
+def test_db():
     ensure_connection()
     if conn is None:
-        return []
+        return jsonify({"status": "error", "message": "Database not connected"})
 
     try:
         cur = conn.cursor()
-        cur.execute("""
-            SELECT r.uid FROM rfid_cards r
-            LEFT JOIN students s ON UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(r.uid, '')), ' ', ''), '-', ''), ':', '')) 
-                                 = UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(s.uid, '')), ' ', ''), '-', ''), ':', ''))
-            WHERE s.uid IS NULL
-            ORDER BY r.id ASC;
-        """)
-        rows = cur.fetchall()
+        cur.execute("SELECT NOW();")
+        result = cur.fetchone()
         cur.close()
-        return [format_uid(row[0]) for row in rows]
+        return jsonify({
+            "status": "success",
+            "message": "Database connected successfully",
+            "server_time": str(result[0])
+        })
     except Exception as e:
-        print("get_unlinked_uids error:", e)
-        return []
-
-def get_all_students():
-    ensure_connection()
-    if conn is None:
-        return []
-
-    try:
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT id, uid, full_name, birthday, contact_number, email, schedule, created_at
-            FROM students ORDER BY id DESC
-        """)
-        rows = cur.fetchall()
-        cur.close()
-        return rows
-    except Exception as e:
-        print("get_all_students error:", e)
-        return []
-
-@admin_bp.route('/Register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        # ... (your existing register logic remains the same)
-        uid = normalize_uid(request.form.get('uid', '').strip())
-        full_name = request.form.get('full_name', '').strip()
-        birthday = request.form.get('birthday', '').strip()
-        contact_number = request.form.get('contact_number', '').strip()
-        email = request.form.get('email', '').strip()
-        schedule_text = request.form.get('schedule', '').strip()
-
-        if not all([uid, full_name, birthday, contact_number, email, schedule_text]):
-            flash("Please fill in all fields including UID.", "error")
-            return redirect(url_for('admin_bp.register'))
-
-        if not is_valid_uid(uid):
-            flash("Invalid UID format.", "error")
-            return redirect(url_for('admin_bp.register'))
-
-        try:
-            save_student_to_db(uid, full_name, birthday, contact_number, email, schedule_text)
-            flash("Student registered successfully.", "success")
-        except Exception as e:
-            flash(str(e), "error")
-        return redirect(url_for('admin_bp.register'))
-
-    students = get_all_students()
-    available_uids = get_unlinked_uids()
-    return render_template('register.html', students=students, available_uids=available_uids)
+        return jsonify({"status": "error", "message": str(e)})
 
 
 # =========================
-# OTHER PAGES
+# PROTECTED ROUTES
 # =========================
 
 @admin_bp.route('/registered_students')
+@login_required
 def registered_students():
     students = get_all_students()
     student_list = []
@@ -319,6 +284,7 @@ def registered_students():
 
 
 @admin_bp.route('/schedules')
+@login_required
 def schedules():
     ensure_connection()
     if conn is None:
@@ -352,11 +318,8 @@ def schedules():
         return render_template('schedules.html', schedules=[])
 
 
-# =========================
-# HISTORY PAGE - Updated for Specific Date
-# =========================
-
 @admin_bp.route('/history')
+@login_required
 def history():
     ensure_connection()
     if conn is None:
@@ -393,12 +356,11 @@ def history():
         return render_template('history.html', history=[])
 
 
-# New: API for filtering history by specific date
 @admin_bp.route('/history/filter')
+@login_required
 def history_filter():
     ensure_connection()
-    selected_date = request.args.get('date')  # Format: YYYY-MM-DD
-
+    selected_date = request.args.get('date')
     if not selected_date:
         return jsonify([])
 
@@ -428,7 +390,141 @@ def history_filter():
         } for row in rows]
 
         return jsonify(result)
-
     except Exception as e:
         print("History filter error:", e)
         return jsonify([])
+
+
+# =========================
+# TEACHER LOGIN & PROFILE
+# =========================
+
+TEACHERS = {
+    "teacher@tapandknow.com": {
+        "id": 1,
+        "full_name": "Mr. Juan Dela Cruz",
+        "email": "teacher@tapandknow.com",
+        "password_hash": generate_password_hash("teacher123"),
+        "subject": "Mathematics",
+        "contact_number": "09123456789",
+        "department": "STEM",
+        "bio": "Senior Mathematics teacher with 12 years experience.",
+        "profile_picture": None,
+        "created_at": datetime.now()
+    }
+}
+
+def get_teacher_by_identifier(identifier):
+    identifier = str(identifier).lower().strip()
+    for email, data in TEACHERS.items():
+        if email.lower() == identifier:
+            return data
+    return None
+
+def get_teacher_by_id(teacher_id):
+    for data in TEACHERS.values():
+        if data.get("id") == teacher_id:
+            return data
+    return None
+
+
+@admin_bp.route('/teacher/login', methods=['GET', 'POST'])
+def teacher_login():
+    if request.method == 'POST':
+        identifier = request.form.get('identifier', '').strip()
+        password = request.form.get('password', '')
+
+        teacher = get_teacher_by_identifier(identifier)
+        if teacher and check_password_hash(teacher['password_hash'], password):
+            session.permanent = True
+            session['teacher_logged_in'] = True
+            session['teacher_id'] = teacher['id']
+            session['teacher_email'] = teacher['email']
+            flash('Login successful!', 'success')
+            return redirect(url_for('admin_bp.teacher_profile'))
+        else:
+            flash('Invalid email or password.', 'error')
+
+    return render_template('login.html')
+
+
+@admin_bp.route('/teacher/profile')
+@login_required
+def teacher_profile():
+    teacher = get_teacher_by_id(session.get('teacher_id'))
+    if not teacher:
+        session.clear()
+        flash('Session expired.', 'error')
+        return redirect(url_for('admin_bp.teacher_login'))
+
+    return render_template('teacher_profile.html', current_teacher=teacher)
+
+
+# NEW: Update Teacher Profile (for editable fields)
+@admin_bp.route('/teacher/update_profile', methods=['POST'])
+@login_required
+def update_teacher_profile():
+    if not session.get('teacher_logged_in'):
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+
+    data = request.get_json()
+    
+    teacher_id = session.get('teacher_id')
+    
+    # Update the teacher data in memory
+    for email, teacher in TEACHERS.items():
+        if teacher.get("id") == teacher_id:
+            if "full_name" in data:
+                teacher["full_name"] = data["full_name"]
+            if "subject" in data:
+                teacher["subject"] = data["subject"]
+            if "department" in data:
+                teacher["department"] = data["department"]
+            if "contact_number" in data:
+                teacher["contact_number"] = data["contact_number"]
+            if "bio" in data:
+                teacher["bio"] = data["bio"]
+            break
+
+    return jsonify({"success": True, "message": "Profile updated successfully"})
+
+
+@admin_bp.route('/teacher/logout')
+def teacher_logout():
+    session.clear()
+    flash('You have been logged out.', 'success')
+    return redirect(url_for('admin_bp.teacher_login'))
+
+
+# =========================
+# PROFILE PICTURE UPLOAD
+# =========================
+UPLOAD_FOLDER = 'static/uploads/teachers'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+@admin_bp.route('/teacher/upload_profile_pic', methods=['POST'])
+def upload_teacher_profile_pic():
+    if not session.get('teacher_logged_in'):
+        return jsonify({"success": False, "message": "Not logged in"})
+
+    if 'profile_picture' not in request.files:
+        return jsonify({"success": False, "message": "No file"})
+
+    file = request.files['profile_picture']
+    if file.filename == '':
+        return jsonify({"success": False, "message": "No selected file"})
+
+    if file:
+        filename = secure_filename(f"teacher_{session.get('teacher_id')}_{file.filename}")
+        save_path = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(save_path)
+
+        teacher_id = session.get('teacher_id')
+        for data in TEACHERS.values():
+            if data["id"] == teacher_id:
+                data["profile_picture"] = f"/static/uploads/teachers/{filename}"
+                break
+
+        return jsonify({"success": True, "image_url": f"/static/uploads/teachers/{filename}"})
+
+    return jsonify({"success": False, "message": "Upload failed"})
