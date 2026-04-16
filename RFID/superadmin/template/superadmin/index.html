@@ -1,29 +1,164 @@
 {% extends "superadmin/base.html" %}
 
+{% block title %}Superadmin Dashboard{% endblock %}
+
 {% block content %}
 
-<div class="bg-white rounded-3xl shadow-xl p-12 text-center">
-    <div class="max-w-md mx-auto">
-        <div class="text-6xl mb-6">🛠️</div>
-        <h1 class="text-3xl font-semibold text-slate-900 mb-3">Super Admin Dashboard</h1>
-        <p class="text-slate-500 mb-8">
-            Welcome back, Super Admin.<br>
-            Select a section from the navigation above to get started.
-        </p>
-        
-        <div class="grid grid-cols-2 gap-4 text-left">
-            <a href="#" class="block p-6 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-colors">
-                <i class="fa-solid fa-box text-2xl text-blue-600 mb-3 block"></i>
-                <div class="font-medium">Products</div>
-                <div class="text-xs text-slate-500">Manage catalog</div>
-            </a>
-            <a href="#" class="block p-6 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-colors">
-                <i class="fa-solid fa-cart-shopping text-2xl text-emerald-600 mb-3 block"></i>
-                <div class="font-medium">Orders</div>
-                <div class="text-xs text-slate-500">View & manage orders</div>
-            </a>
+<!-- CONTAINER (SMALL MARGIN ONLY) -->
+<div class="px-3 sm:px-4 md:px-6 space-y-8">
+
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 py-3">
+
+        <div class="bg-white rounded-3xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">Total Teachers</p>
+            <h2 class="text-3xl font-bold text-gray-800 mt-2">{{ total_teachers or 0 }}</h2>
+        </div>
+
+        <div class="bg-white rounded-3xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">Total Students</p>
+            <h2 class="text-3xl font-bold text-gray-800 mt-2">{{ total_students or 0 }}</h2>
+        </div>
+
+        <div class="bg-white rounded-3xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">RFID Cards</p>
+            <h2 class="text-3xl font-bold text-gray-800 mt-2">{{ total_rfid_cards or 0 }}</h2>
+        </div>
+
+    </div>
+
+    <!-- Attendance Overview -->
+    <div class="bg-white rounded-3xl shadow-sm border p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-5">Attendance Today</h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+
+            <div class="bg-green-50 border border-green-100 rounded-2xl p-4 text-center">
+                <p class="text-sm text-gray-600">Present</p>
+                <h4 class="text-2xl font-bold text-green-600 mt-1">{{ present_today or 0 }}</h4>
+            </div>
+
+            <div class="bg-yellow-50 border border-yellow-100 rounded-2xl p-4 text-center">
+                <p class="text-sm text-gray-600">Late</p>
+                <h4 class="text-2xl font-bold text-yellow-600 mt-1">{{ late_today or 0 }}</h4>
+            </div>
+
+            <div class="bg-red-50 border border-red-100 rounded-2xl p-4 text-center">
+                <p class="text-sm text-gray-600">Absent</p>
+                <h4 class="text-2xl font-bold text-red-600 mt-1">{{ absent_today or 0 }}</h4>
+            </div>
+
+            <div class="bg-blue-50 border border-blue-100 rounded-2xl p-4 text-center">
+                <p class="text-sm text-gray-600">Attendance Rate</p>
+                <h4 class="text-2xl font-bold text-blue-600 mt-1">{{ attendance_rate or 0 }}%</h4>
+            </div>
+
         </div>
     </div>
+
+    <!-- Alerts -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+        <div class="bg-white rounded-3xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">Unlinked RFID</p>
+            <h3 class="text-2xl font-bold text-red-600 mt-2">{{ unlinked_rfid or 0 }}</h3>
+        </div>
+
+        <div class="bg-white rounded-3xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">Students Without Section</p>
+            <h3 class="text-2xl font-bold text-yellow-600 mt-2">{{ students_without_section or 0 }}</h3>
+        </div>
+
+        <div class="bg-white rounded-3xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">Sections Without Teacher</p>
+            <h3 class="text-2xl font-bold text-blue-600 mt-2">{{ sections_without_teacher or 0 }}</h3>
+        </div>
+
+    </div>
+
+    <!-- Recent RFID Activity -->
+    <div class="bg-white rounded-3xl shadow-sm border p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-5">Recent RFID Activity</h3>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead>
+                    <tr class="bg-gray-50 border-b text-gray-600">
+                        <th class="py-3 px-4 text-left">Student</th>
+                        <th class="py-3 px-4 text-left">UID</th>
+                        <th class="py-3 px-4 text-left">Time</th>
+                        <th class="py-3 px-4 text-left">Status</th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y">
+                    {% if recent_activities %}
+                        {% for activity in recent_activities %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="py-3 px-4">{{ activity.student_name }}</td>
+                            <td class="py-3 px-4">{{ activity.uid }}</td>
+                            <td class="py-3 px-4">{{ activity.time }}</td>
+                            <td class="py-3 px-4">
+                                {% if activity.status == 'Present' %}
+                                    <span class="text-green-600 font-semibold">Present</span>
+                                {% elif activity.status == 'Late' %}
+                                    <span class="text-yellow-600 font-semibold">Late</span>
+                                {% else %}
+                                    <span class="text-red-600 font-semibold">{{ activity.status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center py-6 text-gray-500">
+                                No activity found
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+
+    <!-- Teacher Overview -->
+    <div class="bg-white rounded-3xl shadow-sm border p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-5">Teacher Overview</h3>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead>
+                    <tr class="bg-gray-50 border-b text-gray-600">
+                        <th class="py-3 px-4 text-left">Teacher</th>
+                        <th class="py-3 px-4 text-left">Email</th>
+                        <th class="py-3 px-4 text-left">Sections</th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y">
+                    {% if teachers_overview %}
+                        {% for teacher in teachers_overview %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="py-3 px-4">{{ teacher.name }}</td>
+                            <td class="py-3 px-4">{{ teacher.email }}</td>
+                            <td class="py-3 px-4">{{ teacher.total_sections }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center py-6 text-gray-500">
+                                No teacher data
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+
 </div>
 
 {% endblock %}

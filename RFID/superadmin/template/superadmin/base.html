@@ -6,6 +6,7 @@
     <title>{% block title %}GoShopping Superadmin{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
@@ -31,6 +32,7 @@
         }
     </style>
 </head>
+
 <body class="bg-slate-50">
 
     <!-- HEADER -->
@@ -49,10 +51,7 @@
 
             <!-- Right side -->
             <div class="flex items-center gap-x-7">
-                <a href="#" class="flex items-center gap-x-2 text-sm font-medium hover:text-white/80 transition-colors">
-                    <i class="fa-solid fa-eye text-lg"></i>
-                    View my site
-                </a>
+                
                 <a href="#"
                     class="flex items-center gap-x-2 text-sm font-medium hover:text-white/80 transition-colors">
                     <i class="fa-solid fa-arrow-right-from-bracket text-lg"></i>
@@ -71,54 +70,38 @@
         <div class="max-w-screen-2xl mx-auto px-8">
             <div class="flex items-center justify-center gap-x-3 pt-6 pb-3">
 
-                <a href="#"
+                <!-- Dashboard -->
+                <a href="{{url_for('sadmin.index')}}"
                     class="nav-tab {% if request.endpoint == 'admin_bp.dashboard' %}active{% endif %} flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
                     <i class="fa-solid fa-pencil text-xl"></i>
                     Dashboard
                 </a>
 
+                <!-- Orders -->
                 <a href="#"
                     class="nav-tab {% if request.endpoint == 'admin_bp.orders' %}active{% endif %} flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
                     <i class="fa-solid fa-book text-xl"></i>
                     Orders
                 </a>
 
+                <!-- Customers -->
                 <a href="#"
                     class="nav-tab {% if request.endpoint == 'admin_bp.customers' %}active{% endif %} flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
                     <i class="fa-solid fa-users text-xl"></i>
                     Customers
                 </a>
 
-                <!-- STUDENTS DROPDOWN -->
-                <div class="relative group">
-                    <button type="button"
-                        class="nav-tab flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
-                        <i class="fa-solid fa-chart-column text-xl"></i>
-                        Students
-                        <i class="fa-solid fa-chevron-down text-sm"></i>
-                    </button>
+                <a href="{{ url_for('sregister.student') }}"
+                    class="nav-tab {% if request.endpoint == 'sregister.student' %}active{% endif %} flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
+                    <i class="fa-solid fa-chart-column text-xl"></i>
+                    Students
+                </a>
 
-                    <div class="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 overflow-hidden">
-                        
-                        <a href="{{ url_for('sregister.student') }}"
-                            class="flex items-center gap-x-3 px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100 transition">
-                            <i class="fa-solid fa-list text-base"></i>
-                            Student List
-                        </a>
-
-                        <a href="#"
-                            class="flex items-center gap-x-3 px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100 transition">
-                            <i class="fa-solid fa-user-plus text-base"></i>
-                            Add Student
-                        </a>
-
-                    </div>
-                </div>
-
+                <!-- Users -->
                 <a href="#"
                     class="nav-tab {% if request.endpoint == 'admin_bp.users' %}active{% endif %} flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
                     <i class="fa-solid fa-wrench text-xl"></i>
-                    Users
+                    Teachers
                 </a>
 
             </div>

@@ -3,108 +3,579 @@
 {% block title %}Registered Students{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-100 px-6 py-8">
-    <div class="max-w-7xl mx-auto">
-        <div class="bg-white shadow-md rounded-xl p-6">
+<div class="min-h-screen bg-gray-50 px-4 py-8 md:px-8">
 
-            <!-- Header -->
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-800">Registered Students</h1>
-                    <p class="text-sm text-gray-500">List of all registered students in the database</p>
-                </div>
-
-                <div>
-                    <a href="{{ url_for('sregister.register') }}"
-                       class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition">
-                        Register Student
-                    </a>
-                </div>
-            </div>
-
-            <!-- Flash Messages -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    <div class="mb-4 space-y-2">
-                        {% for category, message in messages %}
-                            <div class="px-4 py-3 rounded-lg text-sm font-medium
-                                {% if category == 'success' %}
-                                    bg-green-100 text-green-800 border border-green-200
-                                {% elif category == 'error' %}
-                                    bg-red-100 text-red-800 border border-red-200
-                                {% elif category == 'warning' %}
-                                    bg-yellow-100 text-yellow-800 border border-yellow-200
-                                {% else %}
-                                    bg-blue-100 text-blue-800 border border-blue-200
-                                {% endif %}
-                            ">
-                                {{ message }}
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            {% endwith %}
-
-            <!-- Table -->
-            <div class="overflow-x-auto">
-                <table class="min-w-full border border-gray-200 rounded-lg overflow-hidden">
-                    <thead class="bg-gray-800 text-white">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-sm font-semibold">UID</th>
-                            <th class="px-4 py-3 text-left text-sm font-semibold">Full Name</th>
-                            <th class="px-4 py-3 text-left text-sm font-semibold">Birthday</th>
-                            <th class="px-4 py-3 text-left text-sm font-semibold">Contact Number</th>
-                            <th class="px-4 py-3 text-left text-sm font-semibold">Email</th>
-                            <th class="px-4 py-3 text-left text-sm font-semibold">Schedule</th>
-                            <th class="px-4 py-3 text-left text-sm font-semibold">Created At</th>
-                        </tr>
-                    </thead>
-
-                    <tbody class="divide-y divide-gray-200">
-                        {% if students %}
-                            {% for student in students %}
-                            <tr class="hover:bg-gray-50 align-top">
-                                <td class="px-4 py-3 text-sm text-gray-700 whitespace-pre-line">
-                                    {{ student.uid }}
-                                </td>
-
-                                <td class="px-4 py-3 text-sm font-medium text-gray-900">
-                                    {{ student.full_name }}
-                                </td>
-
-                                <td class="px-4 py-3 text-sm text-gray-700">
-                                    {{ student.birthday }}
-                                </td>
-
-                                <td class="px-4 py-3 text-sm text-gray-700">
-                                    {{ student.contact_number }}
-                                </td>
-
-                                <td class="px-4 py-3 text-sm text-gray-700 break-all">
-                                    {{ student.email }}
-                                </td>
-
-                                <td class="px-4 py-3 text-sm text-gray-700 whitespace-pre-line">
-                                    {{ student.schedule }}
-                                </td>
-
-                                <td class="px-4 py-3 text-sm text-gray-700 whitespace-pre-line">
-                                    {{ student.created_at }}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        {% else %}
-                            <tr>
-                                <td colspan="7" class="px-4 py-6 text-center text-gray-500">
-                                    No registered students found.
-                                </td>
-                            </tr>
-                        {% endif %}
-                    </tbody>
-                </table>
-            </div>
-
-        </div>
+  <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+    <div class="flex items-center gap-x-4">
+      <div></div>
     </div>
+
+    <div class="flex items-center gap-3 flex-wrap">
+      <div class="bg-blue-600 text-white text-sm font-medium px-5 py-2.5 rounded-3xl flex items-center gap-2 shadow-sm">
+        <span>{{ students | length }}</span>
+        <span class="text-blue-100">student{{ 's' if students | length != 1 else '' }}</span>
+      </div>
+
+      <button type="button"
+              onclick="openAddStudentModal()"
+              class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 transition-colors text-white font-medium px-6 py-3 rounded-3xl shadow-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
+        </svg>
+        Add New Student
+      </button>
+
+      <div class="relative">
+        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 01-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <input
+          id="searchInput"
+          type="text"
+          onkeyup="filterTable()"
+          placeholder="Search name, UID, email..."
+          class="w-80 pl-11 pr-4 py-3 bg-white border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-3xl text-sm outline-none transition-all">
+      </div>
+
+      <button onclick="exportToCSV()"
+              class="flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-medium px-5 py-3 rounded-3xl transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v-4m0 0l4 4m-4-4l4-4m12 0v4m0 0l-4-4m4 4l-4 4" />
+        </svg>
+        Export CSV
+      </button>
+
+      <button onclick="triggerImportFile()"
+              class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 transition-colors text-white font-medium px-6 py-3 rounded-3xl shadow-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v-4m0 0l4 4m-4-4l4-4m12 0v4m0 0l-4-4m4 4l-4 4M4 4h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2z" />
+        </svg>
+        Import CSV / Excel
+      </button>
+    </div>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="mb-4 px-6 py-4 rounded-3xl text-sm flex items-center gap-3
+                    {% if category == 'success' %}bg-green-50 text-green-700 border border-green-100
+                    {% elif category == 'error' %}bg-red-50 text-red-700 border border-red-100
+                    {% else %}bg-blue-50 text-blue-700 border border-blue-100{% endif %}">
+          {{ message }}
+          <button onclick="this.parentElement.remove()" class="ml-auto text-xs font-medium underline">Dismiss</button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
+
+    <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-5 flex items-center justify-between text-white">
+      <div></div>
+      <div class="flex items-center gap-2 text-blue-100 text-sm font-medium">
+        <div class="bg-white/20 px-4 py-1 rounded-3xl flex items-center gap-1">
+          <span>{{ students | length }}</span>
+          <span>records</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="p-2">
+      {% if students %}
+      <div class="overflow-x-auto">
+        <table id="studentsTable" class="w-full min-w-full">
+          <thead>
+            <tr class="border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-widest">
+              <th class="text-left py-5 px-4">UID</th>
+              <th class="text-left py-5 px-4">Full Name</th>
+              <th class="text-left py-5 px-4 w-32">Birthday</th>
+              <th class="text-left py-5 px-4 w-40">Contact</th>
+              <th class="text-left py-5 px-4">Email</th>
+              <th class="text-left py-5 px-4 w-72">Schedule</th>
+              <th class="text-left py-5 px-4 w-36">Registered</th>
+              <th class="text-left py-5 px-4 w-32">Action</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 text-sm">
+            {% for s in students %}
+            <tr class="hover:bg-blue-50/50 transition-colors">
+              <td class="py-5 px-4 align-top">
+                <code class="bg-blue-50 text-blue-700 px-3 py-1 rounded-2xl text-xs font-semibold">
+                  {{ s.uid or '—' }}
+                </code>
+              </td>
+              <td class="py-5 px-4 align-top">
+                <span class="font-semibold text-gray-900">
+                  {{ s.last_name }}, {{ s.first_name }}{% if s.middle_name %} {{ s.middle_name }}{% endif %}{% if s.extension %} {{ s.extension }}{% endif %}
+                </span>
+              </td>
+              <td class="py-5 px-4 text-gray-500 align-top">{{ s.birthday }}</td>
+              <td class="py-5 px-4 text-gray-500 align-top">{{ s.contact_number }}</td>
+              <td class="py-5 px-4 text-gray-500 align-top break-all">{{ s.email }}</td>
+              <td class="py-5 px-4 text-gray-500 text-sm align-top">
+                <div class="schedule-cell whitespace-pre-line leading-6 max-w-xs">
+                  {{ s.schedule or '—' }}
+                </div>
+              </td>
+              <td class="py-5 px-4 text-gray-500 text-sm align-top">
+                {{ s.created_at.strftime('%b %d, %Y') if s.created_at else '—' }}
+              </td>
+              <td class="py-5 px-4 align-top">
+                <button
+                  type="button"
+                  onclick='openViewStudentModal({
+                    uid: {{ (s.uid or "—") | tojson }},
+                    last_name: {{ (s.last_name or "") | tojson }},
+                    first_name: {{ (s.first_name or "") | tojson }},
+                    middle_name: {{ (s.middle_name or "") | tojson }},
+                    extension: {{ (s.extension or "") | tojson }},
+                    birthday: {{ (s.birthday or "—") | string | tojson }},
+                    contact_number: {{ (s.contact_number or "—") | tojson }},
+                    email: {{ (s.email or "—") | tojson }},
+                    schedule: {{ (s.schedule or "—") | tojson }},
+                    created_at: {{ (s.created_at.strftime("%b %d, %Y") if s.created_at else "—") | tojson }}
+                  })'
+                  class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-2xl shadow-sm transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  View
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="py-20 text-center">
+        <div class="mx-auto w-24 h-24 bg-blue-50 rounded-3xl flex items-center justify-center text-6xl mb-6">
+          🎓
+        </div>
+        <h3 class="text-2xl font-semibold text-gray-900 mb-2">No students yet</h3>
+        <p class="text-gray-500 max-w-xs mx-auto">When you add your first student, they'll appear here.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
 </div>
+
+<!-- ADD STUDENT MODAL -->
+<div id="addStudentModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 px-4">
+  <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-fadeIn">
+    <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between">
+      <h2 class="text-white text-xl font-semibold">Add New Student</h2>
+      <button type="button" onclick="closeAddStudentModal()" class="text-white text-2xl leading-none hover:opacity-80">
+        &times;
+      </button>
+    </div>
+
+    <form action="{{ url_for('sregister.add_student') }}" method="POST" class="p-6 space-y-5">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Available UID</label>
+          <select name="uid" class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none bg-white">
+            <option value="">Select available UID (Optional)</option>
+            {% for uid in available_uids %}
+              <option value="{{ uid }}">{{ uid }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+          <input type="text" name="last_name" required class="w-full px-4 py-3 rounded-2xl border border-gray-200">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+          <input type="text" name="first_name" required class="w-full px-4 py-3 rounded-2xl border border-gray-200">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Middle Name</label>
+          <input type="text" name="middle_name" class="w-full px-4 py-3 rounded-2xl border border-gray-200">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Extension</label>
+          <input type="text" name="extension" class="w-full px-4 py-3 rounded-2xl border border-gray-200">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Birthday</label>
+          <input type="date" name="birthday" required class="w-full px-4 py-3 rounded-2xl border border-gray-200">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Contact Number</label>
+          <input type="text" name="contact_number" required class="w-full px-4 py-3 rounded-2xl border border-gray-200">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+          <input type="email" name="email" required class="w-full px-4 py-3 rounded-2xl border border-gray-200">
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Schedule</label>
+          <textarea name="schedule" rows="3" required class="w-full px-4 py-3 rounded-2xl border border-gray-200 resize-none"></textarea>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <button type="button" onclick="closeAddStudentModal()" class="px-5 py-3 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-50">
+          Cancel
+        </button>
+        <button type="submit" class="px-6 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm">
+          Save Student
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- VIEW STUDENT MODAL -->
+<div id="viewStudentModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 px-4">
+  <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-fadeIn">
+    <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between">
+      <h2 class="text-white text-xl font-semibold">Student Details</h2>
+      <button type="button" onclick="closeViewStudentModal()" class="text-white text-2xl leading-none hover:opacity-80">
+        &times;
+      </button>
+    </div>
+
+    <div class="p-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">UID</label>
+          <div id="view_uid" class="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-800"></div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Registered</label>
+          <div id="view_created_at" class="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-800"></div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Last Name</label>
+          <div id="view_last_name" class="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-800"></div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">First Name</label>
+          <div id="view_first_name" class="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-800"></div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Middle Name</label>
+          <div id="view_middle_name" class="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-800"></div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Extension</label>
+          <div id="view_extension" class="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-800"></div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Birthday</label>
+          <div id="view_birthday" class="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-800"></div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Contact Number</label>
+          <div id="view_contact_number" class="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-800"></div>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Email</label>
+          <div id="view_email" class="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-800 break-all"></div>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Schedule</label>
+          <div id="view_schedule" class="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-800 whitespace-pre-line leading-7 min-h-[110px]"></div>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-5">
+        <button type="button" onclick="closeViewStudentModal()" class="px-6 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+function filterTable() {
+  const input = document.getElementById('searchInput').value.toLowerCase().trim()
+  const rows = document.querySelectorAll('#studentsTable tbody tr')
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase()
+    row.style.display = text.includes(input) ? '' : 'none'
+  })
+}
+
+function exportToCSV() {
+  const table = document.getElementById('studentsTable')
+  let csv = []
+  const headers = Array.from(table.querySelectorAll('thead th')).map(th => `"${th.textContent.trim()}"`)
+  csv.push(headers.join(','))
+  table.querySelectorAll('tbody tr').forEach(row => {
+    const cols = Array.from(row.querySelectorAll('td')).map(td => `"${td.textContent.trim().replace(/"/g, '""')}"`)
+    csv.push(cols.join(','))
+  })
+  const blob = new Blob([csv.join('\n')], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `students_${new Date().toISOString().slice(0,10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function openAddStudentModal() {
+  const modal = document.getElementById('addStudentModal')
+  modal.classList.remove('hidden')
+  modal.classList.add('flex')
+}
+
+function closeAddStudentModal() {
+  const modal = document.getElementById('addStudentModal')
+  modal.classList.add('hidden')
+  modal.classList.remove('flex')
+}
+
+function formatSchedule(schedule) {
+  if (!schedule || schedule === '—') return '—'
+
+  return schedule
+    .replace(/,\s*(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/g, '\n$1')
+    .trim()
+}
+
+function formatScheduleHtml(schedule) {
+  return formatSchedule(schedule)
+    .replace(/\n/g, '<br>')
+}
+
+function openViewStudentModal(student) {
+  document.getElementById('view_uid').textContent = student.uid || '—'
+  document.getElementById('view_created_at').textContent = student.created_at || '—'
+  document.getElementById('view_last_name').textContent = student.last_name || '—'
+  document.getElementById('view_first_name').textContent = student.first_name || '—'
+  document.getElementById('view_middle_name').textContent = student.middle_name || '—'
+  document.getElementById('view_extension').textContent = student.extension || '—'
+  document.getElementById('view_birthday').textContent = student.birthday || '—'
+  document.getElementById('view_contact_number').textContent = student.contact_number || '—'
+  document.getElementById('view_email').textContent = student.email || '—'
+  document.getElementById('view_schedule').textContent = formatSchedule(student.schedule)
+
+  const modal = document.getElementById('viewStudentModal')
+  modal.classList.remove('hidden')
+  modal.classList.add('flex')
+}
+
+function closeViewStudentModal() {
+  const modal = document.getElementById('viewStudentModal')
+  modal.classList.add('hidden')
+  modal.classList.remove('flex')
+}
+
+window.addEventListener('click', function(e) {
+  const addModal = document.getElementById('addStudentModal')
+  const viewModal = document.getElementById('viewStudentModal')
+
+  if (e.target === addModal) closeAddStudentModal()
+  if (e.target === viewModal) closeViewStudentModal()
+})
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeAddStudentModal()
+    closeViewStudentModal()
+  }
+})
+
+function excelSerialToDate(serial) {
+  const utc_days = Math.floor(serial - 25569)
+  const utc_value = utc_days * 86400
+  const date_info = new Date(utc_value * 1000)
+  const year = date_info.getUTCFullYear()
+  const month = String(date_info.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(date_info.getUTCDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function normalizeBirthday(value) {
+  const raw = String(value || '').trim()
+
+  if (!raw) return ''
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return raw
+  }
+
+  if (/^\d+(\.\d+)?$/.test(raw)) {
+    return excelSerialToDate(parseFloat(raw))
+  }
+
+  const parsed = new Date(raw)
+  if (!isNaN(parsed.getTime())) {
+    const year = parsed.getFullYear()
+    const month = String(parsed.getMonth() + 1).padStart(2, '0')
+    const day = String(parsed.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  return raw
+}
+
+function triggerImportFile() {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.csv,.xlsx,.xls'
+  input.onchange = function (e) {
+    const file = e.target.files[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    const isExcel = file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')
+
+    if (isExcel) {
+      reader.onload = function (ev) {
+        const data = new Uint8Array(ev.target.result)
+        const wb = XLSX.read(data, { type: 'array' })
+        processImportedSheet(wb, file.name)
+      }
+      reader.readAsArrayBuffer(file)
+    } else {
+      reader.onload = function (ev) {
+        const wb = XLSX.read(ev.target.result, { type: 'string' })
+        processImportedSheet(wb, file.name)
+      }
+      reader.readAsText(file)
+    }
+  }
+  input.click()
+}
+
+function processImportedSheet(wb, filename) {
+  const ws = wb.Sheets[wb.SheetNames[0]]
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
+  parseAndImport(rows, filename)
+}
+
+function parseAndImport(rows, filename) {
+  if (rows.length < 2) {
+    alert('❌ No data found in the file.')
+    return
+  }
+
+  const headers = rows[0].map(h => (h || '').toString().trim().toLowerCase())
+  const dataRows = rows.slice(1)
+  const students = []
+
+  for (let row of dataRows) {
+    if (!row || row.every(cell => cell === '' || cell == null)) continue
+
+    const student = {}
+
+    headers.forEach((rawHeader, i) => {
+      let header = (rawHeader || '').toString().trim().toLowerCase()
+      let value = (row[i] ?? '').toString().trim()
+
+      if (!value) return
+
+      if (header.includes('last')) {
+        student.last_name = value
+      } else if (header.includes('first')) {
+        student.first_name = value
+      } else if (header.includes('middle')) {
+        student.middle_name = value
+      } else if (header.includes('extension') || header.includes('ext')) {
+        student.extension = value
+      } else if (header.includes('birth')) {
+        student.birthday = normalizeBirthday(value)
+      } else if (header.includes('contact') || header.includes('phone') || header.includes('number')) {
+        student.contact_number = value
+      } else if (header.includes('email')) {
+        student.email = value
+      } else if (header.includes('schedule') || header.includes('sched')) {
+        student.schedule = value
+      }
+    })
+
+    if (
+      student.last_name &&
+      student.first_name &&
+      student.birthday &&
+      student.contact_number &&
+      student.email &&
+      student.schedule
+    ) {
+      students.push(student)
+    }
+  }
+
+  if (students.length === 0) {
+    alert(
+      '❌ No valid student rows found.\n\n' +
+      'Make sure your file has columns like:\n' +
+      'last_name, first_name, middle_name, extension, birthday, contact_number, email, schedule\n\n' +
+      '⚠️ UID is NOT required because it will be auto linked from available RFID cards.'
+    )
+    return
+  }
+
+  if (confirm(`✅ Found ${students.length} students in "${filename}".\n\nImport them now?`)) {
+    fetch('/superadmin/import-excel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ students: students })
+    })
+    .then(async res => {
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.message || 'Import failed.')
+      return data
+    })
+    .then(data => {
+      alert(data.message || `🎉 Successfully imported ${students.length} students!`)
+      window.location.reload()
+    })
+    .catch(err => {
+      alert(`❌ ${err.message || 'Import failed.'}`)
+    })
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.schedule-cell').forEach(el => {
+    el.innerHTML = formatScheduleHtml(el.textContent)
+  })
+})
+</script>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+  body { font-family: 'Inter', system-ui, sans-serif; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.2s ease-out;
+  }
+</style>
 {% endblock %}
