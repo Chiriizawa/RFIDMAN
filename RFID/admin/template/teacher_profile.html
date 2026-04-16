@@ -1,0 +1,474 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - {{ current_teacher.full_name }}{% endblock %}
+
+{% block content %}
+<style>
+    /* Toast Notification Styles - Matching the color scheme */
+    .toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+        max-width: 450px;
+        padding: 16px 20px;
+        border-radius: 16px;
+        background: rgba(30, 58, 138, 0.95);
+        backdrop-filter: blur(18px);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        animation: slideInRight 0.3s ease;
+        border: 1px solid rgba(255,255,255,0.15);
+    }
+    
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+    
+    .toast.success {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95));
+        backdrop-filter: blur(18px);
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .toast.error {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95));
+        backdrop-filter: blur(18px);
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .toast.info {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.95));
+        backdrop-filter: blur(18px);
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .toast.warning {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95));
+        backdrop-filter: blur(18px);
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .toast-icon {
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+    
+    .toast-content {
+        flex: 1;
+    }
+    
+    .toast-title {
+        font-weight: 600;
+        margin-bottom: 4px;
+        font-size: 14px;
+        color: white;
+    }
+    
+    .toast-message {
+        font-size: 13px;
+        opacity: 0.95;
+        color: white;
+    }
+    
+    .toast-close {
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+        font-size: 18px;
+        flex-shrink: 0;
+        color: white;
+    }
+    
+    .toast-close:hover {
+        opacity: 1;
+    }
+    
+    /* Loading overlay for buttons */
+    .btn-loading {
+        position: relative;
+        pointer-events: none;
+        opacity: 0.7;
+    }
+    
+    .btn-loading::after {
+        content: "";
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        top: 50%;
+        right: 20px;
+        margin-top: -9px;
+        border: 2px solid white;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    /* Glass morphism card matching the admin panel */
+    .profile-card {
+        background: rgba(255,255,255,0.08);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 1.5rem;
+        overflow: hidden;
+    }
+    
+    /* Form inputs matching the theme */
+    .form-input {
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+        color: white;
+        transition: all 0.2s ease;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #facc15;
+        background: rgba(255,255,255,0.15);
+        box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.1);
+    }
+    
+    .form-input::placeholder {
+        color: rgba(255,255,255,0.5);
+    }
+    
+    label {
+        color: rgba(255,255,255,0.9);
+    }
+    
+    /* Yellow accent button */
+    .btn-primary {
+        background: #facc15;
+        color: #1e3a8a;
+        font-weight: 700;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-primary:hover {
+        background: #eab308;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(250, 204, 21, 0.3);
+    }
+    
+    .btn-primary:active {
+        transform: translateY(0);
+    }
+    
+    /* Text colors for glass card */
+    .text-display {
+        color: white;
+    }
+    
+    .subject-display {
+        color: #facc15;
+    }
+    
+    /* Profile picture container */
+    .profile-img-container {
+        border: 4px solid #facc15;
+        box-shadow: 0 0 20px rgba(250, 204, 21, 0.3);
+    }
+</style>
+
+<div class="max-w-4xl mx-auto px-6 py-8">
+
+    <div class="profile-card">
+
+        <!-- Cover with yellow accent gradient -->
+        <div class="h-48 bg-gradient-to-r from-blue-900 to-indigo-900 relative">
+            <div class="absolute -bottom-12 left-10">
+                <div class="relative group">
+                    <img id="profilePic" 
+                         src="{{ current_teacher.profile_picture or 'https://via.placeholder.com/160x160/1e3a8a/facc15?text=👨‍🏫' }}"
+                         alt="Profile Picture"
+                         class="w-32 h-32 rounded-3xl border-4 border-yellow-400 object-cover shadow-xl profile-img-container">
+
+                    <!-- Change Picture Button - Yellow accent -->
+                    <label for="profileUpload" 
+                           class="absolute bottom-1 right-1 bg-yellow-400 text-blue-900 hover:bg-yellow-300 p-3 rounded-2xl shadow cursor-pointer transition">
+                        <i class="fa-solid fa-camera"></i>
+                    </label>
+                    <input type="file" id="profileUpload" accept="image/*" class="hidden"
+                           onchange="uploadProfilePicture()">
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-20 pb-10 px-10">
+
+            <!-- Header with Name -->
+            <div class="flex justify-between items-start mb-8">
+                <div>
+                    <h1 id="teacherNameDisplay" class="text-3xl font-semibold text-display">
+                        {{ current_teacher.full_name }}
+                    </h1>
+                    <p id="subjectDisplay" class="subject-display font-medium">
+                        {{ current_teacher.subject }} • {{ current_teacher.department }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Edit Form -->
+            <form id="profileForm" class="space-y-8">
+
+                <!-- Full Name -->
+                <div>
+                    <label class="block text-sm font-medium mb-2">Full Name</label>
+                    <input type="text" id="full_name" name="full_name"
+                           value="{{ current_teacher.full_name }}"
+                           class="form-input w-full px-5 py-3 rounded-2xl">
+                </div>
+
+                <!-- Subject & Department -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Subject</label>
+                        <input type="text" id="subject" name="subject"
+                               value="{{ current_teacher.subject }}"
+                               class="form-input w-full px-5 py-3 rounded-2xl">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Department</label>
+                        <input type="text" id="department" name="department"
+                               value="{{ current_teacher.department }}"
+                               class="form-input w-full px-5 py-3 rounded-2xl">
+                    </div>
+                </div>
+
+                <!-- Contact Number -->
+                <div>
+                    <label class="block text-sm font-medium mb-2">Contact Number</label>
+                    <input type="text" id="contact_number" name="contact_number"
+                           value="{{ current_teacher.contact_number or '' }}"
+                           class="form-input w-full px-5 py-3 rounded-2xl">
+                </div>
+
+                <!-- Bio -->
+                <div>
+                    <label class="block text-sm font-medium mb-2">About Me (Bio)</label>
+                    <textarea id="bio" name="bio" rows="5"
+                              class="form-input w-full px-5 py-3 rounded-2xl resize-y">{{ current_teacher.bio or '' }}</textarea>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-4 pt-6">
+                    <button type="button" onclick="saveProfile()" id="saveBtn"
+                            class="btn-primary flex-1 font-semibold py-4 rounded-2xl transition shadow">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<script>
+// Toast notification function
+function showToast(message, type = 'success', title = '') {
+    const titles = {
+        success: '✓ Success!',
+        error: '✗ Error!',
+        info: 'ℹ Info',
+        warning: '⚠ Warning'
+    };
+    
+    const icons = {
+        success: '✅',
+        error: '❌',
+        info: 'ℹ️',
+        warning: '⚠️'
+    };
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `
+        <div class="toast-icon">${icons[type] || icons.success}</div>
+        <div class="toast-content">
+            <div class="toast-title">${title || titles[type]}</div>
+            <div class="toast-message">${message}</div>
+        </div>
+        <div class="toast-close" onclick="this.parentElement.remove()">✕</div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (toast && toast.parentElement) {
+            toast.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, 3000);
+    
+    // Click to close
+    toast.addEventListener('click', (e) => {
+        if (e.target === toast || toast.contains(e.target)) {
+            toast.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }
+    });
+}
+
+// Show loading state on button
+function setButtonLoading(button, isLoading) {
+    if (isLoading) {
+        button.classList.add('btn-loading');
+        button.disabled = true;
+        button.textContent = 'Saving...';
+    } else {
+        button.classList.remove('btn-loading');
+        button.disabled = false;
+        button.textContent = 'Save Changes';
+    }
+}
+
+// Upload Profile Picture
+async function uploadProfilePicture() {
+    const fileInput = document.getElementById('profileUpload');
+    if (!fileInput.files.length) return;
+    
+    const file = fileInput.files[0];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    
+    if (file.size > maxSize) {
+        showToast('Image size should be less than 5MB', 'error', 'File Too Large');
+        return;
+    }
+    
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+        showToast('Please upload a valid image (JPEG, PNG, GIF)', 'error', 'Invalid Format');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('profile_picture', file);
+
+    try {
+        const res = await fetch("{{ url_for('admin_bp.upload_teacher_profile_pic') }}", {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            document.getElementById('profilePic').src = data.image_url + '?t=' + Date.now();
+            showToast('Profile picture updated successfully!', 'success', 'Photo Updated');
+            
+            // Clear file input
+            fileInput.value = '';
+        } else {
+            showToast(data.message || 'Failed to upload profile picture', 'error');
+        }
+    } catch (e) {
+        showToast('Network error. Please try again.', 'error', 'Upload Failed');
+        console.error(e);
+    }
+}
+
+// Save Profile Changes
+async function saveProfile() {
+    const saveBtn = document.getElementById('saveBtn');
+    
+    // Validate required fields
+    const fullName = document.getElementById('full_name').value.trim();
+    const subject = document.getElementById('subject').value.trim();
+    const department = document.getElementById('department').value.trim();
+    
+    if (!fullName) {
+        showToast('Full name is required', 'warning', 'Missing Field');
+        document.getElementById('full_name').focus();
+        return;
+    }
+    
+    if (!subject) {
+        showToast('Subject is required', 'warning', 'Missing Field');
+        document.getElementById('subject').focus();
+        return;
+    }
+    
+    if (!department) {
+        showToast('Department is required', 'warning', 'Missing Field');
+        document.getElementById('department').focus();
+        return;
+    }
+    
+    const formData = {
+        full_name: fullName,
+        subject: subject,
+        department: department,
+        contact_number: document.getElementById('contact_number').value.trim(),
+        bio: document.getElementById('bio').value.trim()
+    };
+
+    setButtonLoading(saveBtn, true);
+
+    try {
+        const res = await fetch("{{ url_for('admin_bp.update_teacher_profile') }}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+            showToast('Your profile has been updated successfully!', 'success', 'Profile Updated');
+            
+            // Update displayed values without page reload
+            document.getElementById('teacherNameDisplay').textContent = formData.full_name;
+            document.getElementById('subjectDisplay').textContent = 
+                `${formData.subject} • ${formData.department}`;
+            
+            // Update title
+            document.title = `My Profile - ${formData.full_name}`;
+        } else {
+            showToast(data.message || 'Failed to update profile. Please try again.', 'error', 'Update Failed');
+        }
+    } catch (e) {
+        showToast('Network error. Please check your connection and try again.', 'error', 'Connection Error');
+        console.error(e);
+    } finally {
+        setButtonLoading(saveBtn, false);
+    }
+}
+
+// Enter key to save (optional)
+document.querySelectorAll('#profileForm input, #profileForm textarea').forEach(input => {
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+            saveProfile();
+        }
+    });
+});
+</script>
+{% endblock %}
