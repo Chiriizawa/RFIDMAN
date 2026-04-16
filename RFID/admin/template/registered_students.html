@@ -3,15 +3,255 @@
 {% block title %}Registered Students{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-6 py-8">
+<style>
+    /* Toast Notification Styles - Matching the color scheme */
+    .toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+        max-width: 450px;
+        padding: 16px 20px;
+        border-radius: 16px;
+        background: rgba(30, 58, 138, 0.95);
+        backdrop-filter: blur(18px);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        animation: slideInRight 0.3s ease;
+        border: 1px solid rgba(255,255,255,0.15);
+    }
+    
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+    
+    .toast.success {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95));
+        backdrop-filter: blur(18px);
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .toast.error {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95));
+        backdrop-filter: blur(18px);
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .toast.info {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.95));
+        backdrop-filter: blur(18px);
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .toast.warning {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95));
+        backdrop-filter: blur(18px);
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .toast-icon {
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+    
+    .toast-content {
+        flex: 1;
+    }
+    
+    .toast-title {
+        font-weight: 600;
+        margin-bottom: 4px;
+        font-size: 14px;
+        color: white;
+    }
+    
+    .toast-message {
+        font-size: 13px;
+        opacity: 0.95;
+        color: white;
+    }
+    
+    .toast-close {
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+        font-size: 18px;
+        flex-shrink: 0;
+        color: white;
+    }
+    
+    .toast-close:hover {
+        opacity: 1;
+    }
+    
+    /* Glass card matching the admin panel */
+    .glass-card {
+        background: rgba(255,255,255,0.08);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 1.5rem;
+        overflow: hidden;
+    }
+    
+    /* Table styles */
+    .table-header {
+        background: rgba(30, 58, 138, 0.4);
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .table-header th {
+        color: rgba(255,255,255,0.9);
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .table-row {
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        transition: all 0.2s ease;
+    }
+    
+    .table-row:hover {
+        background: rgba(255,255,255,0.05);
+        transform: scale(1.01);
+    }
+    
+    /* UID badge style */
+    .uid-badge {
+        background: rgba(250, 204, 21, 0.15);
+        color: #facc15;
+        font-family: monospace;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.75rem;
+        display: inline-block;
+        border: 1px solid rgba(250, 204, 21, 0.3);
+        font-size: 0.8rem;
+    }
+    
+    /* Schedule text style */
+    .schedule-text {
+        background: rgba(255,255,255,0.05);
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.75rem;
+        display: inline-block;
+        line-height: 1.4;
+        font-size: 0.8rem;
+        max-width: 250px;
+        white-space: normal;
+        word-wrap: break-word;
+    }
+    
+    /* Empty state glass card */
+    .empty-state {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 1.5rem;
+        backdrop-filter: blur(10px);
+    }
+    
+    /* Total count badge */
+    .total-badge {
+        background: rgba(250, 204, 21, 0.15);
+        border: 1px solid rgba(250, 204, 21, 0.3);
+        color: #facc15;
+        padding: 0.5rem 1.5rem;
+        border-radius: 2rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .total-badge span {
+        color: white;
+        font-weight: 700;
+        margin-left: 0.5rem;
+        font-size: 1rem;
+    }
+    
+    /* Search and filter bar */
+    .search-bar {
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 1rem;
+        padding: 0.5rem 1rem;
+        color: white;
+        width: 300px;
+        transition: all 0.2s ease;
+    }
+    
+    .search-bar:focus {
+        outline: none;
+        border-color: #facc15;
+        background: rgba(255,255,255,0.12);
+        box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.1);
+    }
+    
+    .search-bar::placeholder {
+        color: rgba(255,255,255,0.5);
+    }
+    
+    .action-btn {
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.15);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.875rem;
+    }
+    
+    .action-btn:hover {
+        background: rgba(250, 204, 21, 0.2);
+        border-color: #facc15;
+        color: #facc15;
+        transform: translateY(-1px);
+    }
+</style>
 
-    <!-- Main Card -->
-    <div class="bg-white rounded-3xl shadow-sm overflow-hidden border border-slate-100">
+<div class="max-w-7xl mx-auto">
 
-        <!-- Blue Gradient Header -->
-        <div class="bg-gradient-to-r from-blue-600 to-sky-600 px-10 py-8 text-white">
-            <h1 class="text-3xl font-semibold">Registered Students</h1>
-            <p class="text-blue-100 mt-1">Students linked with RFID cards</p>
+    <div class="glass-card overflow-hidden">
+
+        <!-- Header with gradient matching sidebar -->
+        <div class="bg-gradient-to-r from-blue-900 to-indigo-900 px-10 py-8 text-white border-b border-white/10">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-semibold flex items-center gap-3">
+                        <i class="fa-solid fa-users text-yellow-400"></i>
+                        Registered Students
+                    </h1>
+                    <p class="text-blue-200 mt-1">Students linked with RFID cards</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-yellow-400 text-sm font-medium">Total Registered</div>
+                    <div class="text-2xl font-bold">{{ students|length if students else 0 }}</div>
+                </div>
+            </div>
         </div>
 
         <!-- Content -->
@@ -19,59 +259,123 @@
 
             {% if students and students|length > 0 %}
 
-            <!-- Table -->
+            <!-- Search and Actions Bar -->
+            <div class="mb-6 flex justify-between items-center gap-4 flex-wrap">
+                <div class="relative">
+                    <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-300 text-sm"></i>
+                    <input type="text" 
+                           id="searchInput" 
+                           onkeyup="filterTable()" 
+                           placeholder="Search by name, UID, or email..." 
+                           class="search-bar pl-10">
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="exportToCSV()" class="action-btn">
+                        <i class="fa-solid fa-download mr-2"></i>Export CSV
+                    </button>
+                    <button onclick="printTable()" class="action-btn">
+                        <i class="fa-solid fa-print mr-2"></i>Print
+                    </button>
+                </div>
+            </div>
+
             <div class="overflow-x-auto">
-                <table class="w-full min-w-full text-sm">
+                <table class="w-full min-w-full text-sm" id="studentTable">
                     <thead>
-                        <tr class="bg-slate-50 border-b border-slate-200">
-                            <th class="px-6 py-4 text-left font-medium text-slate-600 w-32">UID</th>
-                            <th class="px-6 py-4 text-left font-medium text-slate-600">Full Name</th>
-                            <th class="px-6 py-4 text-left font-medium text-slate-600 w-32">Birthday</th>
-                            <th class="px-6 py-4 text-left font-medium text-slate-600 w-40">Contact Number</th>
-                            <th class="px-6 py-4 text-left font-medium text-slate-600">Email</th>
-                            <th class="px-6 py-4 text-left font-medium text-slate-600">Schedule</th>
-                            <th class="px-6 py-4 text-left font-medium text-slate-600 w-44">Registered On</th>
+                        <tr class="table-header">
+                            <th class="px-6 py-4 text-left font-medium w-32">
+                                <i class="fa-solid fa-id-card mr-1 text-yellow-400/70 text-xs"></i>UID
+                            </th>
+                            <th class="px-6 py-4 text-left font-medium">
+                                <i class="fa-solid fa-user-graduate mr-1 text-yellow-400/70 text-xs"></i>Full Name
+                            </th>
+                            <th class="px-6 py-4 text-left font-medium w-32">
+                                <i class="fa-solid fa-cake-candles mr-1 text-yellow-400/70 text-xs"></i>Birthday
+                            </th>
+                            <th class="px-6 py-4 text-left font-medium w-40">
+                                <i class="fa-solid fa-phone mr-1 text-yellow-400/70 text-xs"></i>Contact Number
+                            </th>
+                            <th class="px-6 py-4 text-left font-medium">
+                                <i class="fa-solid fa-envelope mr-1 text-yellow-400/70 text-xs"></i>Email
+                            </th>
+                            <th class="px-6 py-4 text-left font-medium">
+                                <i class="fa-regular fa-clock mr-1 text-yellow-400/70 text-xs"></i>Schedule
+                            </th>
+                            <th class="px-6 py-4 text-left font-medium w-44">
+                                <i class="fa-regular fa-calendar mr-1 text-yellow-400/70 text-xs"></i>Registered On
+                            </th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody class="divide-y divide-white/10">
                         {% for s in students %}
-                        <tr class="hover:bg-blue-50 transition-colors">
-                            <!-- Fixed UID: Single line, horizontal, with proper spacing -->
+                        <tr class="table-row transition-colors">
                             <td class="px-6 py-5">
-                                <span class="font-mono font-medium text-blue-700 tracking-widest bg-blue-50 px-3 py-1.5 rounded-xl inline-block">
+                                <span class="uid-badge">
+                                    <i class="fa-solid fa-id-card mr-1 text-xs"></i>
                                     {{ s.uid }}
                                 </span>
                             </td>
-                            <td class="px-6 py-5 font-semibold text-slate-800">{{ s.full_name }}</td>
-                            <td class="px-6 py-5 text-slate-600">{{ s.birthday }}</td>
-                            <td class="px-6 py-5 text-slate-600 font-medium">{{ s.contact_number }}</td>
-                            <td class="px-6 py-5 text-slate-600 text-sm break-all">{{ s.email }}</td>
-                            <td class="px-6 py-5 text-slate-600 text-sm leading-relaxed max-w-xs">
-                                {{ s.schedule|truncate(65) }}
+                            <td class="px-6 py-5 font-semibold text-white">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 bg-yellow-400/20 rounded-full flex items-center justify-center">
+                                        <i class="fa-solid fa-user text-yellow-400 text-sm"></i>
+                                    </div>
+                                    {{ s.full_name }}
+                                </div>
                             </td>
-                            <td class="px-6 py-5 text-slate-600 text-sm">{{ s.created_at }}</td>
+                            <td class="px-6 py-5 text-blue-200">
+                                <i class="fa-solid fa-cake-candles mr-1 text-xs"></i>
+                                {{ s.birthday }}
+                            </td>
+                            <td class="px-6 py-5 text-blue-200 font-medium">
+                                <i class="fa-solid fa-phone mr-1 text-xs"></i>
+                                {{ s.contact_number }}
+                            </td>
+                            <td class="px-6 py-5 text-blue-200 text-sm break-all">
+                                <i class="fa-solid fa-envelope mr-1 text-xs"></i>
+                                {{ s.email }}
+                            </td>
+                            <td class="px-6 py-5">
+                                <div class="schedule-text text-blue-200">
+                                    <i class="fa-regular fa-clock mr-1 text-yellow-400/70"></i>
+                                    {{ s.schedule|truncate(65) }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-5 text-blue-200 text-sm">
+                                <i class="fa-regular fa-calendar mr-1"></i>
+                                {{ s.created_at }}
+                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
 
-            <!-- Total Count -->
-            <div class="mt-10 flex justify-center">
-                <div class="bg-slate-100 border border-slate-200 text-slate-700 px-8 py-3 rounded-3xl text-sm font-medium shadow-sm">
-                    Total Registered Students: <span class="font-semibold text-slate-900">{{ students|length }}</span>
+            <div class="mt-10 flex justify-between items-center gap-4 flex-wrap">
+                <div class="text-blue-300 text-sm">
+                    <i class="fa-solid fa-info-circle mr-1"></i>
+                    Showing <span id="visibleCount">{{ students|length }}</span> of {{ students|length }} students
+                </div>
+                <div class="total-badge">
+                    <i class="fa-solid fa-users mr-2"></i>
+                    Total Registered Students: <span>{{ students|length }}</span>
                 </div>
             </div>
 
             {% else %}
 
-            <!-- Empty State -->
-            <div class="bg-slate-50 border border-slate-200 rounded-3xl p-20 text-center">
-                <div class="text-7xl mb-6 opacity-70">👥</div>
-                <h3 class="text-2xl font-semibold text-slate-700">No Registered Students Yet</h3>
-                <p class="text-slate-500 mt-4 max-w-md mx-auto">
+            <div class="empty-state p-20 text-center">
+                <div class="text-8xl mb-6 opacity-80">
+                    <i class="fa-regular fa-user"></i>
+                </div>
+                <h3 class="text-2xl font-semibold text-white mb-2">No Registered Students Yet</h3>
+                <p class="text-blue-300 mt-4 max-w-md mx-auto">
+                    <i class="fa-solid fa-info-circle mr-1"></i>
                     Students will appear here once they are registered and linked to an RFID card.
                 </p>
+                <div class="mt-8 text-blue-400 text-sm">
+                    <i class="fa-solid fa-arrow-up"></i> New registrations will appear automatically
+                </div>
             </div>
 
             {% endif %}
@@ -80,4 +384,197 @@
     </div>
 
 </div>
+
+<script>
+// Toast notification function for any actions
+function showToast(message, type = 'success', title = '') {
+    const titles = {
+        success: '✓ Success!',
+        error: '✗ Error!',
+        info: 'ℹ Info',
+        warning: '⚠ Warning'
+    };
+    
+    const icons = {
+        success: '✅',
+        error: '❌',
+        info: 'ℹ️',
+        warning: '⚠️'
+    };
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `
+        <div class="toast-icon">${icons[type] || icons.success}</div>
+        <div class="toast-content">
+            <div class="toast-title">${title || titles[type]}</div>
+            <div class="toast-message">${message}</div>
+        </div>
+        <div class="toast-close" onclick="this.parentElement.remove()">✕</div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast && toast.parentElement) {
+            toast.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, 3000);
+    
+    toast.addEventListener('click', (e) => {
+        if (e.target === toast || toast.contains(e.target)) {
+            toast.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }
+    });
+}
+
+// Filter table function
+function filterTable() {
+    const input = document.getElementById('searchInput');
+    const filter = input.value.toLowerCase();
+    const table = document.getElementById('studentTable');
+    const rows = table.getElementsByTagName('tr');
+    let visibleCount = 0;
+    
+    for (let i = 1; i < rows.length; i++) { // Start from 1 to skip header
+        const row = rows[i];
+        const text = row.textContent.toLowerCase();
+        if (text.includes(filter)) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    }
+    
+    // Update visible count
+    const visibleCountSpan = document.getElementById('visibleCount');
+    if (visibleCountSpan) {
+        visibleCountSpan.textContent = visibleCount;
+    }
+    
+    // Show toast for search results
+    if (filter && visibleCount === 0) {
+        showToast('No students found matching your search', 'info', 'No Results');
+    }
+}
+
+// Export to CSV function
+function exportToCSV() {
+    const table = document.getElementById('studentTable');
+    const rows = table.querySelectorAll('tbody tr');
+    
+    if (rows.length === 0) {
+        showToast('No data to export', 'warning', 'Export Failed');
+        return;
+    }
+    
+    // Only export visible rows (filtered)
+    const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none');
+    
+    if (visibleRows.length === 0) {
+        showToast('No visible data to export', 'warning', 'Export Failed');
+        return;
+    }
+    
+    let csvContent = "UID,Full Name,Birthday,Contact Number,Email,Schedule,Registered On\n";
+    
+    visibleRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const rowData = [];
+        cells.forEach(cell => {
+            let text = cell.textContent.trim();
+            // Remove icons and extra spaces, keep meaningful content
+            text = text.replace(/[^\w\s@\.\-\(\)\:]/g, '').trim();
+            rowData.push(`"${text}"`);
+        });
+        csvContent += rowData.join(',') + '\n';
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `registered_students_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    showToast(`Exported ${visibleRows.length} students successfully`, 'success', 'Export Complete');
+}
+
+// Print table function
+function printTable() {
+    const originalTitle = document.title;
+    document.title = 'Registered Students Report';
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Registered Students Report</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #f2f2f2; }
+                h1 { color: #1e3a8a; }
+                .header { margin-bottom: 20px; }
+                .date { color: #666; margin-top: 10px; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>Registered Students Report</h1>
+                <p>Generated on: ${new Date().toLocaleString()}</p>
+                <p>Total Students: ${document.querySelectorAll('.table-row:not([style*="display: none"])').length}</p>
+            </div>
+            ${document.getElementById('studentTable').outerHTML}
+            <div class="date">
+                <p>Tap & Know System - Official Report</p>
+            </div>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+    
+    document.title = originalTitle;
+    showToast('Print window opened', 'info', 'Print Ready');
+}
+
+// Add keyboard shortcuts (Ctrl+F for search focus, Ctrl+E for export)
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'f') {
+        e.preventDefault();
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.focus();
+            showToast('Search input focused', 'info', 'Search Mode');
+        }
+    } else if (e.ctrlKey && e.key === 'e') {
+        e.preventDefault();
+        exportToCSV();
+    } else if (e.ctrlKey && e.key === 'p') {
+        e.preventDefault();
+        printTable();
+    }
+});
+
+// Initialize any tooltips or additional features
+document.addEventListener('DOMContentLoaded', () => {
+    // Add keyboard shortcut hints to the page
+    console.log('Registered Students page loaded - Keyboard shortcuts: Ctrl+F (Search), Ctrl+E (Export), Ctrl+P (Print)');
+    
+    // Optional: Add a small hint tooltip
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.title = 'Press Ctrl+F to focus search';
+    }
+});
+</script>
+
 {% endblock %}
