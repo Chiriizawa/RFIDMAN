@@ -122,7 +122,7 @@
     }
     
     .table-header th {
-        color: rgba(255,255,255,0.9);
+        color: #ffffff;
         font-weight: 600;
         font-size: 0.85rem;
         text-transform: uppercase;
@@ -161,6 +161,7 @@
         display: inline-block;
         line-height: 1.4;
         font-size: 0.8rem;
+        color: #ffffff;
     }
     
     /* Empty state glass card */
@@ -202,7 +203,7 @@
                         <i class="fa-solid fa-calendar-alt text-yellow-400"></i>
                         Student Schedules
                     </h1>
-                    <p class="text-blue-200 mt-1">Class schedules of registered students with RFID</p>
+                    <p class="text-white mt-1">Class schedules of registered students with RFID</p>
                 </div>
                 <div class="text-right">
                     <div class="text-yellow-400 text-sm font-medium">Total Registered</div>
@@ -220,13 +221,13 @@
                 <table class="w-full min-w-full text-sm">
                     <thead>
                         <tr class="table-header">
-                            <th class="px-6 py-4 text-left font-medium w-32">UID</th>
-                            <th class="px-6 py-4 text-left font-medium">Full Name</th>
-                            <th class="px-6 py-4 text-left font-medium w-32">Birthday</th>
-                            <th class="px-6 py-4 text-left font-medium">Contact Number</th>
-                            <th class="px-6 py-4 text-left font-medium">Email</th>
-                            <th class="px-6 py-4 text-left font-medium">Schedule</th>
-                            <th class="px-6 py-4 text-left font-medium w-44">Registered On</th>
+                            <th class="px-6 py-4 text-left font-medium w-32 text-white">UID</th>
+                            <th class="px-6 py-4 text-left font-medium text-white">Full Name</th>
+                            <th class="px-6 py-4 text-left font-medium w-32 text-white">Birthday</th>
+                            <th class="px-6 py-4 text-left font-medium text-white">Contact Number</th>
+                            <th class="px-6 py-4 text-left font-medium text-white">Email</th>
+                            <th class="px-6 py-4 text-left font-medium text-white">Schedule</th>
+                            <th class="px-6 py-4 text-left font-medium w-44 text-white">Registered On</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-white/10">
@@ -244,25 +245,25 @@
                                     {{ s.full_name }}
                                 </div>
                             </td>
-                            <td class="px-6 py-5 text-blue-200">
+                            <td class="px-6 py-5 text-white">
                                 <i class="fa-solid fa-cake-candles mr-1 text-xs"></i>
                                 {{ s.birthday }}
                             </td>
-                            <td class="px-6 py-5 text-blue-200 font-medium">
+                            <td class="px-6 py-5 text-white font-medium">
                                 <i class="fa-solid fa-phone mr-1 text-xs"></i>
                                 {{ s.contact_number }}
                             </td>
-                            <td class="px-6 py-5 text-blue-200 text-sm break-all">
+                            <td class="px-6 py-5 text-white text-sm break-all">
                                 <i class="fa-solid fa-envelope mr-1 text-xs"></i>
                                 {{ s.email }}
                             </td>
                             <td class="px-6 py-5">
-                                <div class="schedule-text text-blue-200">
+                                <div class="schedule-text">
                                     <i class="fa-regular fa-clock mr-1 text-yellow-400/70"></i>
                                     {{ s.schedule }}
                                 </div>
                             </td>
-                            <td class="px-6 py-5 text-blue-200 text-sm">
+                            <td class="px-6 py-5 text-white text-sm">
                                 <i class="fa-regular fa-calendar mr-1"></i>
                                 {{ s.created_at }}
                             </td>
@@ -286,11 +287,11 @@
                     <i class="fa-regular fa-calendar-circle-exclamation"></i>
                 </div>
                 <h3 class="text-2xl font-semibold text-white mb-2">No Schedules Yet</h3>
-                <p class="text-blue-300 mt-4 max-w-md mx-auto">
+                <p class="text-white mt-4 max-w-md mx-auto">
                     <i class="fa-solid fa-info-circle mr-1"></i>
                     Student schedules will appear here once students are registered with their class schedule.
                 </p>
-                <div class="mt-8 text-blue-400 text-sm">
+                <div class="mt-8 text-white text-sm">
                     <i class="fa-solid fa-arrow-up"></i> Check back later for updates
                 </div>
             </div>
