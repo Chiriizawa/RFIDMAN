@@ -95,13 +95,12 @@ def is_valid_uid(uid):
 
 def build_full_name(first_name, middle_name, last_name, extension):
     parts = [
-        first_name.strip() if first_name else "",
-        middle_name.strip() if middle_name else "",
-        last_name.strip() if last_name else "",
-        extension.strip() if extension else ""
+        str(first_name or "").strip(),
+        str(middle_name or "").strip(),
+        str(last_name or "").strip(),
+        str(extension or "").strip()
     ]
-    return " ".join([p for p in parts if p]).strip()
-
+    return " ".join([p for p in parts if p])
 
 def get_all_students():
     ensure_connection()
@@ -123,9 +122,10 @@ def get_all_students():
                 contact_number,
                 email,
                 schedule,
+                section_id,
                 created_at
             FROM students
-            ORDER BY last_name ASC, first_name ASC;
+            ORDER BY last_name ASC, first_name ASC, middle_name ASC;
         """)
         rows = cur.fetchall()
         cur.close()
@@ -133,7 +133,6 @@ def get_all_students():
     except Exception as e:
         print("get_all_students error:", e)
         return []
-
 
 def get_student_name_by_uid(uid):
     ensure_connection()
@@ -153,14 +152,14 @@ def get_student_name_by_uid(uid):
         row = cur.fetchone()
         cur.close()
 
-        if row:
-            return build_full_name(row[0], row[1], row[2], row[3])
-        return ""
+        if not row:
+            return ""
+
+        return build_full_name(row[0], row[1], row[2], row[3])
 
     except Exception as e:
         print("get_student_name_by_uid error:", e)
         return ""
-
 
 def save_uid_to_db(uid):
     ensure_connection()
@@ -183,10 +182,8 @@ def save_uid_to_db(uid):
         cur.execute("INSERT INTO rfid_cards (uid) VALUES (%s);", (uid,))
         cur.close()
         print(f"UID saved: {uid}")
-
     except Exception as e:
         print("Database insert error:", e)
-
 
 def save_student_to_db(uid, first_name, middle_name, last_name, extension, birthday, contact_number, email, schedule_text, section_id=None):
     ensure_connection()
@@ -223,7 +220,6 @@ def save_student_to_db(uid, first_name, middle_name, last_name, extension, birth
             section_id
         ))
         cur.close()
-
     except Exception as e:
         print("Save student error:", e)
         raise
@@ -232,7 +228,6 @@ def save_student_to_db(uid, first_name, middle_name, last_name, extension, birth
 # =========================
 # LOGIN REQUIRED DECORATOR
 # =========================
-
 def login_required(f):
     def decorated_function(*args, **kwargs):
         if not session.get('teacher_logged_in'):
@@ -244,7 +239,7 @@ def login_required(f):
 
 
 # =========================
-# RFID LISTEN & SAVE
+# RFID LISTEN & SAVE (Background Thread)
 # =========================
 
 def listen():
@@ -270,10 +265,8 @@ def listen():
                     "name": student_name if student_name else "No linked student",
                     "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
-
         except Exception as e:
             print("Serial read error:", e)
-
         time.sleep(0.2)
 
 threading.Thread(target=listen, daemon=True).start()
@@ -286,8 +279,10 @@ threading.Thread(target=listen, daemon=True).start()
 @admin_bp.route('/')
 @admin_bp.route('/admin/')
 def index():
+    """Main RFID Dashboard"""
     if not session.get('teacher_logged_in'):
         return redirect(url_for('admin_bp.teacher_login'))
+
     return render_template('dashboard.html')
 
 
@@ -332,12 +327,17 @@ def registered_students():
         student_list.append({
             "id": row[0],
             "uid": format_uid(row[1]) if row[1] else "—",
-            "full_name": full_name or "—",
+            "first_name": row[2] or "—",
+            "middle_name": row[3] or "—",
+            "last_name": row[4] or "—",
+            "extension": row[5] or "—",
+            "full_name": full_name if full_name else "—",
             "birthday": str(row[6]) if row[6] else "—",
             "contact_number": row[7] or "—",
             "email": row[8] or "—",
             "schedule": row[9] or "—",
-            "created_at": row[10].strftime("%b %d, %Y  %I:%M %p") if row[10] else "—"
+            "section_id": row[10],
+            "created_at": row[11].strftime("%b %d, %Y  %I:%M %p") if row[11] else "—"
         })
 
     return render_template('registered_students.html', students=student_list)
@@ -353,7 +353,7 @@ def schedules():
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT 
+            SELECT
                 id,
                 uid,
                 first_name,
@@ -364,27 +364,36 @@ def schedules():
                 contact_number,
                 email,
                 schedule,
+                section_id,
                 created_at
             FROM students
             WHERE schedule IS NOT NULL AND TRIM(schedule) != ''
-            ORDER BY last_name ASC, first_name ASC;
+            ORDER BY last_name ASC, first_name ASC, middle_name ASC;
         """)
         rows = cur.fetchall()
         cur.close()
 
-        schedule_list = [{
-            "id": row[0],
-            "uid": format_uid(row[1]) if row[1] else "—",
-            "full_name": build_full_name(row[2], row[3], row[4], row[5]) or "—",
-            "birthday": str(row[6]) if row[6] else "—",
-            "contact_number": row[7] or "—",
-            "email": row[8] or "—",
-            "schedule": row[9] or "—",
-            "created_at": row[10].strftime("%b %d, %Y  %I:%M %p") if row[10] else "—"
-        } for row in rows]
+        schedule_list = []
+        for row in rows:
+            full_name = build_full_name(row[2], row[3], row[4], row[5])
+
+            schedule_list.append({
+                "id": row[0],
+                "uid": format_uid(row[1]) if row[1] else "—",
+                "first_name": row[2] or "—",
+                "middle_name": row[3] or "—",
+                "last_name": row[4] or "—",
+                "extension": row[5] or "—",
+                "full_name": full_name if full_name else "—",
+                "birthday": str(row[6]) if row[6] else "—",
+                "contact_number": row[7] or "—",
+                "email": row[8] or "—",
+                "schedule": row[9] or "—",
+                "section_id": row[10],
+                "created_at": row[11].strftime("%b %d, %Y  %I:%M %p") if row[11] else "—"
+            })
 
         return render_template('schedules.html', schedules=schedule_list)
-
     except Exception as e:
         print("Schedules error:", e)
         return render_template('schedules.html', schedules=[])
@@ -400,19 +409,17 @@ def history():
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT 
+            SELECT
                 r.id,
                 r.uid,
                 COALESCE(
                     NULLIF(
-                        TRIM(
-                            CONCAT(
-                                COALESCE(s.first_name, ''), ' ',
-                                COALESCE(s.middle_name, ''), ' ',
-                                COALESCE(s.last_name, ''), ' ',
-                                COALESCE(s.extension, '')
-                            )
-                        ),
+                        TRIM(CONCAT(
+                            COALESCE(s.first_name, ''), ' ',
+                            COALESCE(s.middle_name, ''), ' ',
+                            COALESCE(s.last_name, ''), ' ',
+                            COALESCE(s.extension, '')
+                        )),
                         ''
                     ),
                     'Unregistered Card'
@@ -452,19 +459,17 @@ def history_filter():
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT 
+            SELECT
                 r.id,
                 r.uid,
                 COALESCE(
                     NULLIF(
-                        TRIM(
-                            CONCAT(
-                                COALESCE(s.first_name, ''), ' ',
-                                COALESCE(s.middle_name, ''), ' ',
-                                COALESCE(s.last_name, ''), ' ',
-                                COALESCE(s.extension, '')
-                            )
-                        ),
+                        TRIM(CONCAT(
+                            COALESCE(s.first_name, ''), ' ',
+                            COALESCE(s.middle_name, ''), ' ',
+                            COALESCE(s.last_name, ''), ' ',
+                            COALESCE(s.extension, '')
+                        )),
                         ''
                     ),
                     'Unregistered Card'
@@ -488,7 +493,138 @@ def history_filter():
         } for row in rows]
 
         return jsonify(result)
-
     except Exception as e:
         print("History filter error:", e)
         return jsonify([])
+
+
+# =========================
+# TEACHER LOGIN & PROFILE
+# =========================
+
+TEACHERS = {
+    "teacher@tapandknow.com": {
+        "id": 1,
+        "full_name": "Mr. Juan Dela Cruz",
+        "email": "teacher@tapandknow.com",
+        "password_hash": generate_password_hash("teacher123"),
+        "subject": "Mathematics",
+        "contact_number": "09123456789",
+        "department": "STEM",
+        "bio": "Senior Mathematics teacher with 12 years experience.",
+        "profile_picture": None,
+        "created_at": datetime.now()
+    }
+}
+
+def get_teacher_by_identifier(identifier):
+    identifier = str(identifier).lower().strip()
+    for email, data in TEACHERS.items():
+        if email.lower() == identifier:
+            return data
+    return None
+
+def get_teacher_by_id(teacher_id):
+    for data in TEACHERS.values():
+        if data.get("id") == teacher_id:
+            return data
+    return None
+
+
+@admin_bp.route('/teacher/login', methods=['GET', 'POST'])
+def teacher_login():
+    if request.method == 'POST':
+        identifier = request.form.get('identifier', '').strip()
+        password = request.form.get('password', '')
+
+        teacher = get_teacher_by_identifier(identifier)
+        if teacher and check_password_hash(teacher['password_hash'], password):
+            session.permanent = True
+            session['teacher_logged_in'] = True
+            session['teacher_id'] = teacher['id']
+            session['teacher_email'] = teacher['email']
+            flash('Login successful!', 'success')
+            return redirect(url_for('admin_bp.teacher_profile'))
+        else:
+            flash('Invalid email or password.', 'error')
+
+    return render_template('login.html')
+
+
+@admin_bp.route('/teacher/profile')
+@login_required
+def teacher_profile():
+    teacher = get_teacher_by_id(session.get('teacher_id'))
+    if not teacher:
+        session.clear()
+        flash('Session expired.', 'error')
+        return redirect(url_for('admin_bp.teacher_login'))
+
+    return render_template('teacher_profile.html', current_teacher=teacher)
+
+
+@admin_bp.route('/teacher/update_profile', methods=['POST'])
+@login_required
+def update_teacher_profile():
+    if not session.get('teacher_logged_in'):
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+
+    data = request.get_json()
+    teacher_id = session.get('teacher_id')
+
+    for email, teacher in TEACHERS.items():
+        if teacher.get("id") == teacher_id:
+            if "full_name" in data:
+                teacher["full_name"] = data["full_name"]
+            if "subject" in data:
+                teacher["subject"] = data["subject"]
+            if "department" in data:
+                teacher["department"] = data["department"]
+            if "contact_number" in data:
+                teacher["contact_number"] = data["contact_number"]
+            if "bio" in data:
+                teacher["bio"] = data["bio"]
+            break
+
+    return jsonify({"success": True, "message": "Profile updated successfully"})
+
+
+@admin_bp.route('/teacher/logout')
+def teacher_logout():
+    session.clear()
+    flash('You have been logged out.', 'success')
+    return redirect(url_for('admin_bp.teacher_login'))
+
+
+# =========================
+# PROFILE PICTURE UPLOAD
+# =========================
+UPLOAD_FOLDER = 'static/uploads/teachers'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+@admin_bp.route('/teacher/upload_profile_pic', methods=['POST'])
+def upload_teacher_profile_pic():
+    if not session.get('teacher_logged_in'):
+        return jsonify({"success": False, "message": "Not logged in"})
+
+    if 'profile_picture' not in request.files:
+        return jsonify({"success": False, "message": "No file"})
+
+    file = request.files['profile_picture']
+    if file.filename == '':
+        return jsonify({"success": False, "message": "No selected file"})
+
+    if file:
+        filename = secure_filename(f"teacher_{session.get('teacher_id')}_{file.filename}")
+        save_path = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(save_path)
+
+        teacher_id = session.get('teacher_id')
+        for data in TEACHERS.values():
+            if data["id"] == teacher_id:
+                data["profile_picture"] = f"/static/uploads/teachers/{filename}"
+                break
+
+        return jsonify({"success": True, "image_url": f"/static/uploads/teachers/{filename}"})
+
+    return jsonify({"success": False, "message": "Upload failed"})
