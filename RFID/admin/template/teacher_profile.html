@@ -4,22 +4,22 @@
 
 {% block content %}
 <style>
-    /* Toast Notification Styles - Matching the color scheme */
+    /* Toast Notification Styles */
     .toast {
         position: fixed;
         top: 20px;
         right: 20px;
         z-index: 9999;
-        min-width: 300px;
-        max-width: 450px;
-        padding: 16px 20px;
-        border-radius: 16px;
+        min-width: 350px;
+        max-width: 500px;
+        padding: 18px 24px;
+        border-radius: 20px;
         background: rgba(30, 58, 138, 0.95);
         backdrop-filter: blur(18px);
         box-shadow: 0 10px 40px rgba(0,0,0,0.3);
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 14px;
         animation: slideInRight 0.3s ease;
         border: 1px solid rgba(255,255,255,0.15);
     }
@@ -71,7 +71,7 @@
     }
     
     .toast-icon {
-        font-size: 24px;
+        font-size: 28px;
         flex-shrink: 0;
     }
     
@@ -80,14 +80,14 @@
     }
     
     .toast-title {
-        font-weight: 600;
-        margin-bottom: 4px;
-        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 5px;
+        font-size: 16px;
         color: white;
     }
     
     .toast-message {
-        font-size: 13px;
+        font-size: 14px;
         opacity: 0.95;
         color: white;
     }
@@ -96,7 +96,7 @@
         cursor: pointer;
         opacity: 0.7;
         transition: opacity 0.2s;
-        font-size: 18px;
+        font-size: 20px;
         flex-shrink: 0;
         color: white;
     }
@@ -115,12 +115,12 @@
     .btn-loading::after {
         content: "";
         position: absolute;
-        width: 18px;
-        height: 18px;
+        width: 22px;
+        height: 22px;
         top: 50%;
-        right: 20px;
-        margin-top: -9px;
-        border: 2px solid white;
+        right: 24px;
+        margin-top: -11px;
+        border: 2px solid #1e3a8a;
         border-top-color: transparent;
         border-radius: 50%;
         animation: spin 0.6s linear infinite;
@@ -130,7 +130,7 @@
         to { transform: rotate(360deg); }
     }
     
-    /* Glass morphism card matching the admin panel */
+    /* Glass morphism card */
     .profile-card {
         background: rgba(255,255,255,0.08);
         backdrop-filter: blur(18px);
@@ -140,12 +140,14 @@
         overflow: hidden;
     }
     
-    /* Form inputs matching the theme */
+    /* Form inputs - Compact */
     .form-input {
         background: rgba(255,255,255,0.1);
         border: 1px solid rgba(255,255,255,0.2);
         color: white;
         transition: all 0.2s ease;
+        font-size: 0.9rem;
+        padding: 0.6rem 1rem;
     }
     
     .form-input:focus {
@@ -157,10 +159,16 @@
     
     .form-input::placeholder {
         color: rgba(255,255,255,0.5);
+        font-size: 0.85rem;
     }
     
     label {
         color: rgba(255,255,255,0.9);
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        display: block;
+        letter-spacing: 0.3px;
     }
     
     /* Yellow accent button */
@@ -169,6 +177,8 @@
         color: #1e3a8a;
         font-weight: 700;
         transition: all 0.2s ease;
+        font-size: 0.9rem;
+        padding: 0.75rem;
     }
     
     .btn-primary:hover {
@@ -181,39 +191,113 @@
         transform: translateY(0);
     }
     
-    /* Text colors for glass card */
-    .text-display {
+    /* Display text */
+    .display-name {
         color: white;
+        font-size: 1.25rem;
+        font-weight: 700;
     }
     
-    .subject-display {
+    .display-subject {
         color: #facc15;
+        font-size: 0.85rem;
+        font-weight: 500;
     }
     
     /* Profile picture container */
     .profile-img-container {
-        border: 4px solid #facc15;
-        box-shadow: 0 0 20px rgba(250, 204, 21, 0.3);
+        border: 3px solid #facc15;
+        box-shadow: 0 0 15px rgba(250, 204, 21, 0.2);
+    }
+    
+    /* Profile image */
+    .profile-image {
+        width: 100px;
+        height: 100px;
+        border-radius: 1.5rem;
+    }
+    
+    /* Camera button */
+    .camera-btn {
+        padding: 0.5rem;
+        border-radius: 0.75rem;
+        font-size: 0.8rem;
+        bottom: -5px;
+        right: -5px;
+    }
+    
+    /* Character counter */
+    .char-counter {
+        text-align: right;
+        font-size: 0.7rem;
+        color: rgba(255,255,255,0.5);
+        margin-top: 0.25rem;
+    }
+    
+    .char-counter.warning {
+        color: #facc15;
+    }
+    
+    .char-counter.danger {
+        color: #ef4444;
+    }
+    
+    /* Cover image */
+    .cover-image {
+        height: 120px;
+    }
+    
+    /* Info text */
+    .info-text {
+        font-size: 0.7rem;
+        color: rgba(255,255,255,0.45);
+        margin-top: 0.2rem;
+    }
+    
+    .info-text i {
+        font-size: 0.65rem;
+        margin-right: 0.25rem;
+    }
+    
+    /* Display info boxes */
+    .info-display-box {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 0.75rem;
+        padding: 0.5rem 1rem;
+        border-left: 3px solid #facc15;
+    }
+    
+    .info-display-label {
+        font-size: 0.7rem;
+        color: rgba(255,255,255,0.6);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.2rem;
+    }
+    
+    .info-display-value {
+        font-size: 0.9rem;
+        color: white;
+        font-weight: 500;
     }
 </style>
 
-<div class="max-w-4xl mx-auto px-6 py-8">
+<div class="max-w-4xl mx-auto px-4 py-6">
 
     <div class="profile-card">
 
-        <!-- Cover with yellow accent gradient -->
-        <div class="h-48 bg-gradient-to-r from-blue-900 to-indigo-900 relative">
-            <div class="absolute -bottom-12 left-10">
+        <!-- Cover with gradient -->
+        <div class="cover-image h-32 bg-gradient-to-r from-blue-900 to-indigo-900 relative">
+            <div class="absolute -bottom-10 left-6">
                 <div class="relative group">
                     <img id="profilePic" 
-                         src="{{ current_teacher.profile_picture or 'https://via.placeholder.com/160x160/1e3a8a/facc15?text=👨‍🏫' }}"
+                         src="{{ current_teacher.profile_picture or 'https://via.placeholder.com/120x120/1e3a8a/facc15?text=👨‍🏫' }}"
                          alt="Profile Picture"
-                         class="w-32 h-32 rounded-3xl border-4 border-yellow-400 object-cover shadow-xl profile-img-container">
+                         class="profile-image w-24 h-24 rounded-2xl border-3 border-yellow-400 object-cover shadow-lg profile-img-container">
 
-                    <!-- Change Picture Button - Yellow accent -->
                     <label for="profileUpload" 
-                           class="absolute bottom-1 right-1 bg-yellow-400 text-blue-900 hover:bg-yellow-300 p-3 rounded-2xl shadow cursor-pointer transition">
-                        <i class="fa-solid fa-camera"></i>
+                           class="camera-btn absolute bottom-0 right-0 bg-yellow-400 text-blue-900 hover:bg-yellow-300 p-1.5 rounded-lg shadow cursor-pointer transition">
+                        <i class="fa-solid fa-camera text-xs"></i>
                     </label>
                     <input type="file" id="profileUpload" accept="image/*" class="hidden"
                            onchange="uploadProfilePicture()">
@@ -221,66 +305,125 @@
             </div>
         </div>
 
-        <div class="pt-20 pb-10 px-10">
+        <div class="pt-14 pb-6 px-6">
 
-            <!-- Header with Name -->
-            <div class="flex justify-between items-start mb-8">
-                <div>
-                    <h1 id="teacherNameDisplay" class="text-3xl font-semibold text-display">
+            <!-- Display Info on Top - Name, Subject, Department -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+                <div class="info-display-box">
+                    <div class="info-display-label">
+                        <i class="fa-solid fa-user mr-1 text-yellow-400"></i> Full Name
+                    </div>
+                    <div class="info-display-value" id="teacherNameDisplay">
                         {{ current_teacher.full_name }}
-                    </h1>
-                    <p id="subjectDisplay" class="subject-display font-medium">
-                        {{ current_teacher.subject }} • {{ current_teacher.department }}
-                    </p>
+                    </div>
+                </div>
+                <div class="info-display-box">
+                    <div class="info-display-label">
+                        <i class="fa-solid fa-book mr-1 text-yellow-400"></i> Subject
+                    </div>
+                    <div class="info-display-value" id="subjectDisplay">
+                        {{ current_teacher.subject }}
+                    </div>
+                </div>
+                <div class="info-display-box">
+                    <div class="info-display-label">
+                        <i class="fa-solid fa-building mr-1 text-yellow-400"></i> Department
+                    </div>
+                    <div class="info-display-value" id="departmentDisplay">
+                        {{ current_teacher.department }}
+                    </div>
                 </div>
             </div>
 
-            <!-- Edit Form -->
-            <form id="profileForm" class="space-y-8">
+            <!-- Edit Form - Compact -->
+            <form id="profileForm" class="space-y-4">
 
-                <!-- Full Name -->
+                <!-- Full Name Input -->
                 <div>
-                    <label class="block text-sm font-medium mb-2">Full Name</label>
+                    <label>
+                        <i class="fa-solid fa-user mr-1 text-yellow-400"></i> Edit Full Name
+                    </label>
                     <input type="text" id="full_name" name="full_name"
                            value="{{ current_teacher.full_name }}"
-                           class="form-input w-full px-5 py-3 rounded-2xl">
+                           class="form-input w-full rounded-xl"
+                           placeholder="Enter your full name"
+                           maxlength="100"
+                           oninput="validateName(this)">
+                    <div class="info-text">
+                        <i class="fa-solid fa-info-circle"></i> Letters and spaces only • No numbers
+                    </div>
                 </div>
 
-                <!-- Subject & Department -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Subject & Department - Side by side -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium mb-2">Subject</label>
+                        <label>
+                            <i class="fa-solid fa-book mr-1 text-yellow-400"></i> Edit Subject
+                        </label>
                         <input type="text" id="subject" name="subject"
                                value="{{ current_teacher.subject }}"
-                               class="form-input w-full px-5 py-3 rounded-2xl">
+                               class="form-input w-full rounded-xl"
+                               placeholder="e.g., Mathematics"
+                               maxlength="100"
+                               oninput="validateSubject(this)">
+                        <div class="info-text">
+                            <i class="fa-solid fa-info-circle"></i> Letters, spaces, commas, hyphens only
+                        </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-2">Department</label>
+                        <label>
+                            <i class="fa-solid fa-building mr-1 text-yellow-400"></i> Edit Department
+                        </label>
                         <input type="text" id="department" name="department"
                                value="{{ current_teacher.department }}"
-                               class="form-input w-full px-5 py-3 rounded-2xl">
+                               class="form-input w-full rounded-xl"
+                               placeholder="e.g., High School"
+                               maxlength="100"
+                               oninput="validateDepartment(this)">
+                        <div class="info-text">
+                            <i class="fa-solid fa-info-circle"></i> Letters, spaces, commas, hyphens only
+                        </div>
                     </div>
                 </div>
 
                 <!-- Contact Number -->
                 <div>
-                    <label class="block text-sm font-medium mb-2">Contact Number</label>
-                    <input type="text" id="contact_number" name="contact_number"
+                    <label>
+                        <i class="fa-solid fa-phone mr-1 text-yellow-400"></i> Contact Number
+                    </label>
+                    <input type="tel" id="contact_number" name="contact_number"
                            value="{{ current_teacher.contact_number or '' }}"
-                           class="form-input w-full px-5 py-3 rounded-2xl">
+                           class="form-input w-full rounded-xl number-input"
+                           placeholder="09123456789"
+                           inputmode="numeric"
+                           maxlength="11"
+                           oninput="validateContactNumber(this)">
+                    <div class="info-text">
+                        <i class="fa-solid fa-info-circle"></i> Numbers only • Max 11 digits
+                    </div>
                 </div>
 
-                <!-- Bio -->
+                <!-- Bio / About Me -->
                 <div>
-                    <label class="block text-sm font-medium mb-2">About Me (Bio)</label>
-                    <textarea id="bio" name="bio" rows="5"
-                              class="form-input w-full px-5 py-3 rounded-2xl resize-y">{{ current_teacher.bio or '' }}</textarea>
+                    <label>
+                        <i class="fa-regular fa-file-lines mr-1 text-yellow-400"></i> About Me (Bio)
+                    </label>
+                    <textarea id="bio" name="bio" rows="4"
+                              class="form-input w-full rounded-xl resize-y"
+                              placeholder="Tell us about yourself, your teaching philosophy, interests, etc."
+                              maxlength="500"
+                              oninput="updateCharCounter(this)"></textarea>
+                    <div class="char-counter" id="bioCounter">
+                        <i class="fa-regular fa-keyboard mr-1"></i>
+                        <span id="bioCharCount">0</span> / 500 characters
+                    </div>
                 </div>
 
-                <!-- Action Buttons -->
-                <div class="flex gap-4 pt-6">
+                <!-- Save Button -->
+                <div class="pt-4">
                     <button type="button" onclick="saveProfile()" id="saveBtn"
-                            class="btn-primary flex-1 font-semibold py-4 rounded-2xl transition shadow">
+                            class="btn-primary w-full font-semibold rounded-xl transition shadow">
+                        <i class="fa-solid fa-floppy-disk mr-2"></i>
                         Save Changes
                     </button>
                 </div>
@@ -291,8 +434,123 @@
 </div>
 
 <script>
-// Toast notification function
-function showToast(message, type = 'success', title = '') {
+// Validate full name
+function validateName(input) {
+    let value = input.value;
+    let cleaned = value.replace(/[0-9]/g, '');
+    cleaned = cleaned.replace(/[^a-zA-Z\s\.\-ñÑáéíóúÁÉÍÓÚ]/g, '');
+    
+    if (value !== cleaned) {
+        input.value = cleaned;
+        showToast('Numbers and special characters are not allowed in name field', 'warning', 'Invalid Input');
+    }
+}
+
+// Validate subject
+function validateSubject(input) {
+    let value = input.value;
+    let cleaned = value.replace(/[0-9]/g, '');
+    cleaned = cleaned.replace(/[^a-zA-Z\s\.\,\-\&\(\)]/g, '');
+    
+    if (value !== cleaned) {
+        input.value = cleaned;
+        showToast('Numbers are not allowed in subject field', 'warning', 'Invalid Input');
+    }
+}
+
+// Validate department
+function validateDepartment(input) {
+    let value = input.value;
+    let cleaned = value.replace(/[0-9]/g, '');
+    cleaned = cleaned.replace(/[^a-zA-Z\s\.\,\-\&]/g, '');
+    
+    if (value !== cleaned) {
+        input.value = cleaned;
+        showToast('Numbers are not allowed in department field', 'warning', 'Invalid Input');
+    }
+}
+
+// Character counter for bio
+function updateCharCounter(textarea) {
+    const count = textarea.value.length;
+    const counterSpan = document.getElementById('bioCharCount');
+    const counterDiv = document.getElementById('bioCounter');
+    
+    if (counterSpan) {
+        counterSpan.textContent = count;
+    }
+    
+    if (counterDiv) {
+        counterDiv.classList.remove('warning', 'danger');
+        if (count > 450 && count <= 500) {
+            counterDiv.classList.add('warning');
+        } else if (count > 500) {
+            counterDiv.classList.add('danger');
+        }
+    }
+}
+
+// Validate contact number
+function validateContactNumber(input) {
+    let value = input.value;
+    let cleaned = value.replace(/[^\d]/g, '');
+    
+    if (cleaned.length > 11) {
+        cleaned = cleaned.slice(0, 11);
+        showToast('Contact number cannot exceed 11 digits', 'warning', 'Too Long');
+    }
+    
+    if (value !== cleaned) {
+        input.value = cleaned;
+        if (value.match(/[a-zA-Z]/)) {
+            showToast('Only numbers are allowed in contact number field', 'warning', 'Invalid Input');
+        }
+    }
+}
+
+// Keypress prevention
+document.getElementById('full_name')?.addEventListener('keypress', function(e) {
+    const charCode = e.which ? e.which : e.keyCode;
+    if (charCode >= 48 && charCode <= 57) {
+        e.preventDefault();
+        showToast('Numbers are not allowed in name field', 'warning', 'Invalid Input');
+        return false;
+    }
+    return true;
+});
+
+document.getElementById('subject')?.addEventListener('keypress', function(e) {
+    const charCode = e.which ? e.which : e.keyCode;
+    if (charCode >= 48 && charCode <= 57) {
+        e.preventDefault();
+        showToast('Numbers are not allowed in subject field', 'warning', 'Invalid Input');
+        return false;
+    }
+    return true;
+});
+
+document.getElementById('department')?.addEventListener('keypress', function(e) {
+    const charCode = e.which ? e.which : e.keyCode;
+    if (charCode >= 48 && charCode <= 57) {
+        e.preventDefault();
+        showToast('Numbers are not allowed in department field', 'warning', 'Invalid Input');
+        return false;
+    }
+    return true;
+});
+
+document.getElementById('contact_number')?.addEventListener('keypress', function(e) {
+    const charCode = e.which ? e.which : e.keyCode;
+    if (charCode < 48 || charCode > 57) {
+        e.preventDefault();
+        showToast('Only numbers are allowed in contact number field', 'warning', 'Invalid Input');
+        return false;
+    }
+    return true;
+});
+
+// Toast notification
+function showToast(message, type = 'warning', title = '') {
     const titles = {
         success: '✓ Success!',
         error: '✗ Error!',
@@ -310,7 +568,7 @@ function showToast(message, type = 'success', title = '') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     toast.innerHTML = `
-        <div class="toast-icon">${icons[type] || icons.success}</div>
+        <div class="toast-icon">${icons[type] || icons.warning}</div>
         <div class="toast-content">
             <div class="toast-title">${title || titles[type]}</div>
             <div class="toast-message">${message}</div>
@@ -320,7 +578,6 @@ function showToast(message, type = 'success', title = '') {
     
     document.body.appendChild(toast);
     
-    // Auto remove after 3 seconds
     setTimeout(() => {
         if (toast && toast.parentElement) {
             toast.style.animation = 'slideOutRight 0.3s ease';
@@ -328,25 +585,22 @@ function showToast(message, type = 'success', title = '') {
         }
     }, 3000);
     
-    // Click to close
-    toast.addEventListener('click', (e) => {
-        if (e.target === toast || toast.contains(e.target)) {
-            toast.style.animation = 'slideOutRight 0.3s ease';
-            setTimeout(() => toast.remove(), 300);
-        }
+    toast.addEventListener('click', () => {
+        toast.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
     });
 }
 
-// Show loading state on button
+// Loading state
 function setButtonLoading(button, isLoading) {
     if (isLoading) {
         button.classList.add('btn-loading');
         button.disabled = true;
-        button.textContent = 'Saving...';
+        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving...';
     } else {
         button.classList.remove('btn-loading');
         button.disabled = false;
-        button.textContent = 'Save Changes';
+        button.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Save Changes';
     }
 }
 
@@ -356,7 +610,7 @@ async function uploadProfilePicture() {
     if (!fileInput.files.length) return;
     
     const file = fileInput.files[0];
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 5 * 1024 * 1024;
     
     if (file.size > maxSize) {
         showToast('Image size should be less than 5MB', 'error', 'File Too Large');
@@ -382,8 +636,6 @@ async function uploadProfilePicture() {
         if (data.success) {
             document.getElementById('profilePic').src = data.image_url + '?t=' + Date.now();
             showToast('Profile picture updated successfully!', 'success', 'Photo Updated');
-            
-            // Clear file input
             fileInput.value = '';
         } else {
             showToast(data.message || 'Failed to upload profile picture', 'error');
@@ -394,14 +646,19 @@ async function uploadProfilePicture() {
     }
 }
 
-// Save Profile Changes
+// Save Profile
 async function saveProfile() {
     const saveBtn = document.getElementById('saveBtn');
     
-    // Validate required fields
-    const fullName = document.getElementById('full_name').value.trim();
-    const subject = document.getElementById('subject').value.trim();
-    const department = document.getElementById('department').value.trim();
+    let fullName = document.getElementById('full_name').value.trim();
+    let subject = document.getElementById('subject').value.trim();
+    let department = document.getElementById('department').value.trim();
+    const contactNumber = document.getElementById('contact_number').value.trim();
+    const bio = document.getElementById('bio').value.trim();
+    
+    fullName = fullName.replace(/[0-9]/g, '');
+    subject = subject.replace(/[0-9]/g, '');
+    department = department.replace(/[0-9]/g, '');
     
     if (!fullName) {
         showToast('Full name is required', 'warning', 'Missing Field');
@@ -421,12 +678,30 @@ async function saveProfile() {
         return;
     }
     
+    if (contactNumber && !/^\d+$/.test(contactNumber)) {
+        showToast('Contact number can only contain numbers', 'warning', 'Invalid Format');
+        document.getElementById('contact_number').focus();
+        return;
+    }
+    
+    if (contactNumber && contactNumber.length > 11) {
+        showToast('Contact number cannot exceed 11 digits', 'warning', 'Too Long');
+        document.getElementById('contact_number').focus();
+        return;
+    }
+    
+    if (bio.length > 500) {
+        showToast('Bio cannot exceed 500 characters', 'warning', 'Too Long');
+        document.getElementById('bio').focus();
+        return;
+    }
+    
     const formData = {
         full_name: fullName,
         subject: subject,
         department: department,
-        contact_number: document.getElementById('contact_number').value.trim(),
-        bio: document.getElementById('bio').value.trim()
+        contact_number: contactNumber,
+        bio: bio
     };
 
     setButtonLoading(saveBtn, true);
@@ -443,25 +718,36 @@ async function saveProfile() {
         if (data.success) {
             showToast('Your profile has been updated successfully!', 'success', 'Profile Updated');
             
-            // Update displayed values without page reload
             document.getElementById('teacherNameDisplay').textContent = formData.full_name;
-            document.getElementById('subjectDisplay').textContent = 
-                `${formData.subject} • ${formData.department}`;
+            document.getElementById('subjectDisplay').textContent = formData.subject;
+            document.getElementById('departmentDisplay').textContent = formData.department;
             
-            // Update title
             document.title = `My Profile - ${formData.full_name}`;
         } else {
-            showToast(data.message || 'Failed to update profile. Please try again.', 'error', 'Update Failed');
+            showToast(data.message || 'Failed to update profile.', 'error', 'Update Failed');
         }
     } catch (e) {
-        showToast('Network error. Please check your connection and try again.', 'error', 'Connection Error');
+        showToast('Network error. Please try again.', 'error', 'Connection Error');
         console.error(e);
     } finally {
         setButtonLoading(saveBtn, false);
     }
 }
 
-// Enter key to save (optional)
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    const bioTextarea = document.getElementById('bio');
+    if (bioTextarea) {
+        updateCharCounter(bioTextarea);
+    }
+    
+    const contactInput = document.getElementById('contact_number');
+    if (contactInput && !contactInput.value) {
+        contactInput.placeholder = '09123456789';
+    }
+});
+
+// Enter key to save
 document.querySelectorAll('#profileForm input, #profileForm textarea').forEach(input => {
     input.addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
