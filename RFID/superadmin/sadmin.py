@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, request
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
@@ -119,4 +119,123 @@ def index():
         sections_without_teacher=sections_without_teacher,
         recent_activities=recent_activities,
         teachers_overview=teachers_overview
+    )
+
+@sadmin.route('/UID')
+def uid():
+    conn = None
+    cur = None
+    uids = []
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute("""
+            SELECT
+                r.id,
+                r.uid,
+                r.created_at,
+                CASE
+                    WHEN EXISTS (
+                        SELECT 1
+                        FROM students s
+                        WHERE s.uid = r.uid
+                    ) THEN 'Used'
+                    ELSE 'Available'
+                END AS status
+            FROM rfid_cards r
+            ORDER BY r.id DESC
+        """)
+        uids = cur.fetchall()
+
+    except Exception as e:
+        print("RFID cards error:", e)
+
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+    return render_template("superadmin/uid.html", uids=uids)
+
+@sadmin.route('/Login')
+def login():
+    return render_template("superadmin/login.html")
+
+@sadmin.route('/attendance')
+def attendance():
+    selected_section = request.args.get("section", "").strip()
+
+    conn = None
+    cur = None
+    sections = []
+    attendance_rows = []
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # get all sections
+        cur.execute("""
+            SELECT id, section_name
+            FROM sections
+            ORDER BY section_name ASC
+        """)
+        sections = cur.fetchall()
+
+        # attendance with section filter
+        if selected_section:
+            cur.execute("""
+                SELECT
+                    a.id,
+                    CONCAT(s.first_name, ' ', s.last_name) AS student_name,
+                    a.uid,
+                    sec.section_name,
+                    a.attendance_date,
+                    a.time_in,
+                    a.time_out,
+                    a.status,
+                    a.created_at
+                FROM attendance a
+                INNER JOIN students s ON a.student_id = s.id
+                LEFT JOIN sections sec ON s.section_id = sec.id
+                WHERE s.section_id = %s
+                ORDER BY a.attendance_date DESC, a.created_at DESC
+            """, (selected_section,))
+        else:
+            cur.execute("""
+                SELECT
+                    a.id,
+                    CONCAT(s.first_name, ' ', s.last_name) AS student_name,
+                    a.uid,
+                    sec.section_name,
+                    a.attendance_date,
+                    a.time_in,
+                    a.time_out,
+                    a.status,
+                    a.created_at
+                FROM attendance a
+                INNER JOIN students s ON a.student_id = s.id
+                LEFT JOIN sections sec ON s.section_id = sec.id
+                ORDER BY a.attendance_date DESC, a.created_at DESC
+            """)
+
+        attendance_rows = cur.fetchall()
+
+    except Exception as e:
+        print("Attendance page error:", e)
+
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+    return render_template(
+        "superadmin/attendance.html",
+        sections=sections,
+        selected_section=selected_section,
+        attendance_rows=attendance_rows
     )

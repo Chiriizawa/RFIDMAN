@@ -1,0 +1,143 @@
+{% extends "superadmin/base.html" %}
+
+{% block title %}RFID Cards{% endblock %}
+
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8 py-6">
+    <div class="max-w-7xl mx-auto space-y-6">
+
+        <!-- HEADER -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+            </div>
+
+            <!-- FILTER BUTTONS -->
+            <div class="flex items-center gap-2 mt-2 md:mt-0">
+                <button onclick="filterStatus('all', this)"
+                    class="filter-btn px-4 py-1.5 rounded-xl text-sm font-medium bg-blue-600 text-white">
+                    All
+                </button>
+
+                <button onclick="filterStatus('Available', this)"
+                    class="filter-btn px-4 py-1.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 hover:bg-green-100">
+                    Available
+                </button>
+
+                <button onclick="filterStatus('Used', this)"
+                    class="filter-btn px-4 py-1.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 hover:bg-red-100">
+                    Used
+                </button>
+            </div>
+        </div>
+
+        <!-- TABLE CARD -->
+        <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
+
+            <!-- HEADER BAR -->
+            <div class="px-5 sm:px-6 py-4 border-b bg-gradient-to-r from-blue-600 to-blue-700">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-white text-lg font-semibold">RFID Card List</h2>
+                    </div>
+                    <div class="hidden sm:flex items-center gap-2 text-white/90 text-sm">
+                        <i class="fa-solid fa-id-card"></i>
+                        <span>{{ uids|length if uids else 0 }} record(s)</span>
+                    </div>
+                </div>
+            </div>
+
+            {% if uids %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 border-b text-gray-600">
+                            <th class="py-4 px-5 text-left font-semibold">UID</th>
+                            <th class="py-4 px-5 text-left font-semibold">Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody class="divide-y divide-gray-100">
+                        {% for uid in uids %}
+                        <tr class="hover:bg-blue-50/40 transition duration-200"
+                            data-status="{{ uid.status }}">
+
+                            
+
+                            <td class="py-4 px-5">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs shadow-sm">
+                                        UID
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-800 break-all">{{ uid.uid }}</p>
+                                        <p class="text-xs text-gray-400">RFID Unique Identifier</p>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td class="py-4 px-5">
+                                {% if uid.status == 'Available' %}
+                                    <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
+                                        <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                                        Available
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
+                                        <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                                        Used
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            
+
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="py-16 px-6 text-center">
+                <div class="mx-auto w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                    <i class="fa-solid fa-id-card text-3xl text-gray-400"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-700">No RFID cards found</h3>
+                <p class="text-sm text-gray-500 mt-2">
+                    There are currently no RFID UID records available.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+<!-- FILTER SCRIPT -->
+<script>
+function filterStatus(status, btn) {
+    const rows = document.querySelectorAll("tbody tr");
+    const buttons = document.querySelectorAll(".filter-btn");
+
+    // reset buttons
+    buttons.forEach(b => {
+        b.classList.remove("bg-blue-600", "text-white");
+        b.classList.add("bg-gray-100", "text-gray-700");
+    });
+
+    // active button
+    btn.classList.remove("bg-gray-100", "text-gray-700");
+    btn.classList.add("bg-blue-600", "text-white");
+
+    rows.forEach(row => {
+        const rowStatus = row.getAttribute("data-status");
+
+        if (status === "all" || rowStatus === status) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+}
+</script>
+
+{% endblock %}
