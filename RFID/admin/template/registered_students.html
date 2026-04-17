@@ -4,6 +4,7 @@
 
 {% block content %}
 <style>
+    /* Toast Notification Styles - Matching the color scheme */
     .toast {
         position: fixed;
         top: 20px;
@@ -22,7 +23,7 @@
         animation: slideInRight 0.3s ease;
         border: 1px solid rgba(255,255,255,0.15);
     }
-
+    
     @keyframes slideInRight {
         from {
             transform: translateX(100%);
@@ -33,7 +34,7 @@
             opacity: 1;
         }
     }
-
+    
     @keyframes slideOutRight {
         from {
             transform: translateX(0);
@@ -44,53 +45,53 @@
             opacity: 0;
         }
     }
-
+    
     .toast.success {
         background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95));
         backdrop-filter: blur(18px);
         border: 1px solid rgba(255,255,255,0.2);
     }
-
+    
     .toast.error {
         background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95));
         backdrop-filter: blur(18px);
         border: 1px solid rgba(255,255,255,0.2);
     }
-
+    
     .toast.info {
         background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.95));
         backdrop-filter: blur(18px);
         border: 1px solid rgba(255,255,255,0.2);
     }
-
+    
     .toast.warning {
         background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95));
         backdrop-filter: blur(18px);
         border: 1px solid rgba(255,255,255,0.2);
     }
-
+    
     .toast-icon {
         font-size: 24px;
         flex-shrink: 0;
     }
-
+    
     .toast-content {
         flex: 1;
     }
-
+    
     .toast-title {
         font-weight: 600;
         margin-bottom: 4px;
         font-size: 14px;
         color: white;
     }
-
+    
     .toast-message {
         font-size: 13px;
         opacity: 0.95;
         color: white;
     }
-
+    
     .toast-close {
         cursor: pointer;
         opacity: 0.7;
@@ -99,11 +100,22 @@
         flex-shrink: 0;
         color: white;
     }
-
+    
     .toast-close:hover {
         opacity: 1;
     }
-
+    
+    /* Hide scrollbars globally */
+    ::-webkit-scrollbar {
+        display: none;
+    }
+    
+    * {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    
+    /* Glass card matching the admin panel */
     .glass-card {
         background: rgba(255,255,255,0.08);
         backdrop-filter: blur(18px);
@@ -112,12 +124,13 @@
         border-radius: 1.5rem;
         overflow: hidden;
     }
-
+    
+    /* Table styles */
     .table-header {
         background: rgba(30, 58, 138, 0.4);
         border-bottom: 1px solid rgba(255,255,255,0.1);
     }
-
+    
     .table-header th {
         color: #ffffff;
         font-weight: 600;
@@ -125,17 +138,18 @@
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
-
+    
     .table-row {
         border-bottom: 1px solid rgba(255,255,255,0.08);
         transition: all 0.2s ease;
     }
-
+    
     .table-row:hover {
         background: rgba(255,255,255,0.05);
-        transform: scale(1.005);
+        transform: scale(1.01);
     }
-
+    
+    /* UID badge style */
     .uid-badge {
         background: rgba(250, 204, 21, 0.15);
         color: #facc15;
@@ -148,7 +162,8 @@
         border: 1px solid rgba(250, 204, 21, 0.3);
         font-size: 0.8rem;
     }
-
+    
+    /* Schedule text style */
     .schedule-text {
         background: rgba(255,255,255,0.05);
         padding: 0.5rem 0.75rem;
@@ -156,19 +171,18 @@
         display: inline-block;
         line-height: 1.4;
         font-size: 0.8rem;
-        max-width: 260px;
-        white-space: normal;
-        word-wrap: break-word;
         color: #ffffff;
     }
-
+    
+    /* Empty state glass card */
     .empty-state {
         background: rgba(255,255,255,0.05);
         border: 1px solid rgba(255,255,255,0.1);
         border-radius: 1.5rem;
         backdrop-filter: blur(10px);
     }
-
+    
+    /* Total count badge */
     .total-badge {
         background: rgba(250, 204, 21, 0.15);
         border: 1px solid rgba(250, 204, 21, 0.3);
@@ -178,14 +192,15 @@
         font-size: 0.875rem;
         font-weight: 500;
     }
-
+    
     .total-badge span {
         color: white;
         font-weight: 700;
         margin-left: 0.5rem;
         font-size: 1rem;
     }
-
+    
+    /* Search and filter bar */
     .search-bar {
         background: rgba(255,255,255,0.08);
         border: 1px solid rgba(255,255,255,0.15);
@@ -195,18 +210,18 @@
         width: 300px;
         transition: all 0.2s ease;
     }
-
+    
     .search-bar:focus {
         outline: none;
         border-color: #facc15;
         background: rgba(255,255,255,0.12);
         box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.1);
     }
-
+    
     .search-bar::placeholder {
         color: rgba(255,255,255,0.5);
     }
-
+    
     .action-btn {
         background: rgba(255,255,255,0.08);
         border: 1px solid rgba(255,255,255,0.15);
@@ -217,38 +232,40 @@
         transition: all 0.2s ease;
         font-size: 0.875rem;
     }
-
+    
     .action-btn:hover {
         background: rgba(250, 204, 21, 0.2);
         border-color: #facc15;
         color: #facc15;
         transform: translateY(-1px);
     }
-
-    .name-chip {
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.08);
-        padding: 0.45rem 0.7rem;
-        border-radius: 0.8rem;
-        display: inline-block;
-        min-width: 120px;
+    
+    /* Hide scrollbars on overflow containers */
+    .overflow-x-auto {
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
     }
-
-    .display-name-box {
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 0.9rem;
-        padding: 0.65rem 0.85rem;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.6rem;
-        color: white;
+    
+    .overflow-x-auto::-webkit-scrollbar {
+        display: none;
+    }
+    
+    body {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    
+    body::-webkit-scrollbar {
+        display: none;
     }
 </style>
 
 <div class="max-w-7xl mx-auto">
+
     <div class="glass-card overflow-hidden">
 
+        <!-- Header with gradient matching sidebar -->
         <div class="bg-gradient-to-r from-blue-900 to-indigo-900 px-10 py-8 text-white border-b border-white/10">
             <div class="flex items-center justify-between">
                 <div>
@@ -265,9 +282,12 @@
             </div>
         </div>
 
+        <!-- Content -->
         <div class="p-8">
+
             {% if students and students|length > 0 %}
 
+            <!-- Search and Actions Bar -->
             <div class="mb-6 flex justify-between items-center gap-4 flex-wrap">
                 <div class="relative">
                     <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-white text-sm"></i>
@@ -275,7 +295,7 @@
                         type="text"
                         id="searchInput"
                         onkeyup="filterTable()"
-                        placeholder="Search by last name, first name, UID, or email..."
+                        placeholder="Search by name, UID, or email..."
                         class="search-bar pl-10"
                     >
                 </div>
@@ -290,23 +310,21 @@
             </div>
 
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[1600px] text-sm" id="studentTable">
+                <table class="w-full min-w-full text-sm" id="studentTable">
                     <thead>
                         <tr class="table-header">
-                            <th class="px-6 py-4 text-left font-medium text-white">UID</th>
+                            <th class="px-6 py-4 text-left font-medium w-32 text-white">UID</th>
                             <th class="px-6 py-4 text-left font-medium text-white">Last Name</th>
                             <th class="px-6 py-4 text-left font-medium text-white">First Name</th>
                             <th class="px-6 py-4 text-left font-medium text-white">Middle Name</th>
                             <th class="px-6 py-4 text-left font-medium text-white">Extension</th>
-                            <th class="px-6 py-4 text-left font-medium text-white">Display Name</th>
-                            <th class="px-6 py-4 text-left font-medium text-white">Birthday</th>
+                            <th class="px-6 py-4 text-left font-medium w-32 text-white">Birthday</th>
                             <th class="px-6 py-4 text-left font-medium text-white">Contact Number</th>
                             <th class="px-6 py-4 text-left font-medium text-white">Email</th>
                             <th class="px-6 py-4 text-left font-medium text-white">Schedule</th>
-                            <th class="px-6 py-4 text-left font-medium text-white">Registered On</th>
+                            <th class="px-6 py-4 text-left font-medium w-44 text-white">Registered On</th>
                         </tr>
                     </thead>
-
                     <tbody class="divide-y divide-white/10">
                         {% for s in students %}
                         <tr class="table-row transition-colors">
@@ -316,54 +334,39 @@
                                     {{ s.uid }}
                                 </span>
                             </td>
-
-                            <td class="px-6 py-5 text-white font-medium">
-                                <span class="name-chip">{{ s.last_name }}</span>
-                            </td>
-
-                            <td class="px-6 py-5 text-white font-medium">
-                                <span class="name-chip">{{ s.first_name }}</span>
-                            </td>
-
-                            <td class="px-6 py-5 text-white font-medium">
-                                <span class="name-chip">{{ s.middle_name }}</span>
-                            </td>
-
-                            <td class="px-6 py-5 text-white font-medium">
-                                <span class="name-chip">{{ s.extension }}</span>
-                            </td>
-
-                            <td class="px-6 py-5 text-white font-semibold">
-                                <div class="display-name-box">
-                                    <div class="w-8 h-8 bg-yellow-400/20 rounded-full flex items-center justify-center">
-                                        <i class="fa-solid fa-user text-yellow-400 text-sm"></i>
-                                    </div>
-                                    <span>{{ s.full_name }}</span>
+                            <td class="px-6 py-5 font-semibold text-white">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-user-graduate text-yellow-400/70 text-sm"></i>
+                                    {{ s.last_name }}
                                 </div>
                             </td>
-
+                            <td class="px-6 py-5 text-white">
+                                {{ s.first_name }}
+                            </td>
+                            <td class="px-6 py-5 text-white">
+                                {{ s.middle_name or '—' }}
+                            </td>
+                            <td class="px-6 py-5 text-white">
+                                {{ s.extension or '—' }}
+                            </td>
                             <td class="px-6 py-5 text-white">
                                 <i class="fa-solid fa-cake-candles mr-1 text-xs"></i>
                                 {{ s.birthday }}
                             </td>
-
                             <td class="px-6 py-5 text-white font-medium">
                                 <i class="fa-solid fa-phone mr-1 text-xs"></i>
                                 {{ s.contact_number }}
                             </td>
-
                             <td class="px-6 py-5 text-white text-sm break-all">
                                 <i class="fa-solid fa-envelope mr-1 text-xs"></i>
                                 {{ s.email }}
                             </td>
-
                             <td class="px-6 py-5">
                                 <div class="schedule-text">
                                     <i class="fa-regular fa-clock mr-1 text-yellow-400/70"></i>
                                     {{ s.schedule|truncate(65) }}
                                 </div>
                             </td>
-
                             <td class="px-6 py-5 text-white text-sm">
                                 <i class="fa-regular fa-calendar mr-1"></i>
                                 {{ s.created_at }}
@@ -374,11 +377,7 @@
                 </table>
             </div>
 
-            <div class="mt-10 flex justify-between items-center gap-4 flex-wrap">
-                <div class="text-white text-sm">
-                    <i class="fa-solid fa-info-circle mr-1"></i>
-                    Showing <span id="visibleCount">{{ students|length }}</span> of {{ students|length }} students
-                </div>
+            <div class="mt-10 flex justify-center">
                 <div class="total-badge">
                     <i class="fa-solid fa-users mr-2"></i>
                     Total Registered Students: <span>{{ students|length }}</span>
@@ -402,11 +401,14 @@
             </div>
 
             {% endif %}
+
         </div>
     </div>
+
 </div>
 
 <script>
+// Toast notification function
 function showToast(message, type = 'success', title = '') {
     const titles = {
         success: '✓ Success!',
@@ -414,14 +416,14 @@ function showToast(message, type = 'success', title = '') {
         info: 'ℹ Info',
         warning: '⚠ Warning'
     };
-
+    
     const icons = {
         success: '✅',
         error: '❌',
         info: 'ℹ️',
         warning: '⚠️'
     };
-
+    
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     toast.innerHTML = `
@@ -432,33 +434,36 @@ function showToast(message, type = 'success', title = '') {
         </div>
         <div class="toast-close" onclick="this.parentElement.remove()">✕</div>
     `;
-
+    
     document.body.appendChild(toast);
-
+    
     setTimeout(() => {
         if (toast && toast.parentElement) {
             toast.style.animation = 'slideOutRight 0.3s ease';
             setTimeout(() => toast.remove(), 300);
         }
     }, 3000);
-
+    
     toast.addEventListener('click', () => {
         toast.style.animation = 'slideOutRight 0.3s ease';
         setTimeout(() => toast.remove(), 300);
     });
 }
 
+// Filter table function
 function filterTable() {
     const input = document.getElementById('searchInput');
     const filter = input.value.toLowerCase();
     const table = document.getElementById('studentTable');
+    if (!table) return;
+    
     const rows = table.getElementsByTagName('tr');
     let visibleCount = 0;
-
+    
     for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
         const text = row.textContent.toLowerCase();
-
+        
         if (text.includes(filter)) {
             row.style.display = '';
             visibleCount++;
@@ -466,54 +471,44 @@ function filterTable() {
             row.style.display = 'none';
         }
     }
-
-    const visibleCountSpan = document.getElementById('visibleCount');
-    if (visibleCountSpan) {
-        visibleCountSpan.textContent = visibleCount;
-    }
-
+    
     if (filter && visibleCount === 0) {
         showToast('No students found matching your search', 'info', 'No Results');
     }
 }
 
-function cleanCellText(text) {
-    return text
-        .replace(/\s+/g, ' ')
-        .replace(/["]/g, '""')
-        .trim();
-}
-
+// Export to CSV function
 function exportToCSV() {
     const table = document.getElementById('studentTable');
+    if (!table) return;
+    
     const rows = table.querySelectorAll('tbody tr');
-
+    
     if (rows.length === 0) {
         showToast('No data to export', 'warning', 'Export Failed');
         return;
     }
-
+    
     const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none');
-
+    
     if (visibleRows.length === 0) {
         showToast('No visible data to export', 'warning', 'Export Failed');
         return;
     }
-
-    let csvContent = "UID,Last Name,First Name,Middle Name,Extension,Display Name,Birthday,Contact Number,Email,Schedule,Registered On\n";
-
+    
+    let csvContent = "UID,Last Name,First Name,Middle Name,Extension,Birthday,Contact Number,Email,Schedule,Registered On\n";
+    
     visibleRows.forEach(row => {
         const cells = row.querySelectorAll('td');
         const rowData = [];
-
         cells.forEach(cell => {
-            const text = cleanCellText(cell.innerText || cell.textContent || '');
+            let text = cell.textContent.trim();
+            text = text.replace(/[^\w\s@\.\-\(\)\:]/g, '').trim();
             rowData.push(`"${text}"`);
         });
-
         csvContent += rowData.join(',') + '\n';
     });
-
+    
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -523,106 +518,75 @@ function exportToCSV() {
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
-
+    
     showToast(`Exported ${visibleRows.length} students successfully`, 'success', 'Export Complete');
 }
 
+// Print table function
 function printTable() {
-    const visibleRows = Array.from(document.querySelectorAll('#studentTable tbody tr'))
+    const table = document.getElementById('studentTable');
+    if (!table) return;
+    
+    const visibleRows = Array.from(table.querySelectorAll('tbody tr'))
         .filter(row => row.style.display !== 'none')
         .map(row => row.outerHTML)
         .join('');
-
+    
     const printWindow = window.open('', '_blank');
-
+    
     printWindow.document.write(`
         <html>
         <head>
             <title>Registered Students Report</title>
             <style>
-                body {
-                    font-family: Arial, sans-serif;
-                    margin: 20px;
-                }
-                h1 {
-                    color: #1e3a8a;
-                    margin-bottom: 8px;
-                }
-                p {
-                    margin: 4px 0;
-                }
-                table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin-top: 18px;
-                    font-size: 12px;
-                }
-                th, td {
-                    border: 1px solid #ddd;
-                    padding: 8px;
-                    text-align: left;
-                    vertical-align: top;
-                }
-                th {
-                    background: #f3f4f6;
-                }
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #f2f2f2; }
+                h1 { color: #1e3a8a; }
+                .header { margin-bottom: 20px; }
+                .date { color: #666; margin-top: 10px; }
             </style>
         </head>
         <body>
-            <h1>Registered Students Report</h1>
-            <p>Generated on: ${new Date().toLocaleString()}</p>
-            <p>Total Students Shown: ${Array.from(document.querySelectorAll('#studentTable tbody tr')).filter(row => row.style.display !== 'none').length}</p>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>UID</th>
-                        <th>Last Name</th>
-                        <th>First Name</th>
-                        <th>Middle Name</th>
-                        <th>Extension</th>
-                        <th>Display Name</th>
-                        <th>Birthday</th>
-                        <th>Contact Number</th>
-                        <th>Email</th>
-                        <th>Schedule</th>
-                        <th>Registered On</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${visibleRows}
-                </tbody>
-            </table>
-
-            <p style="margin-top:20px;">Tap & Know System - Official Report</p>
+            <div class="header">
+                <h1>Registered Students Report</h1>
+                <p>Generated on: ${new Date().toLocaleString()}</p>
+                <p>Total Students: ${document.querySelectorAll('#studentTable tbody tr').length}</p>
+            </div>
+            ${table.outerHTML}
+            <div class="date">
+                <p>Tap & Know System - Official Report</p>
+            </div>
         </body>
         </html>
     `);
-
+    
     printWindow.document.close();
-    printWindow.focus();
     printWindow.print();
-
+    
     showToast('Print window opened', 'info', 'Print Ready');
 }
 
+// Add keyboard shortcuts (Ctrl+F for search, Ctrl+E for export, Ctrl+P for print)
 document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.key.toLowerCase() === 'f') {
+    if (e.ctrlKey && e.key === 'f') {
         e.preventDefault();
         const searchInput = document.getElementById('searchInput');
         if (searchInput) {
             searchInput.focus();
             showToast('Search input focused', 'info', 'Search Mode');
         }
-    } else if (e.ctrlKey && e.key.toLowerCase() === 'e') {
+    } else if (e.ctrlKey && e.key === 'e') {
         e.preventDefault();
         exportToCSV();
-    } else if (e.ctrlKey && e.key.toLowerCase() === 'p') {
+    } else if (e.ctrlKey && e.key === 'p') {
         e.preventDefault();
         printTable();
     }
 });
 
+// Initialize
 document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {

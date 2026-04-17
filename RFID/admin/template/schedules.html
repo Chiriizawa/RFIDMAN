@@ -105,6 +105,16 @@
         opacity: 1;
     }
     
+    /* Hide scrollbars globally */
+    ::-webkit-scrollbar {
+        display: none;
+    }
+    
+    * {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    
     /* Glass card matching the admin panel */
     .glass-card {
         background: rgba(255,255,255,0.08);
@@ -188,6 +198,26 @@
         font-weight: 700;
         margin-left: 0.5rem;
         font-size: 1rem;
+    }
+    
+    /* Hide scrollbars on overflow containers */
+    .overflow-x-auto {
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar {
+        display: none;
+    }
+    
+    body {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    
+    body::-webkit-scrollbar {
+        display: none;
     }
 </style>
 
