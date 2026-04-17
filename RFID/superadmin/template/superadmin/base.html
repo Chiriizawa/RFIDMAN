@@ -39,68 +39,85 @@
     <header class="header-gradient text-white">
         <div class="max-w-screen-2xl mx-auto px-8 py-5 flex items-center justify-between">
 
-            <!-- Logo -->
             <div class="flex items-center gap-x-3">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-9 h-9" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor" stroke-width="2.25">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                <h1 class="text-3xl font-semibold tracking-[-0.5px]">SUPERADMIN</h1>
+                <div class="w-14 h-14 bg-white rounded-xl flex items-center justify-center overflow-hidden shadow border border-white/40">
+                    <img src="{{ url_for('static', filename='images/cropted.png') }}"
+                         alt="School Logo"
+                         class="w-full h-full object-cover">
+                </div>
+                <h1 class="text-3xl font-semibold tracking-[-0.5px]">SuperAdmin</h1>
             </div>
 
             <!-- Right side -->
-            <div class="flex items-center gap-x-7">
+            <div class="flex items-center gap-x-7 relative">
                 
-                <a href="#"
-                    class="flex items-center gap-x-2 text-sm font-medium hover:text-white/80 transition-colors">
-                    <i class="fa-solid fa-arrow-right-from-bracket text-lg"></i>
-                    Logout
-                </a>
-                <div
-                    class="w-9 h-9 bg-white text-[#1e40af] rounded-2xl flex items-center justify-center font-bold text-lg shadow-inner border border-white/30">
-                    HD
+                <!-- PROFILE BUTTON -->
+                <button type="button"
+                    onclick="toggleDropdown()"
+                    class="flex items-center gap-x-1 px-2 h-9 bg-white text-[#1e40af] rounded-2xl shadow-inner border border-white/30">
+                    
+                    <span class="w-8 h-8 flex items-center justify-center font-bold text-lg">
+                        HD
+                    </span>
+
+                    <!-- Dropdown Icon -->
+                    <i class="fa-solid fa-chevron-down text-xs transition-transform duration-200"
+                       id="dropdownIcon"></i>
+                </button>
+
+                <!-- DROPDOWN -->
+                <div id="profileDropdown"
+                    class="hidden absolute right-0 top-14 w-52 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden z-50">
+                    
+                    <a href="#"
+                        class="flex items-center gap-x-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
+                        <i class="fa-solid fa-database text-[#1e40af]"></i>
+                        Backup Database
+                    </a>
+
+                    <a href="#"
+                        class="flex items-center gap-x-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition border-t border-slate-100">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        Logout
+                    </a>
                 </div>
+
             </div>
         </div>
     </header>
 
     <!-- NAVIGATION -->
-    <div class="bg-white border-b sticky top-0 z-50 shadow-sm">
+    <div class="bg-white border-b sticky top-0 z-40 shadow-sm">
         <div class="max-w-screen-2xl mx-auto px-8">
             <div class="flex items-center justify-center gap-x-3 pt-6 pb-3">
 
-                <!-- Dashboard -->
-                <a href="{{url_for('sadmin.index')}}"
-                    class="nav-tab {% if request.endpoint == 'admin_bp.dashboard' %}active{% endif %} flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
-                    <i class="fa-solid fa-pencil text-xl"></i>
+                <a href="{{ url_for('sadmin.index') }}"
+                    class="nav-tab {% if request.endpoint == 'sadmin.index' %}active{% endif %} flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
+                    <i class="fa-solid fa-gauge text-lg"></i>
                     Dashboard
                 </a>
 
-                <!-- Orders -->
-                <a href="{{url_for('sadmin.attendance')}}"
-                    class="nav-tab {% if request.endpoint == 'admin_bp.orders' %}active{% endif %} flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
-                    <i class="fa-solid fa-book text-xl"></i>
+                <a href="{{ url_for('sadmin.attendance') }}"
+                    class="nav-tab {% if request.endpoint == 'sadmin.attendance' %}active{% endif %} flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
+                    <i class="fa-solid fa-layer-group text-lg"></i>
                     Section
                 </a>
 
-                <!-- Customers -->
-                <a href="{{url_for('sadmin.uid')}}"
-                    class="nav-tab {% if request.endpoint == 'admin_bp.customers' %}active{% endif %} flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
-                    <i class="fa-solid fa-users text-xl"></i>
+                <a href="{{ url_for('sadmin.uid') }}"
+                    class="nav-tab {% if request.endpoint == 'sadmin.uid' %}active{% endif %} flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
+                    <i class="fa-solid fa-id-card text-lg"></i>
                     UID
                 </a>
 
                 <a href="{{ url_for('sregister.student') }}"
                     class="nav-tab {% if request.endpoint == 'sregister.student' %}active{% endif %} flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
-                    <i class="fa-solid fa-chart-column text-xl"></i>
+                    <i class="fa-solid fa-user-graduate text-lg"></i>
                     Students
                 </a>
 
-                <!-- Users -->
                 <a href="#"
-                    class="nav-tab {% if request.endpoint == 'admin_bp.users' %}active{% endif %} flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
-                    <i class="fa-solid fa-wrench text-xl"></i>
+                    class="nav-tab flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
+                    <i class="fa-solid fa-chalkboard-user text-lg"></i>
                     Teachers
                 </a>
 
@@ -110,6 +127,28 @@
 
     <!-- PAGE CONTENT -->
     {% block content %}{% endblock %}
+
+    <!-- SCRIPT -->
+    <script>
+        function toggleDropdown() {
+            const dropdown = document.getElementById("profileDropdown");
+            const icon = document.getElementById("dropdownIcon");
+
+            dropdown.classList.toggle("hidden");
+            icon.classList.toggle("rotate-180");
+        }
+
+        document.addEventListener("click", function(event) {
+            const dropdown = document.getElementById("profileDropdown");
+            const button = event.target.closest("button[onclick='toggleDropdown()']");
+            const icon = document.getElementById("dropdownIcon");
+
+            if (!button && !dropdown.contains(event.target)) {
+                dropdown.classList.add("hidden");
+                icon.classList.remove("rotate-180");
+            }
+        });
+    </script>
 
 </body>
 </html>

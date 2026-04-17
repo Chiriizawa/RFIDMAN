@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, redirect, url_for
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
@@ -121,6 +121,7 @@ def index():
         teachers_overview=teachers_overview
     )
 
+
 @sadmin.route('/UID')
 def uid():
     conn = None
@@ -160,9 +161,11 @@ def uid():
 
     return render_template("superadmin/uid.html", uids=uids)
 
+
 @sadmin.route('/Login')
 def login():
     return render_template("superadmin/login.html")
+
 
 @sadmin.route('/attendance')
 def attendance():
@@ -239,3 +242,13 @@ def attendance():
         selected_section=selected_section,
         attendance_rows=attendance_rows
     )
+
+
+@sadmin.route('/backup-database')
+def backup_database():
+    return "Backup Database"
+
+
+@sadmin.route('/logout')
+def logout():
+    return redirect(url_for('sadmin.login'))

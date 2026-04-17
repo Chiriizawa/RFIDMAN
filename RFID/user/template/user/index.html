@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User RFID Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-200 flex items-center justify-center px-4">
+
+    <div class="w-full max-w-2xl">
+        <div class="bg-white shadow-2xl rounded-3xl overflow-hidden border border-gray-200">
+
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-blue-700 to-indigo-700 px-8 py-6 text-white text-center">
+                <h1 class="text-3xl font-bold">RFID Student Monitor</h1>
+                <p class="text-blue-100 mt-2">Latest student who tapped the RFID card</p>
+            </div>
+
+            <!-- Content -->
+            <div class="p-8">
+                <div class="bg-blue-50 border border-blue-100 rounded-3xl p-8 text-center shadow-sm">
+                    <p class="text-sm uppercase tracking-widest text-blue-500 font-semibold mb-3">
+                        Latest Tap
+                    </p>
+
+                    <h2 id="studentName" class="text-4xl md:text-5xl font-extrabold text-gray-800 leading-tight">
+                        Waiting for scan...
+                    </h2>
+
+                    <div class="mt-8 space-y-3">
+                        <p class="text-lg text-gray-600">
+                            <span class="font-semibold text-gray-800">UID:</span>
+                            <span id="studentUID">—</span>
+                        </p>
+
+                        <p class="text-lg text-gray-600">
+                            <span class="font-semibold text-gray-800">Time:</span>
+                            <span id="scanTime">—</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        async function fetchLatestTap() {
+            try {
+                const response = await fetch("/user/get_latest_tap");
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById("studentName").textContent = data.name || "Waiting for scan...";
+                    document.getElementById("studentUID").textContent = data.uid || "—";
+                    document.getElementById("scanTime").textContent = data.time || "—";
+                }
+            } catch (error) {
+                console.error("Fetch error:", error);
+            }
+        }
+
+        fetchLatestTap();
+        setInterval(fetchLatestTap, 2000);
+    </script>
+
+</body>
+</html>
