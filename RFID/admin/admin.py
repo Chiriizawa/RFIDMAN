@@ -402,14 +402,23 @@ def schedules():
 @admin_bp.route('/history')
 @login_required
 def history():
+    """History page - shows scan records (one per student per day)"""
+    return render_template('history.html')
+
+
+@admin_bp.route('/history/api')
+@login_required
+def history_api():
+    """API endpoint for real-time history updates - one entry per student per day"""
     ensure_connection()
     if conn is None:
-        return render_template('history.html', history=[])
+        return jsonify({"success": False, "message": "Database not connected", "history": []})
 
     try:
         cur = conn.cursor()
+        # Get all scans with student names, ordered by most recent first
         cur.execute("""
-            SELECT
+            SELECT 
                 r.id,
                 r.uid,
                 COALESCE(
@@ -429,23 +438,38 @@ def history():
             LEFT JOIN students s
                 ON UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(r.uid, '')), ' ', ''), '-', ''), ':', ''))
                  = UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(s.uid, '')), ' ', ''), '-', ''), ':', ''))
-            ORDER BY r.created_at DESC;
+            ORDER BY r.created_at DESC
+            LIMIT 500;
         """)
         rows = cur.fetchall()
         cur.close()
 
-        history_list = [{
-            "id": row[0],
-            "uid": format_uid(row[1]) if row[1] else "—",
-            "full_name": row[2] or "Unregistered Card",
-            "timestamp": row[3].strftime("%B %d, %Y  %I:%M %p") if row[3] else "—"
-        } for row in rows]
+        # Process results and filter to one per student per day
+        seen_keys = set()
+        history_list = []
+        
+        for row in rows:
+            # Create a key combining student identifier and date
+            student_id = row[1]  # UID
+            scan_date = row[3].date() if row[3] else None
+            
+            if scan_date:
+                key = f"{student_id}_{scan_date}"
+                if key not in seen_keys:
+                    seen_keys.add(key)
+                    history_list.append({
+                        "id": row[0],
+                        "uid": format_uid(row[1]) if row[1] else "—",
+                        "full_name": row[2] or "Unregistered Card",
+                        "scan_date": scan_date.strftime("%B %d, %Y") if scan_date else "—",
+                        "scan_time": row[3].strftime("%I:%M:%S %p") if row[3] else "—"
+                    })
 
-        return render_template('history.html', history=history_list)
+        return jsonify({"success": True, "history": history_list})
 
     except Exception as e:
-        print("History route error:", e)
-        return render_template('history.html', history=[])
+        print("History API error:", e)
+        return jsonify({"success": False, "message": str(e), "history": []})
 
 
 @admin_bp.route('/history/filter')
@@ -459,7 +483,7 @@ def history_filter():
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT
+            SELECT 
                 r.id,
                 r.uid,
                 COALESCE(
@@ -485,12 +509,25 @@ def history_filter():
         rows = cur.fetchall()
         cur.close()
 
-        result = [{
-            "id": row[0],
-            "uid": format_uid(row[1]) if row[1] else "—",
-            "full_name": row[2] or "Unregistered Card",
-            "timestamp": row[3].strftime("%B %d, %Y  %I:%M %p") if row[3] else "—"
-        } for row in rows]
+        # Filter to one per student per day
+        seen_keys = set()
+        result = []
+        
+        for row in rows:
+            student_id = row[1]
+            scan_date = row[3].date() if row[3] else None
+            
+            if scan_date:
+                key = f"{student_id}_{scan_date}"
+                if key not in seen_keys:
+                    seen_keys.add(key)
+                    result.append({
+                        "id": row[0],
+                        "uid": format_uid(row[1]) if row[1] else "—",
+                        "full_name": row[2] or "Unregistered Card",
+                        "scan_date": scan_date.strftime("%B %d, %Y") if scan_date else "—",
+                        "scan_time": row[3].strftime("%I:%M:%S %p") if row[3] else "—"
+                    })
 
         return jsonify(result)
     except Exception as e:
