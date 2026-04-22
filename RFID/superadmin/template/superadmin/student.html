@@ -6,15 +6,8 @@
 <div class="min-h-screen bg-gray-50 px-4 py-8 md:px-8">
 
   <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
-    <div class="flex items-center gap-x-4">
-      <div></div>
-    </div>
-
+    <div></div>
     <div class="flex items-center gap-3 flex-wrap">
-      <div class="bg-blue-600 text-white text-sm font-medium px-5 py-2.5 rounded-3xl flex items-center gap-2 shadow-sm">
-        <span>{{ students | length }}</span>
-        <span class="text-blue-100">student{{ 's' if students | length != 1 else '' }}</span>
-      </div>
 
       <button type="button"
               onclick="openAddStudentModal()"
@@ -35,7 +28,7 @@
           id="searchInput"
           type="text"
           onkeyup="filterTable()"
-          placeholder="Search name, UID, email..."
+          placeholder="Search name, UID, email, section..."
           class="w-80 pl-11 pr-4 py-3 bg-white border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-3xl text-sm outline-none transition-all">
       </div>
 
@@ -72,7 +65,6 @@
   {% endwith %}
 
   <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
-
     <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-5 flex items-center justify-between text-white">
       <div></div>
       <div class="flex items-center gap-2 text-blue-100 text-sm font-medium">
@@ -91,6 +83,8 @@
             <tr class="border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-widest">
               <th class="text-left py-5 px-4">UID</th>
               <th class="text-left py-5 px-4">Full Name</th>
+              <th class="text-left py-5 px-4">Section</th>
+              <th class="text-left py-5 px-4">Year Level</th>
               <th class="text-left py-5 px-4 w-32">Birthday</th>
               <th class="text-left py-5 px-4 w-40">Contact</th>
               <th class="text-left py-5 px-4">Email</th>
@@ -107,22 +101,29 @@
                   {{ s.uid or '—' }}
                 </code>
               </td>
+
               <td class="py-5 px-4 align-top">
                 <span class="font-semibold text-gray-900">
                   {{ s.last_name }}, {{ s.first_name }}{% if s.middle_name %} {{ s.middle_name }}{% endif %}{% if s.extension %} {{ s.extension }}{% endif %}
                 </span>
               </td>
+
+              <td class="py-5 px-4 text-gray-500 align-top">{{ s.section_name or '—' }}</td>
+              <td class="py-5 px-4 text-gray-500 align-top">{{ s.year_level or '—' }}</td>
               <td class="py-5 px-4 text-gray-500 align-top">{{ s.birthday }}</td>
               <td class="py-5 px-4 text-gray-500 align-top">{{ s.contact_number }}</td>
               <td class="py-5 px-4 text-gray-500 align-top break-all">{{ s.email }}</td>
+
               <td class="py-5 px-4 text-gray-500 text-sm align-top">
                 <div class="schedule-cell whitespace-pre-line leading-6 max-w-xs">
                   {{ s.schedule or '—' }}
                 </div>
               </td>
+
               <td class="py-5 px-4 text-gray-500 text-sm align-top">
                 {{ s.created_at.strftime('%b %d, %Y') if s.created_at else '—' }}
               </td>
+
               <td class="py-5 px-4 align-top">
                 <button
                   type="button"
@@ -132,6 +133,9 @@
                     first_name: {{ (s.first_name or "") | tojson }},
                     middle_name: {{ (s.middle_name or "") | tojson }},
                     extension: {{ (s.extension or "") | tojson }},
+                    section_name: {{ (s.section_name or "—") | tojson }},
+                    year_level: {{ (s.year_level or "—") | tojson }},
+                    teacher_name: {{ (s.teacher_name or "—") | tojson }},
                     birthday: {{ (s.birthday or "—") | string | tojson }},
                     contact_number: {{ (s.contact_number or "—") | tojson }},
                     email: {{ (s.email or "—") | tojson }},
@@ -153,9 +157,7 @@
       </div>
       {% else %}
       <div class="py-20 text-center">
-        <div class="mx-auto w-24 h-24 bg-blue-50 rounded-3xl flex items-center justify-center text-6xl mb-6">
-          🎓
-        </div>
+        <div class="mx-auto w-24 h-24 bg-blue-50 rounded-3xl flex items-center justify-center text-6xl mb-6">🎓</div>
         <h3 class="text-2xl font-semibold text-gray-900 mb-2">No students yet</h3>
         <p class="text-gray-500 max-w-xs mx-auto">When you add your first student, they'll appear here.</p>
       </div>
@@ -166,15 +168,13 @@
 
 <!-- ADD STUDENT MODAL -->
 <div id="addStudentModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 px-4">
-  <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-fadeIn">
-    <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between">
+  <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden animate-fadeIn max-h-[92vh] overflow-y-auto">
+    <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
       <h2 class="text-white text-xl font-semibold">Add New Student</h2>
-      <button type="button" onclick="closeAddStudentModal()" class="text-white text-2xl leading-none hover:opacity-80">
-        &times;
-      </button>
+      <button type="button" onclick="closeAddStudentModal()" class="text-white text-2xl leading-none hover:opacity-80">&times;</button>
     </div>
 
-    <form action="{{ url_for('sregister.add_student') }}" method="POST" class="p-6 space-y-5">
+    <form action="{{ url_for('sregister.add_student') }}" method="POST" class="p-6 space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
         <div>
@@ -189,50 +189,103 @@
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-          <input type="text" name="last_name" required class="w-full px-4 py-3 rounded-2xl border border-gray-200">
+          <input type="text" name="last_name" required class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none">
         </div>
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-          <input type="text" name="first_name" required class="w-full px-4 py-3 rounded-2xl border border-gray-200">
+          <input type="text" name="first_name" required class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none">
         </div>
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Middle Name</label>
-          <input type="text" name="middle_name" class="w-full px-4 py-3 rounded-2xl border border-gray-200">
+          <input type="text" name="middle_name" class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none">
         </div>
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Extension</label>
-          <input type="text" name="extension" class="w-full px-4 py-3 rounded-2xl border border-gray-200">
+          <input type="text" name="extension" placeholder="e.g. Jr., Sr., III" class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none">
         </div>
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Birthday</label>
-          <input type="date" name="birthday" required class="w-full px-4 py-3 rounded-2xl border border-gray-200">
+          <input type="date" name="birthday" required class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none">
         </div>
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Contact Number</label>
-          <input type="text" name="contact_number" required class="w-full px-4 py-3 rounded-2xl border border-gray-200">
+          <input type="text" name="contact_number" required class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none">
         </div>
 
-        <div>
+        <div class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-          <input type="email" name="email" required class="w-full px-4 py-3 rounded-2xl border border-gray-200">
+          <input type="email" name="email" required class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none">
+        </div>
+
+        <!-- SECTION BLOCK -->
+        <div class="md:col-span-2 border border-dashed border-blue-300 rounded-3xl p-5 bg-blue-50/40">
+          <div class="mb-4">
+            <h3 class="text-base font-semibold text-blue-700">Section (Optional)</h3>
+            <p class="text-sm text-gray-500">Pumili ng existing section o gumawa ng bagong section sa baba.</p>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Existing Section</label>
+            <select name="section_id"
+                    class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none bg-white">
+              <option value="">Select existing section</option>
+              {% for section in sections %}
+                <option value="{{ section.id }}">
+                  {{ section.section_name }}{% if section.year_level %} - {{ section.year_level }}{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <p class="text-xs text-gray-400 mb-3">— OR create a new section below —</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">New Section Name</label>
+              <input type="text" name="new_section_name" placeholder="e.g. BSIT-1A"
+                    class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none">
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Year Level</label>
+              <input type="text" name="new_year_level" placeholder="e.g. 1st Year"
+                     class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none">
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Teacher Adviser</label>
+              <select name="new_teacher_id"
+                      class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none bg-white">
+                <option value="">Select teacher (Optional)</option>
+                {% for teacher in teachers %}
+                  <option value="{{ teacher.id }}">
+                    {{ teacher.full_name }}{% if teacher.teacher_id %} ({{ teacher.teacher_id }}){% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
         </div>
 
         <div class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700 mb-2">Schedule</label>
-          <textarea name="schedule" rows="3" required class="w-full px-4 py-3 rounded-2xl border border-gray-200 resize-none"></textarea>
+          <textarea name="schedule" rows="4" required
+                    class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none resize-none"></textarea>
         </div>
       </div>
 
       <div class="flex items-center justify-end gap-3 pt-2">
-        <button type="button" onclick="closeAddStudentModal()" class="px-5 py-3 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-50">
+        <button type="button" onclick="closeAddStudentModal()"
+                class="px-5 py-3 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-50">
           Cancel
         </button>
-        <button type="submit" class="px-6 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm">
+        <button type="submit"
+                class="px-6 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm">
           Save Student
         </button>
       </div>
@@ -242,12 +295,10 @@
 
 <!-- VIEW STUDENT MODAL -->
 <div id="viewStudentModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 px-4">
-  <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-fadeIn">
-    <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between">
+  <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-fadeIn max-h-[92vh] overflow-y-auto">
+    <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
       <h2 class="text-white text-xl font-semibold">Student Details</h2>
-      <button type="button" onclick="closeViewStudentModal()" class="text-white text-2xl leading-none hover:opacity-80">
-        &times;
-      </button>
+      <button type="button" onclick="closeViewStudentModal()" class="text-white text-2xl leading-none hover:opacity-80">&times;</button>
     </div>
 
     <div class="p-6">
@@ -284,6 +335,21 @@
         </div>
 
         <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Section</label>
+          <div id="view_section_name" class="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-800"></div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Year Level</label>
+          <div id="view_year_level" class="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-800"></div>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Teacher Adviser</label>
+          <div id="view_teacher_name" class="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-800"></div>
+        </div>
+
+        <div>
           <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Birthday</label>
           <div id="view_birthday" class="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-gray-800"></div>
         </div>
@@ -305,7 +371,8 @@
       </div>
 
       <div class="flex justify-end pt-5">
-        <button type="button" onclick="closeViewStudentModal()" class="px-6 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm">
+        <button type="button" onclick="closeViewStudentModal()"
+                class="px-6 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm">
           Close
         </button>
       </div>
@@ -320,8 +387,7 @@ function filterTable() {
   const input = document.getElementById('searchInput').value.toLowerCase().trim()
   const rows = document.querySelectorAll('#studentsTable tbody tr')
   rows.forEach(row => {
-    const text = row.textContent.toLowerCase()
-    row.style.display = text.includes(input) ? '' : 'none'
+    row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none'
   })
 }
 
@@ -357,28 +423,27 @@ function closeAddStudentModal() {
 
 function formatSchedule(schedule) {
   if (!schedule || schedule === '—') return '—'
-
-  return schedule
-    .replace(/,\s*(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/g, '\n$1')
-    .trim()
+  return schedule.replace(/,\s*(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/g, '\n$1').trim()
 }
 
 function formatScheduleHtml(schedule) {
-  return formatSchedule(schedule)
-    .replace(/\n/g, '<br>')
+  return formatSchedule(schedule).replace(/\n/g, '<br>')
 }
 
 function openViewStudentModal(student) {
-  document.getElementById('view_uid').textContent = student.uid || '—'
-  document.getElementById('view_created_at').textContent = student.created_at || '—'
-  document.getElementById('view_last_name').textContent = student.last_name || '—'
-  document.getElementById('view_first_name').textContent = student.first_name || '—'
-  document.getElementById('view_middle_name').textContent = student.middle_name || '—'
-  document.getElementById('view_extension').textContent = student.extension || '—'
-  document.getElementById('view_birthday').textContent = student.birthday || '—'
-  document.getElementById('view_contact_number').textContent = student.contact_number || '—'
-  document.getElementById('view_email').textContent = student.email || '—'
-  document.getElementById('view_schedule').textContent = formatSchedule(student.schedule)
+  document.getElementById('view_uid').textContent           = student.uid || '—'
+  document.getElementById('view_created_at').textContent    = student.created_at || '—'
+  document.getElementById('view_last_name').textContent     = student.last_name || '—'
+  document.getElementById('view_first_name').textContent    = student.first_name || '—'
+  document.getElementById('view_middle_name').textContent   = student.middle_name || '—'
+  document.getElementById('view_extension').textContent     = student.extension || '—'
+  document.getElementById('view_section_name').textContent  = student.section_name || '—'
+  document.getElementById('view_year_level').textContent    = student.year_level || '—'
+  document.getElementById('view_teacher_name').textContent  = student.teacher_name || '—'
+  document.getElementById('view_birthday').textContent      = student.birthday || '—'
+  document.getElementById('view_contact_number').textContent= student.contact_number || '—'
+  document.getElementById('view_email').textContent         = student.email || '—'
+  document.getElementById('view_schedule').textContent      = formatSchedule(student.schedule)
 
   const modal = document.getElementById('viewStudentModal')
   modal.classList.remove('hidden')
@@ -392,11 +457,8 @@ function closeViewStudentModal() {
 }
 
 window.addEventListener('click', function(e) {
-  const addModal = document.getElementById('addStudentModal')
-  const viewModal = document.getElementById('viewStudentModal')
-
-  if (e.target === addModal) closeAddStudentModal()
-  if (e.target === viewModal) closeViewStudentModal()
+  if (e.target === document.getElementById('addStudentModal')) closeAddStudentModal()
+  if (e.target === document.getElementById('viewStudentModal')) closeViewStudentModal()
 })
 
 document.addEventListener('keydown', function(e) {
@@ -407,36 +469,22 @@ document.addEventListener('keydown', function(e) {
 })
 
 function excelSerialToDate(serial) {
-  const utc_days = Math.floor(serial - 25569)
-  const utc_value = utc_days * 86400
-  const date_info = new Date(utc_value * 1000)
-  const year = date_info.getUTCFullYear()
-  const month = String(date_info.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(date_info.getUTCDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  const date_info = new Date(Math.floor(serial - 25569) * 86400 * 1000)
+  const y = date_info.getUTCFullYear()
+  const m = String(date_info.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(date_info.getUTCDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 function normalizeBirthday(value) {
   const raw = String(value || '').trim()
-
   if (!raw) return ''
-
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-    return raw
-  }
-
-  if (/^\d+(\.\d+)?$/.test(raw)) {
-    return excelSerialToDate(parseFloat(raw))
-  }
-
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw
+  if (/^\d+(\.\d+)?$/.test(raw)) return excelSerialToDate(parseFloat(raw))
   const parsed = new Date(raw)
   if (!isNaN(parsed.getTime())) {
-    const year = parsed.getFullYear()
-    const month = String(parsed.getMonth() + 1).padStart(2, '0')
-    const day = String(parsed.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
+    return `${parsed.getFullYear()}-${String(parsed.getMonth()+1).padStart(2,'0')}-${String(parsed.getDate()).padStart(2,'0')}`
   }
-
   return raw
 }
 
@@ -444,22 +492,19 @@ function triggerImportFile() {
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = '.csv,.xlsx,.xls'
-  input.onchange = function (e) {
+  input.onchange = function(e) {
     const file = e.target.files[0]
     if (!file) return
-
     const reader = new FileReader()
-    const isExcel = file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')
-
+    const isExcel = /\.(xlsx|xls)$/i.test(file.name)
     if (isExcel) {
-      reader.onload = function (ev) {
-        const data = new Uint8Array(ev.target.result)
-        const wb = XLSX.read(data, { type: 'array' })
+      reader.onload = ev => {
+        const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' })
         processImportedSheet(wb, file.name)
       }
       reader.readAsArrayBuffer(file)
     } else {
-      reader.onload = function (ev) {
+      reader.onload = ev => {
         const wb = XLSX.read(ev.target.result, { type: 'string' })
         processImportedSheet(wb, file.name)
       }
@@ -476,64 +521,35 @@ function processImportedSheet(wb, filename) {
 }
 
 function parseAndImport(rows, filename) {
-  if (rows.length < 2) {
-    alert('❌ No data found in the file.')
-    return
-  }
+  if (rows.length < 2) { alert('❌ No data found in the file.'); return }
 
   const headers = rows[0].map(h => (h || '').toString().trim().toLowerCase())
-  const dataRows = rows.slice(1)
   const students = []
 
-  for (let row of dataRows) {
+  for (let row of rows.slice(1)) {
     if (!row || row.every(cell => cell === '' || cell == null)) continue
-
     const student = {}
-
-    headers.forEach((rawHeader, i) => {
-      let header = (rawHeader || '').toString().trim().toLowerCase()
-      let value = (row[i] ?? '').toString().trim()
-
+    headers.forEach((header, i) => {
+      const value = (row[i] ?? '').toString().trim()
       if (!value) return
-
-      if (header.includes('last')) {
-        student.last_name = value
-      } else if (header.includes('first')) {
-        student.first_name = value
-      } else if (header.includes('middle')) {
-        student.middle_name = value
-      } else if (header.includes('extension') || header.includes('ext')) {
-        student.extension = value
-      } else if (header.includes('birth')) {
-        student.birthday = normalizeBirthday(value)
-      } else if (header.includes('contact') || header.includes('phone') || header.includes('number')) {
-        student.contact_number = value
-      } else if (header.includes('email')) {
-        student.email = value
-      } else if (header.includes('schedule') || header.includes('sched')) {
-        student.schedule = value
-      }
+      if (header.includes('last'))                                       student.last_name      = value
+      else if (header.includes('first'))                                 student.first_name     = value
+      else if (header.includes('middle'))                                student.middle_name    = value
+      else if (header.includes('extension') || header.includes('ext'))  student.extension      = value
+      else if (header.includes('birth'))                                 student.birthday       = normalizeBirthday(value)
+      else if (header.includes('contact') || header.includes('phone') || header.includes('number')) student.contact_number = value
+      else if (header.includes('email'))                                 student.email          = value
+      else if (header.includes('schedule') || header.includes('sched')) student.schedule       = value
+      else if (header.includes('section'))                               student.section_name   = value
+      else if (header.includes('year'))                                  student.year_level     = value
     })
-
-    if (
-      student.last_name &&
-      student.first_name &&
-      student.birthday &&
-      student.contact_number &&
-      student.email &&
-      student.schedule
-    ) {
+    if (student.last_name && student.first_name && student.birthday && student.contact_number && student.email && student.schedule) {
       students.push(student)
     }
   }
 
   if (students.length === 0) {
-    alert(
-      '❌ No valid student rows found.\n\n' +
-      'Make sure your file has columns like:\n' +
-      'last_name, first_name, middle_name, extension, birthday, contact_number, email, schedule\n\n' +
-      '⚠️ UID is NOT required because it will be auto linked from available RFID cards.'
-    )
+    alert('❌ No valid student rows found.\n\nMake sure your file has columns like:\nlast_name, first_name, middle_name, extension, birthday, contact_number, email, schedule, section_name, year_level\n\n⚠️ UID is NOT required — it will be auto-linked from available RFID cards.')
     return
   }
 
@@ -541,7 +557,7 @@ function parseAndImport(rows, filename) {
     fetch('/superadmin/import-excel', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ students: students })
+      body: JSON.stringify({ students })
     })
     .then(async res => {
       const data = await res.json().catch(() => ({}))
@@ -552,13 +568,11 @@ function parseAndImport(rows, filename) {
       alert(data.message || `🎉 Successfully imported ${students.length} students!`)
       window.location.reload()
     })
-    .catch(err => {
-      alert(`❌ ${err.message || 'Import failed.'}`)
-    })
+    .catch(err => alert(`❌ ${err.message || 'Import failed.'}`))
   }
 }
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.schedule-cell').forEach(el => {
     el.innerHTML = formatScheduleHtml(el.textContent)
   })
@@ -571,11 +585,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   @keyframes fadeIn {
     from { opacity: 0; transform: scale(0.96); }
-    to { opacity: 1; transform: scale(1); }
+    to   { opacity: 1; transform: scale(1); }
   }
 
-  .animate-fadeIn {
-    animation: fadeIn 0.2s ease-out;
-  }
+  .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
 </style>
 {% endblock %}
