@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, jsonify, request, redirect, url_for, flash, session
 import psycopg2
+import psycopg2.extras
 import serial
 import threading
 import time
@@ -22,36 +23,47 @@ latest_scan = {
 }
 
 # =========================
-# DB CONNECTION
+# DB CONNECTION - SUPABASE VERSION
 # =========================
 
-def get_connection():
-    return psycopg2.connect(
-        host=os.getenv("DB_HOST", "localhost"),
-        database=os.getenv("DB_NAME", "RFID"),
-        user=os.getenv("DB_USER", "postgres"),
-        password=os.getenv("DB_PASSWORD", ""),
-        port=os.getenv("DB_PORT", "5432")
-    )
-
-conn = None
-try:
-    conn = get_connection()
-    conn.autocommit = True
-    print("Connected to PostgreSQL successfully.")
-except Exception as e:
-    print("Database connection error:", e)
-
-def ensure_connection():
-    global conn
+def get_db_connection():
+    """Create a new database connection to Supabase"""
     try:
-        if conn is None or conn.closed != 0:
-            conn = get_connection()
-            conn.autocommit = True
+        conn = psycopg2.connect(
+            host=os.getenv("DB_HOST"),
+            database=os.getenv("DB_NAME"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            port=os.getenv("DB_PORT"),
+            sslmode='require'  # Required for Supabase
+        )
+        conn.autocommit = True
+        return conn
     except Exception as e:
-        print("Reconnect failed:", e)
-        conn = None
+        print(f"Database connection error: {e}")
+        return None
 
+def get_connection():
+    """Get a database connection (creates new one if needed)"""
+    try:
+        conn = get_db_connection()
+        if conn:
+            return conn
+        else:
+            return None
+    except Exception as e:
+        print(f"Connection error: {e}")
+        return None
+
+# Test connection on startup
+print("Testing Supabase connection...")
+print(f"Connecting to: {os.getenv('DB_HOST')}")
+test_conn = get_connection()
+if test_conn:
+    print("✓ Supabase connected successfully")
+    test_conn.close()
+else:
+    print("✗ Supabase connection failed! Please check your .env file")
 
 # =========================
 # SERIAL CONNECTION
@@ -63,7 +75,7 @@ try:
     print("Serial connected on COM3")
     time.sleep(2)
 except Exception as e:
-    print("Serial connection error:", e)
+    print(f"Serial connection error: {e}")
 
 
 # =========================
@@ -103,13 +115,13 @@ def build_full_name(first_name, middle_name, last_name, extension):
     return " ".join([p for p in parts if p])
 
 def get_all_students():
-    ensure_connection()
+    conn = get_connection()
     if conn is None:
         print("Database connection failed in get_all_students")
         return []
 
     try:
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cur.execute("""
             SELECT 
                 id,
@@ -129,13 +141,17 @@ def get_all_students():
         """)
         rows = cur.fetchall()
         cur.close()
+        conn.close()
         return rows
     except Exception as e:
-        print("get_all_students error:", e)
+        print(f"get_all_students error: {e}")
         return []
+    finally:
+        if conn:
+            conn.close()
 
 def get_student_name_by_uid(uid):
-    ensure_connection()
+    conn = get_connection()
     if conn is None:
         return ""
 
@@ -151,6 +167,7 @@ def get_student_name_by_uid(uid):
         """, (uid,))
         row = cur.fetchone()
         cur.close()
+        conn.close()
 
         if not row:
             return ""
@@ -158,11 +175,14 @@ def get_student_name_by_uid(uid):
         return build_full_name(row[0], row[1], row[2], row[3])
 
     except Exception as e:
-        print("get_student_name_by_uid error:", e)
+        print(f"get_student_name_by_uid error: {e}")
         return ""
+    finally:
+        if conn:
+            conn.close()
 
 def save_uid_to_db(uid):
-    ensure_connection()
+    conn = get_connection()
     if conn is None:
         return
 
@@ -177,16 +197,21 @@ def save_uid_to_db(uid):
         """, (uid,))
         if cur.fetchone():
             cur.close()
+            conn.close()
             return
 
         cur.execute("INSERT INTO rfid_cards (uid) VALUES (%s);", (uid,))
         cur.close()
+        conn.close()
         print(f"UID saved: {uid}")
     except Exception as e:
-        print("Database insert error:", e)
+        print(f"Database insert error: {e}")
+    finally:
+        if conn:
+            conn.close()
 
 def save_student_to_db(uid, first_name, middle_name, last_name, extension, birthday, contact_number, email, schedule_text, section_id=None):
-    ensure_connection()
+    conn = get_connection()
     if conn is None:
         raise Exception("Database not connected")
 
@@ -219,10 +244,15 @@ def save_student_to_db(uid, first_name, middle_name, last_name, extension, birth
             schedule_text,
             section_id
         ))
+        conn.commit()
         cur.close()
+        conn.close()
     except Exception as e:
-        print("Save student error:", e)
+        print(f"Save student error: {e}")
         raise
+    finally:
+        if conn:
+            conn.close()
 
 
 # =========================
@@ -266,10 +296,15 @@ def listen():
                     "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
         except Exception as e:
-            print("Serial read error:", e)
+            print(f"Serial read error: {e}")
         time.sleep(0.2)
 
-threading.Thread(target=listen, daemon=True).start()
+# Start RFID listener thread
+if ser and ser.is_open:
+    threading.Thread(target=listen, daemon=True).start()
+    print("RFID listener thread started")
+else:
+    print("RFID listener not started - no serial connection")
 
 
 # =========================
@@ -293,21 +328,56 @@ def get_latest():
 
 @admin_bp.route('/test_db')
 def test_db():
-    ensure_connection()
-    if conn is None:
-        return jsonify({"status": "error", "message": "Database not connected"})
-
+    """Test database connection"""
     try:
+        conn = get_connection()
+        if conn is None:
+            return jsonify({
+                "status": "error", 
+                "message": "Database connection failed. Check your .env file and Supabase credentials"
+            })
+        
         cur = conn.cursor()
         cur.execute("SELECT NOW();")
         result = cur.fetchone()
         cur.close()
+        conn.close()
+        
+        # Test if teachers table exists
+        conn2 = get_connection()
+        cur2 = conn2.cursor()
+        cur2.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'teachers'
+            );
+        """)
+        teachers_exists = cur2.fetchone()[0]
+        cur2.close()
+        conn2.close()
+        
+        # Test if teacher_accounts table exists
+        conn3 = get_connection()
+        cur3 = conn3.cursor()
+        cur3.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'teacher_accounts'
+            );
+        """)
+        accounts_exists = cur3.fetchone()[0]
+        cur3.close()
+        conn3.close()
+        
         return jsonify({
             "status": "success",
-            "message": "Database connected successfully",
-            "server_time": str(result[0])
+            "message": "Supabase connected successfully",
+            "server_time": str(result[0]),
+            "teachers_table_exists": teachers_exists,
+            "teacher_accounts_table_exists": accounts_exists
         })
     except Exception as e:
+        print(f"Test DB error: {e}")
         return jsonify({"status": "error", "message": str(e)})
 
 
@@ -346,7 +416,7 @@ def registered_students():
 @admin_bp.route('/schedules')
 @login_required
 def schedules():
-    ensure_connection()
+    conn = get_connection()
     if conn is None:
         return render_template('schedules.html', schedules=[])
 
@@ -372,6 +442,7 @@ def schedules():
         """)
         rows = cur.fetchall()
         cur.close()
+        conn.close()
 
         schedule_list = []
         for row in rows:
@@ -395,8 +466,11 @@ def schedules():
 
         return render_template('schedules.html', schedules=schedule_list)
     except Exception as e:
-        print("Schedules error:", e)
+        print(f"Schedules error: {e}")
         return render_template('schedules.html', schedules=[])
+    finally:
+        if conn:
+            conn.close()
 
 
 @admin_bp.route('/history')
@@ -410,13 +484,12 @@ def history():
 @login_required
 def history_api():
     """API endpoint for real-time history updates - one entry per student per day"""
-    ensure_connection()
+    conn = get_connection()
     if conn is None:
         return jsonify({"success": False, "message": "Database not connected", "history": []})
 
     try:
         cur = conn.cursor()
-        # Get all scans with student names, ordered by most recent first
         cur.execute("""
             SELECT 
                 r.id,
@@ -443,14 +516,13 @@ def history_api():
         """)
         rows = cur.fetchall()
         cur.close()
+        conn.close()
 
-        # Process results and filter to one per student per day
         seen_keys = set()
         history_list = []
         
         for row in rows:
-            # Create a key combining student identifier and date
-            student_id = row[1]  # UID
+            student_id = row[1]
             scan_date = row[3].date() if row[3] else None
             
             if scan_date:
@@ -468,14 +540,17 @@ def history_api():
         return jsonify({"success": True, "history": history_list})
 
     except Exception as e:
-        print("History API error:", e)
+        print(f"History API error: {e}")
         return jsonify({"success": False, "message": str(e), "history": []})
+    finally:
+        if conn:
+            conn.close()
 
 
 @admin_bp.route('/history/filter')
 @login_required
 def history_filter():
-    ensure_connection()
+    conn = get_connection()
     selected_date = request.args.get('date')
     if not selected_date:
         return jsonify([])
@@ -508,8 +583,8 @@ def history_filter():
         """, (selected_date,))
         rows = cur.fetchall()
         cur.close()
+        conn.close()
 
-        # Filter to one per student per day
         seen_keys = set()
         result = []
         
@@ -531,42 +606,189 @@ def history_filter():
 
         return jsonify(result)
     except Exception as e:
-        print("History filter error:", e)
+        print(f"History filter error: {e}")
         return jsonify([])
+    finally:
+        if conn:
+            conn.close()
+
+
+# =========================
+# TEACHER DB FUNCTIONS
+# =========================
+
+def get_teacher_by_email(email):
+    """
+    Fetch teacher info + account by email.
+    Joins teachers + teacher_accounts tables.
+    Returns a dict or None.
+    """
+    conn = get_connection()
+    if conn is None:
+        print("No database connection")
+        return None
+
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("""
+            SELECT
+                t.id,
+                t.teacher_id,
+                t.first_name,
+                t.middle_name,
+                t.last_name,
+                t.email,
+                t.contact_number,
+                t.profile_image,
+                t.created_at,
+                ta.password,
+                ta.id AS account_id
+            FROM teachers t
+            INNER JOIN teacher_accounts ta ON ta.teacher_id = t.id
+            WHERE LOWER(TRIM(t.email)) = LOWER(TRIM(%s))
+            LIMIT 1;
+        """, (email,))
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        if not row:
+            print(f"No teacher found with email: {email}")
+            return None
+
+        full_name = build_full_name(row['first_name'], row['middle_name'], row['last_name'], None)
+
+        return {
+            "id": row['id'],
+            "teacher_id": row['teacher_id'],
+            "first_name": row['first_name'],
+            "middle_name": row['middle_name'],
+            "last_name": row['last_name'],
+            "full_name": full_name,
+            "email": row['email'],
+            "contact_number": row['contact_number'],
+            "profile_picture": row['profile_image'],
+            "created_at": row['created_at'],
+            "password_hash": row['password'],
+            "account_id": row['account_id'],
+        }
+    except Exception as e:
+        print(f"get_teacher_by_email error: {e}")
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_teacher_by_id(teacher_db_id):
+    """
+    Fetch teacher info by primary key (teachers.id).
+    Returns a dict or None.
+    """
+    conn = get_connection()
+    if conn is None:
+        return None
+
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("""
+            SELECT
+                t.id,
+                t.teacher_id,
+                t.first_name,
+                t.middle_name,
+                t.last_name,
+                t.email,
+                t.contact_number,
+                t.profile_image,
+                t.created_at
+            FROM teachers t
+            WHERE t.id = %s
+            LIMIT 1;
+        """, (teacher_db_id,))
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        if not row:
+            return None
+
+        full_name = build_full_name(row['first_name'], row['middle_name'], row['last_name'], None)
+
+        return {
+            "id": row['id'],
+            "teacher_id": row['teacher_id'],
+            "first_name": row['first_name'],
+            "middle_name": row['middle_name'],
+            "last_name": row['last_name'],
+            "full_name": full_name,
+            "email": row['email'],
+            "contact_number": row['contact_number'],
+            "profile_picture": row['profile_image'],
+            "created_at": row['created_at'],
+        }
+    except Exception as e:
+        print(f"get_teacher_by_id error: {e}")
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+
+def update_teacher_in_db(teacher_db_id, fields: dict):
+    """
+    Update allowed fields in the teachers table.
+    """
+    conn = get_connection()
+    if conn is None:
+        raise Exception("Database not connected")
+
+    allowed = {"first_name", "middle_name", "last_name", "contact_number"}
+    updates = {k: v for k, v in fields.items() if k in allowed}
+
+    if not updates:
+        return
+
+    set_clause = ", ".join([f"{col} = %s" for col in updates.keys()])
+    values = list(updates.values()) + [teacher_db_id]
+
+    try:
+        cur = conn.cursor()
+        cur.execute(f"UPDATE teachers SET {set_clause} WHERE id = %s;", values)
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"update_teacher_in_db error: {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
+
+
+def update_teacher_profile_image(teacher_db_id, image_path):
+    """Update the profile_image column for a teacher."""
+    conn = get_connection()
+    if conn is None:
+        raise Exception("Database not connected")
+
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE teachers SET profile_image = %s WHERE id = %s;", (image_path, teacher_db_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"update_teacher_profile_image error: {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
 
 
 # =========================
 # TEACHER LOGIN & PROFILE
 # =========================
-
-TEACHERS = {
-    "teacher@tapandknow.com": {
-        "id": 1,
-        "full_name": "Mr. Juan Dela Cruz",
-        "email": "teacher@tapandknow.com",
-        "password_hash": generate_password_hash("teacher123"),
-        "subject": "Mathematics",
-        "contact_number": "09123456789",
-        "department": "STEM",
-        "bio": "Senior Mathematics teacher with 12 years experience.",
-        "profile_picture": None,
-        "created_at": datetime.now()
-    }
-}
-
-def get_teacher_by_identifier(identifier):
-    identifier = str(identifier).lower().strip()
-    for email, data in TEACHERS.items():
-        if email.lower() == identifier:
-            return data
-    return None
-
-def get_teacher_by_id(teacher_id):
-    for data in TEACHERS.values():
-        if data.get("id") == teacher_id:
-            return data
-    return None
-
 
 @admin_bp.route('/teacher/login', methods=['GET', 'POST'])
 def teacher_login():
@@ -574,15 +796,24 @@ def teacher_login():
         identifier = request.form.get('identifier', '').strip()
         password = request.form.get('password', '')
 
-        teacher = get_teacher_by_identifier(identifier)
-        if teacher and check_password_hash(teacher['password_hash'], password):
-            session.permanent = True
-            session['teacher_logged_in'] = True
-            session['teacher_id'] = teacher['id']
-            session['teacher_email'] = teacher['email']
-            flash('Login successful!', 'success')
-            return redirect(url_for('admin_bp.teacher_profile'))
+        print(f"Login attempt for: {identifier}")
+
+        teacher = get_teacher_by_email(identifier)
+
+        if teacher:
+            print(f"Teacher found: {teacher['email']}")
+            if check_password_hash(teacher['password_hash'], password):
+                session.permanent = True
+                session['teacher_logged_in'] = True
+                session['teacher_id'] = teacher['id']
+                session['teacher_email'] = teacher['email']
+                flash('Login successful!', 'success')
+                return redirect(url_for('admin_bp.teacher_profile'))
+            else:
+                print("Password mismatch")
+                flash('Invalid email or password.', 'error')
         else:
+            print("Teacher not found")
             flash('Invalid email or password.', 'error')
 
     return render_template('login.html')
@@ -603,27 +834,29 @@ def teacher_profile():
 @admin_bp.route('/teacher/update_profile', methods=['POST'])
 @login_required
 def update_teacher_profile():
-    if not session.get('teacher_logged_in'):
-        return jsonify({"success": False, "message": "Not logged in"}), 401
-
     data = request.get_json()
     teacher_id = session.get('teacher_id')
 
-    for email, teacher in TEACHERS.items():
-        if teacher.get("id") == teacher_id:
-            if "full_name" in data:
-                teacher["full_name"] = data["full_name"]
-            if "subject" in data:
-                teacher["subject"] = data["subject"]
-            if "department" in data:
-                teacher["department"] = data["department"]
-            if "contact_number" in data:
-                teacher["contact_number"] = data["contact_number"]
-            if "bio" in data:
-                teacher["bio"] = data["bio"]
-            break
+    if not teacher_id:
+        return jsonify({"success": False, "message": "Not logged in"}), 401
 
-    return jsonify({"success": True, "message": "Profile updated successfully"})
+    try:
+        fields = {}
+        if "first_name" in data:
+            fields["first_name"] = data["first_name"]
+        if "middle_name" in data:
+            fields["middle_name"] = data["middle_name"]
+        if "last_name" in data:
+            fields["last_name"] = data["last_name"]
+        if "contact_number" in data:
+            fields["contact_number"] = data["contact_number"]
+
+        update_teacher_in_db(teacher_id, fields)
+        return jsonify({"success": True, "message": "Profile updated successfully"})
+
+    except Exception as e:
+        print(f"update_teacher_profile error: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
 
 
 @admin_bp.route('/teacher/logout')
@@ -640,28 +873,28 @@ UPLOAD_FOLDER = 'static/uploads/teachers'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @admin_bp.route('/teacher/upload_profile_pic', methods=['POST'])
+@login_required
 def upload_teacher_profile_pic():
-    if not session.get('teacher_logged_in'):
-        return jsonify({"success": False, "message": "Not logged in"})
-
     if 'profile_picture' not in request.files:
-        return jsonify({"success": False, "message": "No file"})
+        return jsonify({"success": False, "message": "No file provided"})
 
     file = request.files['profile_picture']
     if file.filename == '':
-        return jsonify({"success": False, "message": "No selected file"})
+        return jsonify({"success": False, "message": "No file selected"})
 
     if file:
-        filename = secure_filename(f"teacher_{session.get('teacher_id')}_{file.filename}")
+        teacher_id = session.get('teacher_id')
+        filename = secure_filename(f"teacher_{teacher_id}_{file.filename}")
         save_path = os.path.join(UPLOAD_FOLDER, filename)
         file.save(save_path)
 
-        teacher_id = session.get('teacher_id')
-        for data in TEACHERS.values():
-            if data["id"] == teacher_id:
-                data["profile_picture"] = f"/static/uploads/teachers/{filename}"
-                break
+        image_url = f"/static/uploads/teachers/{filename}"
 
-        return jsonify({"success": True, "image_url": f"/static/uploads/teachers/{filename}"})
+        try:
+            update_teacher_profile_image(teacher_id, image_url)
+        except Exception as e:
+            return jsonify({"success": False, "message": f"File saved but DB update failed: {e}"})
+
+        return jsonify({"success": True, "image_url": image_url})
 
     return jsonify({"success": False, "message": "Upload failed"})
