@@ -4,9 +4,7 @@
 
 {% block content %}
 
-<!-- CONTAINER (SMALL MARGIN ONLY) -->
 <div class="px-3 sm:px-4 md:px-6 space-y-8">
-
 
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 py-3">
@@ -58,7 +56,7 @@
     </div>
 
     <!-- Alerts -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
 
         <div class="bg-white rounded-3xl shadow-sm border p-5">
             <p class="text-sm text-gray-500">Unlinked RFID</p>
@@ -73,6 +71,11 @@
         <div class="bg-white rounded-3xl shadow-sm border p-5">
             <p class="text-sm text-gray-500">Sections Without Teacher</p>
             <h3 class="text-2xl font-bold text-blue-600 mt-2">{{ sections_without_teacher or 0 }}</h3>
+        </div>
+
+        <div class="bg-white rounded-3xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">Teachers Without Section</p>
+            <h3 class="text-2xl font-bold text-purple-600 mt-2">{{ teachers_without_section or 0 }}</h3>
         </div>
 
     </div>
@@ -104,6 +107,8 @@
                                     <span class="text-green-600 font-semibold">Present</span>
                                 {% elif activity.status == 'Late' %}
                                     <span class="text-yellow-600 font-semibold">Late</span>
+                                {% elif activity.status == 'Registered' %}
+                                    <span class="text-blue-600 font-semibold">Registered</span>
                                 {% else %}
                                     <span class="text-red-600 font-semibold">{{ activity.status }}</span>
                                 {% endif %}
@@ -133,7 +138,9 @@
                     <tr class="bg-gray-50 border-b text-gray-600">
                         <th class="py-3 px-4 text-left">Teacher</th>
                         <th class="py-3 px-4 text-left">Email</th>
+                        <th class="py-3 px-4 text-left">Contact</th>
                         <th class="py-3 px-4 text-left">Sections</th>
+                        <th class="py-3 px-4 text-left">Status</th>
                     </tr>
                 </thead>
 
@@ -141,15 +148,63 @@
                     {% if teachers_overview %}
                         {% for teacher in teachers_overview %}
                         <tr class="hover:bg-gray-50">
-                            <td class="py-3 px-4">{{ teacher.name }}</td>
-                            <td class="py-3 px-4">{{ teacher.email }}</td>
-                            <td class="py-3 px-4">{{ teacher.total_sections }}</td>
+                            <td class="py-3 px-4">{{ teacher.full_name }}</td>
+                            <td class="py-3 px-4">{{ teacher.email or '—' }}</td>
+                            <td class="py-3 px-4">{{ teacher.contact_number or '—' }}</td>
+                            <td class="py-3 px-4">{{ teacher.total_sections or 0 }}</td>
+                            <td class="py-3 px-4">
+                                {% if teacher.total_sections == 0 %}
+                                    <span class="px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-700">
+                                        No Section
+                                    </span>
+                                {% else %}
+                                    <span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">
+                                        Assigned
+                                    </span>
+                                {% endif %}
+                            </td>
                         </tr>
                         {% endfor %}
                     {% else %}
                         <tr>
-                            <td colspan="3" class="text-center py-6 text-gray-500">
+                            <td colspan="5" class="text-center py-6 text-gray-500">
                                 No teacher data
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+
+    <!-- Teachers Without Section List -->
+    <div class="bg-white rounded-3xl shadow-sm border p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-5">Teachers Without Section</h3>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead>
+                    <tr class="bg-gray-50 border-b text-gray-600">
+                        <th class="py-3 px-4 text-left">Teacher</th>
+                        <th class="py-3 px-4 text-left">Email</th>
+                        <th class="py-3 px-4 text-left">Contact</th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y">
+                    {% if teachers_without_section_list %}
+                        {% for teacher in teachers_without_section_list %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="py-3 px-4">{{ teacher.full_name }}</td>
+                            <td class="py-3 px-4">{{ teacher.email or '—' }}</td>
+                            <td class="py-3 px-4">{{ teacher.contact_number or '—' }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center py-6 text-gray-500">
+                                All teachers already have sections
                             </td>
                         </tr>
                     {% endif %}

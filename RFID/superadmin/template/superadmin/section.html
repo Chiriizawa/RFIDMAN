@@ -61,7 +61,7 @@
 
     <div class="bg-white rounded-[28px] overflow-hidden card-shadow">
         <div class="top-gradient px-7 py-5 flex items-center justify-between">
-            <h2 class="text-white text-xl font-semibold">Sections</h2>
+            <h2 class="text-white text-xl font-semibold"></h2>
             <span class="bg-white/20 text-white px-4 py-2 rounded-full text-sm">
                 {{ total_sections }} record{{ '' if total_sections == 1 else 's' }}
             </span>
@@ -71,12 +71,10 @@
             <table class="min-w-full">
                 <thead class="bg-white border-b">
                     <tr class="table-head text-slate-500 uppercase text-left">
-                        <th class="px-6 py-6">ID</th>
                         <th class="px-6 py-6">Section Name</th>
                         <th class="px-6 py-6">Year Level</th>
                         <th class="px-6 py-6">Adviser</th>
                         <th class="px-6 py-6">Students</th>
-                        <th class="px-6 py-6">Created</th>
                         <th class="px-6 py-6 text-center">Action</th>
                     </tr>
                 </thead>
@@ -84,11 +82,7 @@
                     {% if sections %}
                         {% for section in sections %}
                             <tr class="border-b last:border-b-0 hover:bg-slate-50 transition">
-                                <td class="px-6 py-6">
-                                    <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold">
-                                        {{ section.id }}
-                                    </span>
-                                </td>
+                                
 
                                 <td class="px-6 py-6 font-semibold text-slate-800">
                                     {{ section.section_name }}
@@ -104,10 +98,6 @@
 
                                 <td class="px-6 py-6 text-slate-600">
                                     {{ section.total_students }}
-                                </td>
-
-                                <td class="px-6 py-6 text-slate-500">
-                                    {{ section.created_at.strftime('%b %d, %Y') if section.created_at else '—' }}
                                 </td>
 
                                 <td class="px-6 py-6">
@@ -159,6 +149,7 @@
             <input type="hidden" name="action" value="add_section">
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Section Name</label>
                     <input type="text"
@@ -169,40 +160,58 @@
 
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Year Level</label>
+
                     <select name="year_level"
                             class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
+
                         <option value="">Select Year Level</option>
-                        <option value="1st Year">1st Year</option>
-                        <option value="2nd Year">2nd Year</option>
-                        <option value="3rd Year">3rd Year</option>
-                        <option value="4th Year">4th Year</option>
+
+                        <option value="Grade 11">
+                            Grade 11
+                        </option>
+
+                        <option value="Grade 12">
+                            Grade 12
+                        </option>
+
                     </select>
                 </div>
+
             </div>
 
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-2">Adviser</label>
+
                 <select name="teacher_id"
                         class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
+
                     <option value="">No Adviser</option>
+
                     {% for teacher in teachers %}
                         <option value="{{ teacher.id }}">
-                            {{ teacher.last_name }}, {{ teacher.first_name }}{% if teacher.middle_name %} {{ teacher.middle_name }}{% endif %}
+                            {{ teacher.last_name }}, {{ teacher.first_name }}
+                            {% if teacher.middle_name %}
+                                {{ teacher.middle_name }}
+                            {% endif %}
                         </option>
                     {% endfor %}
+
                 </select>
             </div>
 
             <div class="flex justify-end gap-3 pt-2">
+
                 <button type="button"
                         onclick="closeAddModal()"
                         class="px-5 py-3 rounded-2xl border font-semibold text-slate-700">
                     Cancel
                 </button>
+
                 <button type="submit"
                         class="px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-semibold">
                     Save Section
                 </button>
+
             </div>
         </form>
     </div>
@@ -211,18 +220,24 @@
 <!-- Edit Modal -->
 <div id="editModal" class="fixed inset-0 hidden items-center justify-center modal-backdrop z-50 p-4">
     <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden">
+
         <div class="top-gradient px-6 py-4 flex items-center justify-between">
             <h3 class="text-white text-xl font-semibold">Edit Section</h3>
             <button type="button" onclick="closeEditModal()" class="text-white text-2xl">&times;</button>
         </div>
 
         <form method="POST" class="p-6 space-y-5">
+
             <input type="hidden" name="action" value="edit_section">
             <input type="hidden" name="section_id" id="edit_section_id">
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Section Name</label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">
+                        Section Name
+                    </label>
+
                     <input type="text"
                            name="section_name"
                            id="edit_section_name"
@@ -231,43 +246,66 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Year Level</label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">
+                        Year Level
+                    </label>
+
                     <select name="year_level"
                             id="edit_year_level"
                             class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
+
                         <option value="">Select Year Level</option>
-                        <option value="1st Year">1st Year</option>
-                        <option value="2nd Year">2nd Year</option>
-                        <option value="3rd Year">3rd Year</option>
-                        <option value="4th Year">4th Year</option>
+
+                        <option value="Grade 11">
+                            Grade 11
+                        </option>
+
+                        <option value="Grade 12">
+                            Grade 12
+                        </option>
+
                     </select>
                 </div>
+
             </div>
 
             <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-2">Adviser</label>
+
+                <label class="block text-sm font-semibold text-slate-700 mb-2">
+                    Adviser
+                </label>
+
                 <select name="teacher_id"
                         id="edit_teacher_id"
                         class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
+
                     <option value="">No Adviser</option>
+
                     {% for teacher in teachers %}
                         <option value="{{ teacher.id }}">
-                            {{ teacher.last_name }}, {{ teacher.first_name }}{% if teacher.middle_name %} {{ teacher.middle_name }}{% endif %}
+                            {{ teacher.last_name }}, {{ teacher.first_name }}
+                            {% if teacher.middle_name %}
+                                {{ teacher.middle_name }}
+                            {% endif %}
                         </option>
                     {% endfor %}
+
                 </select>
             </div>
 
             <div class="flex justify-end gap-3 pt-2">
+
                 <button type="button"
                         onclick="closeEditModal()"
                         class="px-5 py-3 rounded-2xl border font-semibold text-slate-700">
                     Cancel
                 </button>
+
                 <button type="submit"
                         class="px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-semibold">
                     Update Section
                 </button>
+
             </div>
         </form>
     </div>
@@ -275,13 +313,16 @@
 
 <!-- Delete Modal -->
 <div id="deleteModal" class="fixed inset-0 hidden items-center justify-center modal-backdrop z-50 p-4">
+
     <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden">
+
         <div class="top-gradient px-6 py-4 flex items-center justify-between">
             <h3 class="text-white text-xl font-semibold">Delete Section</h3>
             <button type="button" onclick="closeDeleteModal()" class="text-white text-2xl">&times;</button>
         </div>
 
         <form method="POST" class="p-6">
+
             <input type="hidden" name="action" value="delete_section">
             <input type="hidden" name="section_id" id="delete_section_id">
 
@@ -291,21 +332,25 @@
             </p>
 
             <div class="flex justify-end gap-3 pt-6">
+
                 <button type="button"
                         onclick="closeDeleteModal()"
                         class="px-5 py-3 rounded-2xl border font-semibold text-slate-700">
                     Cancel
                 </button>
+
                 <button type="submit"
                         class="px-5 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-semibold">
                     Delete
                 </button>
+
             </div>
         </form>
     </div>
 </div>
 
 <script>
+
     function openAddModal() {
         document.getElementById('addModal').classList.remove('hidden');
         document.getElementById('addModal').classList.add('flex');
@@ -317,6 +362,7 @@
     }
 
     function openEditModal(id, sectionName, yearLevel, teacherId) {
+
         document.getElementById('edit_section_id').value = id;
         document.getElementById('edit_section_name').value = sectionName;
         document.getElementById('edit_year_level').value = yearLevel;
@@ -332,6 +378,7 @@
     }
 
     function openDeleteModal(id, sectionName) {
+
         document.getElementById('delete_section_id').value = id;
         document.getElementById('delete_section_name').textContent = sectionName;
 
@@ -343,5 +390,8 @@
         document.getElementById('deleteModal').classList.add('hidden');
         document.getElementById('deleteModal').classList.remove('flex');
     }
+
 </script>
+
 {% endblock %}
+```

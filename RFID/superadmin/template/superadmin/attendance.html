@@ -6,54 +6,35 @@
 <div class="px-3 sm:px-4 md:px-6 space-y-6">
 
     <!-- Header -->
-    <div class=" p-4">
-        
-    </div>
+    <div class="p-4"></div>
 
-    <!-- Filter -->
+    <!-- Real-Time Filter -->
     <div class="bg-white rounded-3xl shadow-sm border p-6">
-        <form method="GET" action="{{ url_for('sadmin.attendance') }}" class="flex flex-col md:flex-row md:items-end gap-4">
+        <div class="flex flex-col md:flex-row md:items-end gap-4">
             <div class="w-full md:w-96">
-                <label for="section" class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="sectionFilter" class="block text-sm font-medium text-gray-700 mb-2">
                     Filter by Section
                 </label>
                 <select
-                    id="section"
-                    name="section"
+                    id="sectionFilter"
                     class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 >
                     <option value="">All Sections</option>
                     {% for section in sections %}
-                        <option value="{{ section.id }}" {% if selected_section == section.id|string %}selected{% endif %}>
+                        <option value="{{ section.section_name }}">
                             {{ section.section_name }}
                         </option>
                     {% endfor %}
                 </select>
             </div>
-
-            <div class="flex gap-3">
-                <button
-                    type="submit"
-                    class="rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 text-sm font-semibold transition"
-                >
-                    Filter
-                </button>
-
-                <a
-                    href="{{ url_for('sadmin.attendance') }}"
-                    class="rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-3 text-sm font-semibold transition"
-                >
-                    Reset
-                </a>
-            </div>
-        </form>
+        </div>
     </div>
 
     <!-- Table -->
     <div class="bg-white rounded-3xl shadow-sm border p-6">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
             <h3 class="text-lg font-semibold text-gray-800">Attendance Records</h3>
-            <span class="text-sm text-gray-500">
+            <span id="totalCount" class="text-sm text-gray-500">
                 Total: {{ attendance_rows|length if attendance_rows else 0 }}
             </span>
         </div>
@@ -72,13 +53,13 @@
                     </tr>
                 </thead>
 
-                <tbody class="divide-y">
+                <tbody id="attendanceTableBody" class="divide-y">
                     {% if attendance_rows %}
                         {% for row in attendance_rows %}
-                        <tr class="hover:bg-gray-50">
+                        <tr class="hover:bg-gray-50 attendance-row">
                             <td class="py-3 px-4 font-medium text-gray-800">{{ row.student_name }}</td>
                             <td class="py-3 px-4 text-gray-600">{{ row.uid or 'No UID' }}</td>
-                            <td class="py-3 px-4 text-gray-600">{{ row.section_name or 'No Section' }}</td>
+                            <td class="py-3 px-4 text-gray-600 section-cell">{{ row.section_name or 'No Section' }}</td>
                             <td class="py-3 px-4 text-gray-600">{{ row.attendance_date }}</td>
                             <td class="py-3 px-4 text-gray-600">{{ row.time_in or '-' }}</td>
                             <td class="py-3 px-4 text-gray-600">{{ row.time_out or '-' }}</td>
@@ -104,16 +85,64 @@
                         </tr>
                         {% endfor %}
                     {% else %}
-                        <tr>
-                            <td colspan="8" class="text-center py-8 text-gray-500">
+                        <tr id="noDataRow">
+                            <td colspan="7" class="text-center py-8 text-gray-500">
                                 No attendance records found
                             </td>
                         </tr>
                     {% endif %}
                 </tbody>
             </table>
+
+            <!-- No match message for filtering -->
+            <div id="noMatchMessage" class="hidden text-center py-8 text-gray-500">
+                No attendance records found for the selected section
+            </div>
         </div>
     </div>
 
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const sectionFilter = document.getElementById("sectionFilter");
+    const rows = document.querySelectorAll(".attendance-row");
+    const totalCount = document.getElementById("totalCount");
+    const noMatchMessage = document.getElementById("noMatchMessage");
+    const noDataRow = document.getElementById("noDataRow");
+
+    function updateFilter() {
+        const selectedSection = sectionFilter.value.trim().toLowerCase();
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const sectionCell = row.querySelector(".section-cell");
+            const sectionText = sectionCell ? sectionCell.textContent.trim().toLowerCase() : "";
+
+            if (selectedSection === "" || sectionText === selectedSection) {
+                row.style.display = "";
+                visibleCount++;
+            } else {
+                row.style.display = "none";
+            }
+        });
+
+        totalCount.textContent = `Total: ${visibleCount}`;
+
+        if (rows.length > 0) {
+            if (visibleCount === 0) {
+                noMatchMessage.classList.remove("hidden");
+            } else {
+                noMatchMessage.classList.add("hidden");
+            }
+        }
+
+        if (noDataRow) {
+            noDataRow.style.display = "none";
+        }
+    }
+
+    sectionFilter.addEventListener("change", updateFilter);
+});
+</script>
 {% endblock %}
