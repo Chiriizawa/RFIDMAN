@@ -100,13 +100,19 @@
                 <a href="{{ url_for('sadmin.attendance') }}"
                     class="nav-tab {% if request.endpoint == 'sadmin.attendance' %}active{% endif %} flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
                     <i class="fa-solid fa-layer-group text-lg"></i>
-                    Section
+                    Attendance
                 </a>
 
                 <a href="{{ url_for('sadmin.uid') }}"
                     class="nav-tab {% if request.endpoint == 'sadmin.uid' %}active{% endif %} flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
                     <i class="fa-solid fa-id-card text-lg"></i>
                     UID
+                </a>
+
+                <a href="{{ url_for('section_bp.section') }}"
+                    class="nav-tab {% if request.endpoint == 'sadmin.uid' %}active{% endif %} flex items-center justify-center gap-x-3 px-7 py-4 rounded-3xl text-base font-semibold min-w-[170px] text-slate-700">
+                    <i class="fa-solid fa-id-card text-lg"></i>
+                    Section
                 </a>
 
                 <a href="{{ url_for('sregister.student') }}"

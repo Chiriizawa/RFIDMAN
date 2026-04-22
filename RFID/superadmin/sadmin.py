@@ -15,7 +15,8 @@ def get_db_connection():
         database=os.getenv("DB_NAME"),
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
-        port=os.getenv("DB_PORT", 5432)
+        port=os.getenv("DB_PORT", 5432),
+        sslmode="require"
     )
 
 
@@ -44,6 +45,10 @@ def index():
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
+        # Total teachers
+        cur.execute("SELECT COUNT(*) AS count FROM teachers")
+        total_teachers = cur.fetchone()["count"]
+
         # Total students
         cur.execute("SELECT COUNT(*) AS count FROM students")
         total_students = cur.fetchone()["count"]
@@ -61,18 +66,32 @@ def index():
         """)
         unlinked_rfid = cur.fetchone()["count"]
 
-        # If your students table has NO section_id column yet,
-        # keep this as 0 for now
-        students_without_section = 0
-        sections_without_teacher = 0
-        total_teachers = 0
+        # Students without section
+        cur.execute("""
+            SELECT COUNT(*) AS count
+            FROM students
+            WHERE section_id IS NULL
+        """)
+        students_without_section = cur.fetchone()["count"]
+
+        # Sections without teacher
+        cur.execute("""
+            SELECT COUNT(*) AS count
+            FROM sections
+            WHERE teacher_id IS NULL
+        """)
+        sections_without_teacher = cur.fetchone()["count"]
 
         # Recent activity
-        # Since you don't yet have attendance table,
-        # use the latest registered students with linked RFID as placeholder
         cur.execute("""
             SELECT
-                CONCAT(s.first_name, ' ', s.last_name) AS student_name,
+                CONCAT(
+                    COALESCE(s.first_name, ''), 
+                    CASE WHEN s.middle_name IS NOT NULL AND TRIM(s.middle_name) <> '' THEN ' ' || s.middle_name ELSE '' END,
+                    ' ',
+                    COALESCE(s.last_name, ''),
+                    CASE WHEN s.extension IS NOT NULL AND TRIM(s.extension) <> '' THEN ' ' || s.extension ELSE '' END
+                ) AS student_name,
                 s.uid,
                 TO_CHAR(s.created_at, 'HH12:MI AM') AS time,
                 'Registered' AS status
@@ -93,8 +112,36 @@ def index():
             for row in rows
         ]
 
-        # Empty for now because teachers table is not yet available in your screenshot
-        teachers_overview = []
+        # Teachers overview
+        cur.execute("""
+            SELECT
+                t.id,
+                CONCAT(
+                    COALESCE(t.first_name, ''),
+                    CASE WHEN t.middle_name IS NOT NULL AND TRIM(t.middle_name) <> '' THEN ' ' || t.middle_name ELSE '' END,
+                    ' ',
+                    COALESCE(t.last_name, ''),
+                    CASE WHEN t.extension IS NOT NULL AND TRIM(t.extension) <> '' THEN ' ' || t.extension ELSE '' END
+                ) AS full_name,
+                t.email,
+                t.contact_number,
+                TO_CHAR(t.created_at, 'YYYY-MM-DD HH12:MI AM') AS created_at
+            FROM teachers t
+            ORDER BY t.created_at DESC
+            LIMIT 10
+        """)
+        teacher_rows = cur.fetchall()
+
+        teachers_overview = [
+            {
+                "id": row["id"],
+                "full_name": row["full_name"],
+                "email": row["email"],
+                "contact_number": row["contact_number"],
+                "created_at": row["created_at"]
+            }
+            for row in teacher_rows
+        ]
 
     except Exception as e:
         print("Superadmin dashboard error:", e)
@@ -193,7 +240,13 @@ def attendance():
             cur.execute("""
                 SELECT
                     a.id,
-                    CONCAT(s.first_name, ' ', s.last_name) AS student_name,
+                    CONCAT(
+                        COALESCE(s.first_name, ''),
+                        CASE WHEN s.middle_name IS NOT NULL AND TRIM(s.middle_name) <> '' THEN ' ' || s.middle_name ELSE '' END,
+                        ' ',
+                        COALESCE(s.last_name, ''),
+                        CASE WHEN s.extension IS NOT NULL AND TRIM(s.extension) <> '' THEN ' ' || s.extension ELSE '' END
+                    ) AS student_name,
                     a.uid,
                     sec.section_name,
                     a.attendance_date,
@@ -211,7 +264,13 @@ def attendance():
             cur.execute("""
                 SELECT
                     a.id,
-                    CONCAT(s.first_name, ' ', s.last_name) AS student_name,
+                    CONCAT(
+                        COALESCE(s.first_name, ''),
+                        CASE WHEN s.middle_name IS NOT NULL AND TRIM(s.middle_name) <> '' THEN ' ' || s.middle_name ELSE '' END,
+                        ' ',
+                        COALESCE(s.last_name, ''),
+                        CASE WHEN s.extension IS NOT NULL AND TRIM(s.extension) <> '' THEN ' ' || s.extension ELSE '' END
+                    ) AS student_name,
                     a.uid,
                     sec.section_name,
                     a.attendance_date,
