@@ -54,7 +54,7 @@ def get_latest_tap():
             FROM rfid_cards r
             LEFT JOIN students s
                 ON UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(r.uid, '')), ' ', ''), '-', ''), ':', ''))
-                 = UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(s.uid, '')), ' ', ''), '-', ''), ':', ''))
+                = UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(s.uid, '')), ' ', ''), '-', ''), ':', ''))
             ORDER BY r.created_at DESC
             LIMIT 1
         """)
