@@ -549,3 +549,117 @@ def add_student():
         )
 
         return redirect(url_for('sregister.student'))
+
+
+# =========================
+# ADD LANG ITO SA DULO
+# =========================
+@sregister.route('/update-student/<int:student_id>', methods=['POST'])
+def update_student(student_id):
+
+    last_name = request.form.get('last_name', '').strip()
+    first_name = request.form.get('first_name', '').strip()
+    middle_name = request.form.get('middle_name', '').strip()
+    extension = request.form.get('extension', '').strip()
+    birthday_raw = request.form.get('birthday', '').strip()
+    contact_number = request.form.get('contact_number', '').strip()
+    email = request.form.get('email', '').strip()
+    schedule = request.form.get('schedule', '').strip()
+    section_id_raw = request.form.get('section_id', '').strip()
+
+    if (
+        not last_name or
+        not first_name or
+        not birthday_raw or
+        not contact_number or
+        not email or
+        not schedule
+    ):
+        flash("Please fill in all required fields.", "error")
+        return redirect(url_for('sregister.student'))
+
+    conn = None
+    cur = None
+
+    try:
+        birthday = normalize_birthday(birthday_raw)
+        section_id = int(section_id_raw) if section_id_raw else None
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT id
+            FROM students
+            WHERE id = %s
+        """, (student_id,))
+
+        if not cur.fetchone():
+            flash("Student not found.", "error")
+            return redirect(url_for('sregister.student'))
+
+        if section_id is not None:
+            cur.execute("""
+                SELECT id
+                FROM sections
+                WHERE id = %s
+            """, (section_id,))
+
+            if not cur.fetchone():
+                flash("Selected section does not exist.", "error")
+                return redirect(url_for('sregister.student'))
+
+        cur.execute("""
+            SELECT id
+            FROM students
+            WHERE email = %s
+            AND id <> %s
+        """, (email, student_id))
+
+        if cur.fetchone():
+            flash("This email is already registered to another student.", "error")
+            return redirect(url_for('sregister.student'))
+
+        cur.execute("""
+            UPDATE students
+            SET
+                last_name = %s,
+                first_name = %s,
+                middle_name = %s,
+                extension = %s,
+                birthday = %s,
+                contact_number = %s,
+                email = %s,
+                schedule = %s,
+                section_id = %s
+            WHERE id = %s
+        """, (
+            last_name,
+            first_name,
+            middle_name if middle_name else None,
+            extension if extension else None,
+            birthday,
+            contact_number,
+            email,
+            schedule,
+            section_id,
+            student_id
+        ))
+
+        conn.commit()
+
+        flash("Student updated successfully.", "success")
+        return redirect(url_for('sregister.student'))
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+
+        flash(f"Error updating student: {str(e)}", "error")
+        return redirect(url_for('sregister.student'))
+
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()

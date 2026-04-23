@@ -1,6 +1,6 @@
 {% extends "superadmin/base.html" %}
 
-{% block title %}Superadmin Dashboard{% endblock %}
+{% block title %}Dashboard{% endblock %}
 
 {% block content %}
 
@@ -9,17 +9,17 @@
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 py-3">
 
-        <div class="bg-white rounded-3xl shadow-sm border p-5">
+        <div class="bg-gray-50 rounded-3xl shadow-sm border p-5">
             <p class="text-sm text-gray-500">Total Teachers</p>
             <h2 class="text-3xl font-bold text-gray-800 mt-2">{{ total_teachers or 0 }}</h2>
         </div>
 
-        <div class="bg-white rounded-3xl shadow-sm border p-5">
+        <div class="bg-gray-50 rounded-3xl shadow-sm border p-5">
             <p class="text-sm text-gray-500">Total Students</p>
             <h2 class="text-3xl font-bold text-gray-800 mt-2">{{ total_students or 0 }}</h2>
         </div>
 
-        <div class="bg-white rounded-3xl shadow-sm border p-5">
+        <div class="bg-gray-50 rounded-3xl shadow-sm border p-5">
             <p class="text-sm text-gray-500">RFID Cards</p>
             <h2 class="text-3xl font-bold text-gray-800 mt-2">{{ total_rfid_cards or 0 }}</h2>
         </div>
@@ -27,7 +27,7 @@
     </div>
 
     <!-- Attendance Overview -->
-    <div class="bg-white rounded-3xl shadow-sm border p-6">
+    <div class="bg-gray-50 rounded-3xl shadow-sm border p-6">
         <h3 class="text-lg font-semibold text-gray-800 mb-5">Attendance Today</h3>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -58,22 +58,22 @@
     <!-- Alerts -->
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
 
-        <div class="bg-white rounded-3xl shadow-sm border p-5">
+        <div class="bg-gray-50 rounded-3xl shadow-sm border p-5">
             <p class="text-sm text-gray-500">Unlinked RFID</p>
             <h3 class="text-2xl font-bold text-red-600 mt-2">{{ unlinked_rfid or 0 }}</h3>
         </div>
 
-        <div class="bg-white rounded-3xl shadow-sm border p-5">
+        <div class="bg-gray-50 rounded-3xl shadow-sm border p-5">
             <p class="text-sm text-gray-500">Students Without Section</p>
             <h3 class="text-2xl font-bold text-yellow-600 mt-2">{{ students_without_section or 0 }}</h3>
         </div>
 
-        <div class="bg-white rounded-3xl shadow-sm border p-5">
+        <div class="bg-gray-50 rounded-3xl shadow-sm border p-5">
             <p class="text-sm text-gray-500">Sections Without Teacher</p>
             <h3 class="text-2xl font-bold text-blue-600 mt-2">{{ sections_without_teacher or 0 }}</h3>
         </div>
 
-        <div class="bg-white rounded-3xl shadow-sm border p-5">
+        <div class="bg-gray-50 rounded-3xl shadow-sm border p-5">
             <p class="text-sm text-gray-500">Teachers Without Section</p>
             <h3 class="text-2xl font-bold text-purple-600 mt-2">{{ teachers_without_section or 0 }}</h3>
         </div>
@@ -81,13 +81,13 @@
     </div>
 
     <!-- Recent RFID Activity -->
-    <div class="bg-white rounded-3xl shadow-sm border p-6">
+    <div class="bg-gray-50 rounded-3xl shadow-sm border p-6">
         <h3 class="text-lg font-semibold text-gray-800 mb-5">Recent RFID Activity</h3>
 
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead>
-                    <tr class="bg-gray-50 border-b text-gray-600">
+                    <tr class="bg-gray-100 border-b text-gray-600">
                         <th class="py-3 px-4 text-left">Student</th>
                         <th class="py-3 px-4 text-left">UID</th>
                         <th class="py-3 px-4 text-left">Time</th>
@@ -98,7 +98,7 @@
                 <tbody class="divide-y">
                     {% if recent_activities %}
                         {% for activity in recent_activities %}
-                        <tr class="hover:bg-gray-50">
+                        <tr class="hover:bg-gray-100">
                             <td class="py-3 px-4">{{ activity.student_name }}</td>
                             <td class="py-3 px-4">{{ activity.uid }}</td>
                             <td class="py-3 px-4">{{ activity.time }}</td>
@@ -129,13 +129,13 @@
     </div>
 
     <!-- Teacher Overview -->
-    <div class="bg-white rounded-3xl shadow-sm border p-6">
+    <div class="bg-gray-50 rounded-3xl shadow-sm border p-6">
         <h3 class="text-lg font-semibold text-gray-800 mb-5">Teacher Overview</h3>
 
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead>
-                    <tr class="bg-gray-50 border-b text-gray-600">
+                    <tr class="bg-gray-100 border-b text-gray-600">
                         <th class="py-3 px-4 text-left">Teacher</th>
                         <th class="py-3 px-4 text-left">Email</th>
                         <th class="py-3 px-4 text-left">Contact</th>
@@ -147,7 +147,7 @@
                 <tbody class="divide-y">
                     {% if teachers_overview %}
                         {% for teacher in teachers_overview %}
-                        <tr class="hover:bg-gray-50">
+                        <tr class="hover:bg-gray-100">
                             <td class="py-3 px-4">{{ teacher.full_name }}</td>
                             <td class="py-3 px-4">{{ teacher.email or '—' }}</td>
                             <td class="py-3 px-4">{{ teacher.contact_number or '—' }}</td>
@@ -179,13 +179,13 @@
     </div>
 
     <!-- Teachers Without Section List -->
-    <div class="bg-white rounded-3xl shadow-sm border p-6">
+    <div class="bg-gray-50 rounded-3xl shadow-sm border p-6">
         <h3 class="text-lg font-semibold text-gray-800 mb-5">Teachers Without Section</h3>
 
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead>
-                    <tr class="bg-gray-50 border-b text-gray-600">
+                    <tr class="bg-gray-100 border-b text-gray-600">
                         <th class="py-3 px-4 text-left">Teacher</th>
                         <th class="py-3 px-4 text-left">Email</th>
                         <th class="py-3 px-4 text-left">Contact</th>
@@ -195,7 +195,7 @@
                 <tbody class="divide-y">
                     {% if teachers_without_section_list %}
                         {% for teacher in teachers_without_section_list %}
-                        <tr class="hover:bg-gray-50">
+                        <tr class="hover:bg-gray-100">
                             <td class="py-3 px-4">{{ teacher.full_name }}</td>
                             <td class="py-3 px-4">{{ teacher.email or '—' }}</td>
                             <td class="py-3 px-4">{{ teacher.contact_number or '—' }}</td>
