@@ -648,7 +648,11 @@ def update_teacher_in_db(teacher_db_id, fields: dict):
         raise Exception("Database not connected")
     
     allowed = {
+<<<<<<< HEAD
         "first_name", "middle_name", "last_name", "extension", 
+=======
+        "first_name", "middle_name", "last_name", "extension",
+>>>>>>> cddc272487b54aaf91c2613b57e5636635e0ef36
         "contact_number", "email"
     }
     updates = {k: v for k, v in fields.items() if k in allowed}
@@ -863,7 +867,29 @@ def teacher_login():
             return render_template('login.html')
         teacher = get_teacher_by_email(identifier)
         if teacher:
-            if teacher['password_hash'] and check_password_hash(teacher['password_hash'], password):
+            password_valid = False
+            if teacher['password_hash']:
+                password_valid = check_password_hash(teacher['password_hash'], password)
+                # Support legacy plain-text passwords by falling back to direct comparison
+                if not password_valid and teacher['password_hash'] == password:
+                    password_valid = True
+                    # Auto-migrate plain-text password to hashed
+                    try:
+                        new_hash = generate_password_hash(password)
+                        conn = get_connection()
+                        if conn:
+                            cur = conn.cursor()
+                            cur.execute("""
+                                UPDATE teacher_accounts
+                                SET password = %s
+                                WHERE id = %s
+                            """, (new_hash, teacher['account_id']))
+                            conn.commit()
+                            cur.close()
+                            conn.close()
+                    except Exception as e:
+                        print(f"Auto-hash password error: {e}")
+            if password_valid:
                 session.permanent = True
                 session['teacher_logged_in'] = True
                 session['teacher_id'] = teacher['id']
@@ -910,7 +936,11 @@ def update_teacher_profile():
             fields["extension"] = data["extension"]
         if "contact_number" in data:
             fields["contact_number"] = data["contact_number"]
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> cddc272487b54aaf91c2613b57e5636635e0ef36
         if not fields:
             return jsonify({"success": False, "message": "No fields to update"}), 400
         
