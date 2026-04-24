@@ -564,9 +564,6 @@ def get_teacher_by_email(email):
                 t.contact_number,
                 t.email AS teacher_email,
                 t.created_at,
-                t.subject,
-                t.department,
-                t.bio,
                 ta.id AS account_id,
                 ta.teacher_id AS linked_teacher_id,
                 ta.email AS account_email,
@@ -601,10 +598,7 @@ def get_teacher_by_email(email):
             "email": row["account_email"],
             "password_hash": row["password"],
             "created_at": row["created_at"],
-            "reset_token": row["reset_token"],
-            "subject": row.get("subject", ""),
-            "department": row.get("department", ""),
-            "bio": row.get("bio", "")
+            "reset_token": row["reset_token"]
         }
     except Exception as e:
         print(f"get_teacher_by_email error: {e}")
@@ -628,10 +622,7 @@ def get_teacher_by_id(teacher_db_id):
                 extension,
                 contact_number,
                 email,
-                created_at,
-                subject,
-                department,
-                bio
+                created_at
             FROM teachers
             WHERE id = %s
             LIMIT 1;
@@ -655,10 +646,7 @@ def get_teacher_by_id(teacher_db_id):
             "full_name": full_name,
             "contact_number": row["contact_number"],
             "email": row["email"],
-            "created_at": row["created_at"],
-            "subject": row.get("subject", ""),
-            "department": row.get("department", ""),
-            "bio": row.get("bio", "")
+            "created_at": row["created_at"]
         }
     except Exception as e:
         print(f"get_teacher_by_id error: {e}")
@@ -673,8 +661,8 @@ def update_teacher_in_db(teacher_db_id, fields: dict):
         raise Exception("Database not connected")
     
     allowed = {
-        "first_name", "middle_name", "last_name", "extension", 
-        "contact_number", "email", "subject", "department", "bio"
+        "first_name", "middle_name", "last_name", "extension",
+        "contact_number", "email"
     }
     updates = {k: v for k, v in fields.items() if k in allowed}
     
@@ -888,7 +876,29 @@ def teacher_login():
             return render_template('login.html')
         teacher = get_teacher_by_email(identifier)
         if teacher:
-            if teacher['password_hash'] and check_password_hash(teacher['password_hash'], password):
+            password_valid = False
+            if teacher['password_hash']:
+                password_valid = check_password_hash(teacher['password_hash'], password)
+                # Support legacy plain-text passwords by falling back to direct comparison
+                if not password_valid and teacher['password_hash'] == password:
+                    password_valid = True
+                    # Auto-migrate plain-text password to hashed
+                    try:
+                        new_hash = generate_password_hash(password)
+                        conn = get_connection()
+                        if conn:
+                            cur = conn.cursor()
+                            cur.execute("""
+                                UPDATE teacher_accounts
+                                SET password = %s
+                                WHERE id = %s
+                            """, (new_hash, teacher['account_id']))
+                            conn.commit()
+                            cur.close()
+                            conn.close()
+                    except Exception as e:
+                        print(f"Auto-hash password error: {e}")
+            if password_valid:
                 session.permanent = True
                 session['teacher_logged_in'] = True
                 session['teacher_id'] = teacher['id']
@@ -935,13 +945,7 @@ def update_teacher_profile():
             fields["extension"] = data["extension"]
         if "contact_number" in data:
             fields["contact_number"] = data["contact_number"]
-        if "subject" in data:
-            fields["subject"] = data["subject"]
-        if "department" in data:
-            fields["department"] = data["department"]
-        if "bio" in data:
-            fields["bio"] = data["bio"]
-        
+
         if not fields:
             return jsonify({"success": False, "message": "No fields to update"}), 400
         
