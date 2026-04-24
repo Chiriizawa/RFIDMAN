@@ -4,7 +4,6 @@
 
 {% block content %}
 <style>
-    /* Toast Notification Styles */
     .toast {
         position: fixed;
         top: 20px;
@@ -24,15 +23,8 @@
         border: 1px solid rgba(255,255,255,0.15);
     }
     
-    @keyframes slideInRight {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    
-    @keyframes slideOutRight {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100%); opacity: 0; }
-    }
+    @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
     
     .toast.success { background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95)); }
     .toast.error { background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95)); }
@@ -46,192 +38,61 @@
     .toast-close { cursor: pointer; opacity: 0.7; font-size: 18px; color: white; }
     .toast-close:hover { opacity: 1; }
     
-    /* Hide scrollbars globally */
-    ::-webkit-scrollbar {
-        display: none;
-    }
+    .white-card { background: white; border-radius: 1.5rem; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+    .header-gradient { background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%); padding: 1.5rem 2rem; }
+    .text-accent { color: #f59e0b; }
     
-    * {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-    }
+    .table-header { background: #f8fafc; border-bottom: 2px solid #e2e8f0; }
+    .table-header th { color: #1e293b; font-weight: 700; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 1rem 1.5rem; }
+    .table-row { border-bottom: 1px solid #e2e8f0; transition: all 0.2s ease; }
+    .table-row:hover { background: #f8fafc; }
+    .table-row td { padding: 1rem 1.5rem; color: #1e293b; font-size: 0.9rem; }
     
-    .glass-card {
-        background: rgba(255,255,255,0.08);
-        backdrop-filter: blur(18px);
-        border: 1px solid rgba(255,255,255,0.15);
-        border-radius: 1.5rem;
-        overflow: hidden;
-    }
+    .uid-badge { background: #fef3c7; color: #92400e; font-family: monospace; font-weight: 700; padding: 0.5rem 1rem; border-radius: 0.75rem; display: inline-block; border: 1px solid #fbbf24; font-size: 0.85rem; }
+    .empty-state { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 2rem; text-align: center; }
+    .total-badge { background: #fef3c7; border: 1px solid #fbbf24; color: #92400e; padding: 0.5rem 1.5rem; border-radius: 2rem; font-size: 0.875rem; font-weight: 600; }
+    .total-badge span { color: #d97706; font-weight: 800; margin-left: 0.5rem; font-size: 1rem; }
     
-    .table-header {
-        background: rgba(30, 58, 138, 0.4);
-        border-bottom: 1px solid rgba(255,255,255,0.1);
-    }
+    .search-bar { background: white; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 0.6rem 1rem; color: #1e293b; width: 300px; transition: all 0.2s ease; }
+    .search-bar:focus { outline: none; border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1); }
+    .search-bar::placeholder { color: #94a3b8; }
     
-    .table-header th {
-        color: #ffffff;
-        font-weight: 600;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
+    .action-btn { background: #f8fafc; border: 1px solid #e2e8f0; color: #1e293b; padding: 0.5rem 1rem; border-radius: 0.75rem; cursor: pointer; transition: all 0.2s ease; font-size: 0.875rem; }
+    .action-btn:hover { background: #fef3c7; border-color: #f59e0b; color: #d97706; transform: translateY(-1px); }
     
-    .table-row {
-        border-bottom: 1px solid rgba(255,255,255,0.08);
-        transition: all 0.2s ease;
-    }
+    .live-indicator { display: inline-flex; align-items: center; gap: 8px; background: #dcfce7; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; color: #166534; }
+    .pulse-dot { width: 8px; height: 8px; background-color: #10b981; border-radius: 50%; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
     
-    .table-row:hover {
-        background: rgba(255,255,255,0.05);
-        transform: scale(1.01);
-    }
-    
-    .uid-badge {
-        background: rgba(250, 204, 21, 0.15);
-        color: #facc15;
-        font-family: monospace;
-        font-weight: 600;
-        padding: 0.375rem 0.75rem;
-        border-radius: 0.75rem;
-        display: inline-block;
-        border: 1px solid rgba(250, 204, 21, 0.3);
-        font-size: 0.8rem;
-    }
-    
-    .empty-state {
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 1.5rem;
-        backdrop-filter: blur(10px);
-    }
-    
-    .total-badge {
-        background: rgba(250, 204, 21, 0.15);
-        border: 1px solid rgba(250, 204, 21, 0.3);
-        color: #facc15;
-        padding: 0.5rem 1.5rem;
-        border-radius: 2rem;
-        font-size: 0.875rem;
-        font-weight: 500;
-    }
-    
-    .total-badge span {
-        color: white;
-        font-weight: 700;
-        margin-left: 0.5rem;
-        font-size: 1rem;
-    }
-    
-    .search-bar {
-        background: rgba(255,255,255,0.08);
-        border: 1px solid rgba(255,255,255,0.15);
-        border-radius: 1rem;
-        padding: 0.5rem 1rem;
-        color: white;
-        width: 300px;
-        transition: all 0.2s ease;
-    }
-    
-    .search-bar:focus {
-        outline: none;
-        border-color: #facc15;
-        background: rgba(255,255,255,0.12);
-        box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.1);
-    }
-    
-    .search-bar::placeholder {
-        color: rgba(255,255,255,0.5);
-    }
-    
-    .action-btn {
-        background: rgba(255,255,255,0.08);
-        border: 1px solid rgba(255,255,255,0.15);
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 0.75rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-size: 0.875rem;
-    }
-    
-    .action-btn:hover {
-        background: rgba(250, 204, 21, 0.2);
-        border-color: #facc15;
-        color: #facc15;
-        transform: translateY(-1px);
-    }
-    
-    .live-indicator {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        background: rgba(16, 185, 129, 0.2);
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.75rem;
-    }
-    
-    .pulse-dot {
-        width: 8px;
-        height: 8px;
-        background-color: #10b981;
-        border-radius: 50%;
-        animation: pulse 1.5s infinite;
-    }
-    
-    @keyframes pulse {
-        0% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.5; transform: scale(1.2); }
-        100% { opacity: 1; transform: scale(1); }
-    }
-    
-    /* Hide scrollbars on overflow containers */
-    .overflow-x-auto {
-        overflow-x: auto;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-    }
-    
-    .overflow-x-auto::-webkit-scrollbar {
-        display: none;
-    }
-    
-    body {
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-    }
-    
-    body::-webkit-scrollbar {
-        display: none;
+    @media (max-width: 768px) {
+        .table-header th, .table-row td { padding: 0.75rem 1rem; }
+        .header-gradient { padding: 1rem 1.25rem; }
+        .search-bar { width: 100%; }
     }
 </style>
 
-<div class="max-w-7xl mx-auto">
-    <div class="glass-card overflow-hidden">
-        <!-- Header -->
-        <div class="bg-gradient-to-r from-blue-900 to-indigo-900 px-10 py-8 text-white border-b border-white/10">
-            <div class="flex items-center justify-between">
+<div class="max-w-7xl mx-auto px-4">
+    <div class="white-card">
+        <div class="header-gradient text-white">
+            <div class="flex items-center justify-between flex-wrap gap-4">
                 <div>
-                    <h1 class="text-3xl font-semibold flex items-center gap-3">
-                        <i class="fa-solid fa-clock-rotate-left text-yellow-400"></i>
+                    <h1 class="text-2xl font-semibold flex items-center gap-3">
+                        <i class="fa-solid fa-clock-rotate-left text-accent"></i>
                         Scan History
                     </h1>
-                    <p class="text-white mt-1">Real-time RFID scan records • One entry per student per day</p>
+                    <p class="text-white/80 mt-1 text-sm">Real-time RFID scan records • One entry per student per day</p>
                 </div>
                 <div class="live-indicator">
                     <div class="pulse-dot"></div>
-                    <span class="text-white text-sm">Live Updates</span>
+                    <span>Live Updates</span>
                 </div>
             </div>
         </div>
 
-        <!-- Content -->
-        <div class="p-8">
-            <!-- Search and Actions Bar -->
+        <div class="p-6">
             <div class="mb-6 flex justify-between items-center gap-4 flex-wrap">
                 <div class="relative flex-1 max-w-md">
-                    <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60 text-sm"></i>
+                    <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
                     <input type="text" id="searchInput" onkeyup="filterHistory()" placeholder="Search by UID, student name..." class="search-bar pl-10 w-full">
                 </div>
                 <div class="flex gap-2">
@@ -241,27 +102,25 @@
                 </div>
             </div>
 
-            <!-- History Table -->
             <div class="overflow-x-auto">
                 <table class="w-full min-w-full text-sm" id="historyTable">
                     <thead>
                         <tr class="table-header">
-                            <th class="px-6 py-4 text-left font-medium w-16 text-white">#</th>
-                            <th class="px-6 py-4 text-left font-medium w-32 text-white">UID</th>
-                            <th class="px-6 py-4 text-left font-medium text-white">Student Name</th>
-                            <th class="px-6 py-4 text-left font-medium w-48 text-white">Scan Date</th>
-                            <th class="px-6 py-4 text-left font-medium w-32 text-white">Scan Time</th>
+                            <th class="text-left w-16">#</th>
+                            <th class="text-left w-32">UID</th>
+                            <th class="text-left">Student Name</th>
+                            <th class="text-left w-48">Scan Date</th>
+                            <th class="text-left w-32">Scan Time</th>
                         </tr>
                     </thead>
-                    <tbody id="historyTableBody" class="divide-y divide-white/10">
-                        <tr><td colspan="5" class="px-6 py-12 text-center"><div class="empty-state p-8"><i class="fa-regular fa-clock text-4xl text-white/50 mb-3"></i><p class="text-white/60">Loading scan history...</p></div></td></tr>
+                    <tbody id="historyTableBody" class="divide-y divide-gray-100">
+                        <tr><td colspan="5" class="text-center py-8"><div class="empty-state"><i class="fa-regular fa-clock text-4xl text-gray-400 mb-3"></i><p class="text-gray-500">Loading scan history...</p></div></td></tr>
                     </tbody>
                 </table>
             </div>
 
-            <!-- Footer Stats -->
             <div class="mt-6 flex justify-between items-center gap-4 flex-wrap">
-                <div class="text-white text-sm"><i class="fa-solid fa-info-circle mr-1"></i>Showing <span id="visibleCount">0</span> of <span id="totalCount">0</span> scans</div>
+                <div class="text-gray-600 text-sm"><i class="fa-solid fa-info-circle mr-1"></i>Showing <span id="visibleCount">0</span> of <span id="totalCount">0</span> scans</div>
                 <div class="total-badge"><i class="fa-solid fa-id-card mr-2"></i>Total Scans: <span id="totalScans">0</span></div>
             </div>
         </div>
@@ -279,7 +138,6 @@
         toast.innerHTML = `<div class="toast-icon">${icons[type] || icons.success}</div><div class="toast-content"><div class="toast-title">${title || titles[type]}</div><div class="toast-message">${message}</div></div><div class="toast-close" onclick="this.parentElement.remove()">✕</div>`;
         document.body.appendChild(toast);
         setTimeout(() => { if (toast && toast.parentElement) { toast.style.animation = 'slideOutRight 0.3s ease'; setTimeout(() => toast.remove(), 300); } }, 3000);
-        toast.addEventListener('click', () => { toast.style.animation = 'slideOutRight 0.3s ease'; setTimeout(() => toast.remove(), 300); });
     }
     
     async function fetchHistory() {
@@ -287,25 +145,21 @@
             const response = await fetch('/admin/history/api');
             const data = await response.json();
             if (data.success) {
-                if (allScans.length > 0 && data.history.length > allScans.length) {
-                    showToast(`New scan detected!`, 'success', 'New Record');
-                }
+                if (allScans.length > 0 && data.history.length > allScans.length) showToast(`New scan detected!`, 'success', 'New Record');
                 allScans = data.history;
                 renderHistoryTable(allScans);
                 updateStats(allScans);
             }
-        } catch (error) {
-            console.error('Error fetching history:', error);
-        }
+        } catch (error) { console.error('Error fetching history:', error); }
     }
     
     function renderHistoryTable(scans) {
         const tbody = document.getElementById('historyTableBody');
         if (!scans || scans.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center"><div class="empty-state p-8"><i class="fa-regular fa-clock text-4xl text-white/50 mb-3"></i><p class="text-white/60">No scan records found</p><p class="text-white/40 text-sm mt-2">Scan an RFID card to see records</p></div></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8"><div class="empty-state"><i class="fa-regular fa-clock text-4xl text-gray-400 mb-3"></i><p class="text-gray-500">No scan records found</p><p class="text-gray-400 text-sm mt-2">Scan an RFID card to see records</p></div></td></tr>`;
             return;
         }
-        tbody.innerHTML = scans.map((scan, index) => `<tr class="table-row transition-colors" data-uid="${scan.uid}" data-name="${scan.full_name?.toLowerCase() || ''}" data-date="${scan.scan_date}"><td class="px-6 py-5 text-white font-medium">${index + 1}</td><td class="px-6 py-5"><span class="uid-badge"><i class="fa-solid fa-id-card mr-1 text-xs"></i>${scan.uid}</span></td><td class="px-6 py-5 font-semibold text-white"><div class="flex items-center gap-2"><div class="w-8 h-8 bg-yellow-400/20 rounded-full flex items-center justify-center"><i class="fa-solid fa-user text-yellow-400 text-sm"></i></div>${scan.full_name || 'Unregistered Card'}</div></td><td class="px-6 py-5 text-white"><i class="fa-regular fa-calendar mr-1"></i>${scan.scan_date}</td><td class="px-6 py-5 text-white"><i class="fa-regular fa-clock mr-1"></i>${scan.scan_time}</td></tr>`).join('');
+        tbody.innerHTML = scans.map((scan, index) => `<tr class="table-row"><td class="font-medium">${index + 1}</td><td><span class="uid-badge"><i class="fa-solid fa-id-card mr-1 text-xs"></i>${scan.uid}</span></td><td class="font-medium"><div class="flex items-center gap-2"><div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-user text-amber-600 text-sm"></i></div>${scan.full_name || 'Unregistered Card'}</div></td><td><i class="fa-regular fa-calendar mr-1 text-gray-400"></i>${scan.scan_date}</td><td><i class="fa-regular fa-clock mr-1 text-gray-400"></i>${scan.scan_time}</td></tr>`).join('');
     }
     
     function updateStats(scans) {

@@ -27,7 +27,7 @@ latest_scan = {
 }
 
 # =========================
-# DB CONNECTION - SUPABASE VERSION (FIXED)
+# DB CONNECTION - SUPABASE VERSION
 # =========================
 
 def get_db_connection():
@@ -58,7 +58,6 @@ def get_connection():
     try:
         conn = get_db_connection()
         if conn:
-            # Test the connection
             with conn.cursor() as cur:
                 cur.execute("SELECT 1")
             return conn
@@ -108,15 +107,12 @@ def is_valid_uid(uid):
     uid = normalize_uid(uid)
     if not uid:
         return False
-
     allowed = "0123456789ABCDEF"
     for ch in uid:
         if ch not in allowed:
             return False
-
     if len(uid) not in [8, 14]:
         return False
-
     return True
 
 def build_full_name(first_name, middle_name, last_name, extension):
@@ -133,7 +129,6 @@ def get_all_students():
     if conn is None:
         print("Database connection failed in get_all_students")
         return []
-
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cur.execute("""
@@ -144,7 +139,6 @@ def get_all_students():
                 middle_name,
                 last_name,
                 extension,
-                birthday,
                 contact_number,
                 email,
                 schedule,
@@ -167,9 +161,7 @@ def get_student_name_by_uid(uid):
     conn = get_connection()
     if conn is None:
         return ""
-
     uid = normalize_uid(uid)
-
     try:
         cur = conn.cursor()
         cur.execute("""
@@ -180,12 +172,9 @@ def get_student_name_by_uid(uid):
         """, (uid,))
         row = cur.fetchone()
         cur.close()
-
         if not row:
             return ""
-
         return build_full_name(row[0], row[1], row[2], row[3])
-
     except Exception as e:
         print(f"get_student_name_by_uid error: {e}")
         return ""
@@ -197,9 +186,7 @@ def save_uid_to_db(uid):
     conn = get_connection()
     if conn is None:
         return
-
     uid = normalize_uid(uid)
-
     try:
         cur = conn.cursor()
         cur.execute("""
@@ -210,7 +197,6 @@ def save_uid_to_db(uid):
         if cur.fetchone():
             cur.close()
             return
-
         cur.execute("INSERT INTO rfid_cards (uid) VALUES (%s);", (uid,))
         cur.close()
         print(f"UID saved: {uid}")
@@ -220,11 +206,10 @@ def save_uid_to_db(uid):
         if conn:
             conn.close()
 
-def save_student_to_db(uid, first_name, middle_name, last_name, extension, birthday, contact_number, email, schedule_text, section_id=None):
+def save_student_to_db(uid, first_name, middle_name, last_name, extension, contact_number, email, schedule_text, section_id=None):
     conn = get_connection()
     if conn is None:
         raise Exception("Database not connected")
-
     try:
         cur = conn.cursor()
         cur.execute("""
@@ -234,7 +219,6 @@ def save_student_to_db(uid, first_name, middle_name, last_name, extension, birth
                 middle_name,
                 last_name,
                 extension,
-                birthday,
                 contact_number,
                 email,
                 schedule,
@@ -248,7 +232,7 @@ def save_student_to_db(uid, first_name, middle_name, last_name, extension, birth
             middle_name,
             last_name,
             extension,
-            birthday,
+           
             contact_number,
             email,
             schedule_text,
@@ -289,14 +273,11 @@ def listen():
                 if not raw or not raw.upper().startswith("UID:"):
                     time.sleep(0.2)
                     continue
-
                 uid = normalize_uid(raw.split(":", 1)[1].strip())
                 if not is_valid_uid(uid):
                     continue
-
                 save_uid_to_db(uid)
                 student_name = get_student_name_by_uid(uid)
-
                 latest_scan = {
                     "message": "Card scanned successfully",
                     "uid": format_uid(uid),
@@ -305,7 +286,6 @@ def listen():
                 }
         except Exception as e:
             print(f"Serial read error: {e}")
-
         time.sleep(0.2)
 
 if ser and ser.is_open:
@@ -338,13 +318,11 @@ def test_db():
                 "status": "error",
                 "message": "Database connection failed. Check your .env file and Supabase credentials"
             })
-
         cur = conn.cursor()
         cur.execute("SELECT NOW();")
         result = cur.fetchone()
         cur.close()
         conn.close()
-
         return jsonify({
             "status": "success",
             "message": "Supabase connected successfully",
@@ -363,10 +341,8 @@ def test_db():
 def registered_students():
     students = get_all_students()
     student_list = []
-
     for row in students:
         full_name = build_full_name(row[2], row[3], row[4], row[5])
-
         student_list.append({
             "id": row[0],
             "uid": format_uid(row[1]) if row[1] else "—",
@@ -375,14 +351,12 @@ def registered_students():
             "last_name": row[4] or "—",
             "extension": row[5] or "—",
             "full_name": full_name if full_name else "—",
-            "birthday": str(row[6]) if row[6] else "—",
             "contact_number": row[7] or "—",
             "email": row[8] or "—",
             "schedule": row[9] or "—",
             "section_id": row[10],
             "created_at": row[11].strftime("%b %d, %Y  %I:%M %p") if row[11] else "—"
         })
-
     return render_template('registered_students.html', students=student_list)
 
 @admin_bp.route('/schedules')
@@ -391,7 +365,6 @@ def schedules():
     conn = get_connection()
     if conn is None:
         return render_template('schedules.html', schedules=[])
-
     try:
         cur = conn.cursor()
         cur.execute("""
@@ -414,11 +387,9 @@ def schedules():
         """)
         rows = cur.fetchall()
         cur.close()
-
         schedule_list = []
         for row in rows:
             full_name = build_full_name(row[2], row[3], row[4], row[5])
-
             schedule_list.append({
                 "id": row[0],
                 "uid": format_uid(row[1]) if row[1] else "—",
@@ -434,7 +405,6 @@ def schedules():
                 "section_id": row[10],
                 "created_at": row[11].strftime("%b %d, %Y  %I:%M %p") if row[11] else "—"
             })
-
         return render_template('schedules.html', schedules=schedule_list)
     except Exception as e:
         print(f"Schedules error: {e}")
@@ -454,7 +424,6 @@ def history_api():
     conn = get_connection()
     if conn is None:
         return jsonify({"success": False, "message": "Database not connected", "history": []})
-
     try:
         cur = conn.cursor()
         cur.execute("""
@@ -483,14 +452,11 @@ def history_api():
         """)
         rows = cur.fetchall()
         cur.close()
-
         seen_keys = set()
         history_list = []
-
         for row in rows:
             student_id = row[1]
             scan_date = row[3].date() if row[3] else None
-
             if scan_date:
                 key = f"{student_id}_{scan_date}"
                 if key not in seen_keys:
@@ -502,9 +468,7 @@ def history_api():
                         "scan_date": scan_date.strftime("%B %d, %Y") if scan_date else "—",
                         "scan_time": row[3].strftime("%I:%M:%S %p") if row[3] else "—"
                     })
-
         return jsonify({"success": True, "history": history_list})
-
     except Exception as e:
         print(f"History API error: {e}")
         return jsonify({"success": False, "message": str(e), "history": []})
@@ -519,7 +483,6 @@ def history_filter():
     selected_date = request.args.get('date')
     if not selected_date:
         return jsonify([])
-
     try:
         cur = conn.cursor()
         cur.execute("""
@@ -548,14 +511,11 @@ def history_filter():
         """, (selected_date,))
         rows = cur.fetchall()
         cur.close()
-
         seen_keys = set()
         result = []
-
         for row in rows:
             student_id = row[1]
             scan_date = row[3].date() if row[3] else None
-
             if scan_date:
                 key = f"{student_id}_{scan_date}"
                 if key not in seen_keys:
@@ -567,7 +527,6 @@ def history_filter():
                         "scan_date": scan_date.strftime("%B %d, %Y") if scan_date else "—",
                         "scan_time": row[3].strftime("%I:%M:%S %p") if row[3] else "—"
                     })
-
         return jsonify(result)
     except Exception as e:
         print(f"History filter error: {e}")
@@ -577,21 +536,17 @@ def history_filter():
             conn.close()
 
 # =========================
-# TEACHER DB FUNCTIONS
+# TEACHER DB FUNCTIONS - FIXED (removed birthday column)
 # =========================
 
 def get_teacher_by_email(email):
-    """
-    Login is based on teacher_accounts.email
-    Password is based on teacher_accounts.password
-    """
     conn = get_connection()
     if conn is None:
         print("No database connection")
         return None
-
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        # REMOVED t.birthday since it doesn't exist in teachers table
         cur.execute("""
             SELECT
                 t.id,
@@ -599,14 +554,9 @@ def get_teacher_by_email(email):
                 t.first_name,
                 t.middle_name,
                 t.extension,
-                t.birthday,
                 t.contact_number,
                 t.email AS teacher_email,
                 t.created_at,
-                t.subject,
-                t.department,
-                t.bio,
-                t.profile_picture,
                 ta.id AS account_id,
                 ta.teacher_id AS linked_teacher_id,
                 ta.email AS account_email,
@@ -619,18 +569,15 @@ def get_teacher_by_email(email):
         """, (email,))
         row = cur.fetchone()
         cur.close()
-
         if not row:
             print(f"No teacher account found with email: {email}")
             return None
-
         full_name = build_full_name(
             row["first_name"],
             row["middle_name"],
             row["last_name"],
             row["extension"]
         )
-
         return {
             "id": row["id"],
             "teacher_id": row["linked_teacher_id"],
@@ -639,20 +586,14 @@ def get_teacher_by_email(email):
             "middle_name": row["middle_name"],
             "last_name": row["last_name"],
             "extension": row["extension"],
-            "birthday": row["birthday"],
             "full_name": full_name,
             "contact_number": row["contact_number"],
             "teacher_email": row["teacher_email"],
             "email": row["account_email"],
             "password_hash": row["password"],
             "created_at": row["created_at"],
-            "reset_token": row["reset_token"],
-            "subject": row.get("subject", ""),
-            "department": row.get("department", ""),
-            "bio": row.get("bio", ""),
-            "profile_picture": row.get("profile_picture", "")
+            "reset_token": row["reset_token"]
         }
-
     except Exception as e:
         print(f"get_teacher_by_email error: {e}")
         import traceback
@@ -666,9 +607,9 @@ def get_teacher_by_id(teacher_db_id):
     conn = get_connection()
     if conn is None:
         return None
-
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        # REMOVED birthday column
         cur.execute("""
             SELECT
                 id,
@@ -676,48 +617,34 @@ def get_teacher_by_id(teacher_db_id):
                 first_name,
                 middle_name,
                 extension,
-                birthday,
                 contact_number,
                 email,
-                created_at,
-                subject,
-                department,
-                bio,
-                profile_picture
+                created_at
             FROM teachers
             WHERE id = %s
             LIMIT 1;
         """, (teacher_db_id,))
         row = cur.fetchone()
         cur.close()
-
         if not row:
             return None
-
         full_name = build_full_name(
             row["first_name"],
             row["middle_name"],
             row["last_name"],
             row["extension"]
         )
-
         return {
             "id": row["id"],
             "first_name": row["first_name"],
             "middle_name": row["middle_name"],
             "last_name": row["last_name"],
             "extension": row["extension"],
-            "birthday": row["birthday"],
             "full_name": full_name,
             "contact_number": row["contact_number"],
             "email": row["email"],
-            "created_at": row["created_at"],
-            "subject": row.get("subject", ""),
-            "department": row.get("department", ""),
-            "bio": row.get("bio", ""),
-            "profile_picture": row.get("profile_picture", "")
+            "created_at": row["created_at"]
         }
-
     except Exception as e:
         print(f"get_teacher_by_id error: {e}")
         return None
@@ -729,20 +656,16 @@ def update_teacher_in_db(teacher_db_id, fields: dict):
     conn = get_connection()
     if conn is None:
         raise Exception("Database not connected")
-
+    # Only use columns that actually exist in your teachers table
     allowed = {
         "first_name", "middle_name", "last_name", "extension", 
-        "contact_number", "email", "birthday", 
-        "subject", "department", "bio", "profile_picture"
+        "contact_number", "email"
     }
     updates = {k: v for k, v in fields.items() if k in allowed}
-
     if not updates:
         return
-
     set_clause = ", ".join([f"{col} = %s" for col in updates.keys()])
     values = list(updates.values()) + [teacher_db_id]
-
     try:
         cur = conn.cursor()
         cur.execute(f"UPDATE teachers SET {set_clause} WHERE id = %s;", values)
@@ -759,7 +682,6 @@ def update_teacher_account_password_by_email(email, new_password):
     conn = get_connection()
     if conn is None:
         raise Exception("Database not connected")
-
     try:
         hashed_password = generate_password_hash(new_password)
         cur = conn.cursor()
@@ -785,18 +707,14 @@ def update_teacher_account_password_by_email(email, new_password):
 # =========================
 
 def send_reset_email(to_email, reset_token):
-    """Send password reset email using Gmail SMTP"""
     try:
         smtp_server = os.getenv("MAIL_HOST", "smtp.gmail.com")
         smtp_port = int(os.getenv("MAIL_PORT", 587))
         smtp_username = os.getenv("MAIL_USERNAME")
         smtp_password = os.getenv("MAIL_PASSWORD")
         from_email = os.getenv("MAIL_FROM", smtp_username)
-        
         print(f"Sending reset email to: {to_email}")
-        
         reset_link = f"http://127.0.0.1:5000/reset_password/{reset_token}"
-        
         subject = "Password Reset Request - Tap & Know"
         html_content = f"""
         <!DOCTYPE html>
@@ -805,94 +723,46 @@ def send_reset_email(to_email, reset_token):
             <meta charset="UTF-8">
             <title>Password Reset</title>
             <style>
-                body {{
-                    font-family: Arial, sans-serif;
-                    line-height: 1.6;
-                    color: #333;
-                }}
-                .container {{
-                    max-width: 600px;
-                    margin: 0 auto;
-                    padding: 20px;
-                    background: #f9f9f9;
-                    border-radius: 10px;
-                }}
-                .header {{
-                    background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);
-                    color: white;
-                    padding: 20px;
-                    text-align: center;
-                    border-radius: 10px 10px 0 0;
-                }}
-                .content {{
-                    background: white;
-                    padding: 30px;
-                    border-radius: 0 0 10px 10px;
-                }}
-                .button {{
-                    display: inline-block;
-                    padding: 12px 24px;
-                    background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);
-                    color: white;
-                    text-decoration: none;
-                    border-radius: 5px;
-                    margin: 20px 0;
-                }}
-                .footer {{
-                    text-align: center;
-                    margin-top: 20px;
-                    font-size: 12px;
-                    color: #666;
-                }}
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; background: #f9f9f9; border-radius: 10px; }}
+                .header {{ background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }}
+                .content {{ background: white; padding: 30px; border-radius: 0 0 10px 10px; }}
+                .button {{ display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%); color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
+                .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
             </style>
         </head>
         <body>
             <div class="container">
-                <div class="header">
-                    <h2>Tap & Know System</h2>
-                </div>
+                <div class="header"><h2>Tap & Know System</h2></div>
                 <div class="content">
                     <h3>Password Reset Request</h3>
                     <p>Hello,</p>
                     <p>We received a request to reset your password for your Tap & Know teacher account.</p>
                     <p>Click the button below to reset your password:</p>
-                    <p style="text-align: center;">
-                        <a href="{reset_link}" class="button">Reset Password</a>
-                    </p>
+                    <p style="text-align: center;"><a href="{reset_link}" class="button">Reset Password</a></p>
                     <p>Or copy and paste this link into your browser:</p>
-                    <p style="background: #f0f0f0; padding: 10px; border-radius: 5px; word-break: break-all;">
-                        {reset_link}
-                    </p>
+                    <p style="background: #f0f0f0; padding: 10px; border-radius: 5px; word-break: break-all;">{reset_link}</p>
                     <p><strong>Important:</strong> This link will expire after 24 hours.</p>
                     <p>If you didn't request this password reset, please ignore this email.</p>
                     <hr>
-                    <p style="font-size: 14px; color: #666;">
-                        Best regards,<br>
-                        Tap & Know Administration
-                    </p>
+                    <p style="font-size: 14px; color: #666;">Best regards,<br>Tap & Know Administration</p>
                 </div>
-                <div class="footer">
-                    <p>This is an automated message, please do not reply to this email.</p>
-                </div>
+                <div class="footer"><p>This is an automated message, please do not reply to this email.</p></div>
             </div>
         </body>
         </html>
         """
-        
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
         msg['From'] = from_email
         msg['To'] = to_email
         msg.attach(MIMEText(html_content, 'html'))
-        
         with smtplib.SMTP(smtp_server, smtp_port, timeout=30) as server:
             server.starttls()
             server.login(smtp_username, smtp_password)
             server.send_message(msg)
-        
         print(f"✓ Reset email sent successfully to {to_email}")
         return True
-        
     except Exception as e:
         print(f"✗ Email sending error: {e}")
         import traceback
@@ -900,14 +770,11 @@ def send_reset_email(to_email, reset_token):
         return False
 
 def get_teacher_by_email_simple(email):
-    """Simplified function just to check if email exists"""
     conn = None
     try:
         conn = get_connection()
         if conn is None:
-            print("No database connection")
             return None
-        
         cur = conn.cursor()
         cur.execute("""
             SELECT email FROM teacher_accounts
@@ -916,11 +783,9 @@ def get_teacher_by_email_simple(email):
         """, (email,))
         row = cur.fetchone()
         cur.close()
-        
         if row:
             return {"email": row[0]}
         return None
-        
     except Exception as e:
         print(f"get_teacher_by_email_simple error: {e}")
         return None
@@ -929,14 +794,11 @@ def get_teacher_by_email_simple(email):
             conn.close()
 
 def save_reset_token(email, token):
-    """Save reset token to database"""
     conn = None
     try:
         conn = get_connection()
         if conn is None:
-            print("No database connection")
             return False
-        
         cur = conn.cursor()
         cur.execute("""
             UPDATE teacher_accounts
@@ -946,10 +808,8 @@ def save_reset_token(email, token):
         conn.commit()
         updated = cur.rowcount > 0
         cur.close()
-        
         print(f"Token saved for {email}: {updated}")
         return updated
-        
     except Exception as e:
         print(f"Save reset token error: {e}")
         return False
@@ -958,13 +818,11 @@ def save_reset_token(email, token):
             conn.close()
 
 def verify_reset_token(token):
-    """Verify if reset token exists and get associated email"""
     conn = None
     try:
         conn = get_connection()
         if conn is None:
             return None
-        
         cur = conn.cursor()
         cur.execute("""
             SELECT email FROM teacher_accounts
@@ -972,12 +830,10 @@ def verify_reset_token(token):
         """, (token,))
         row = cur.fetchone()
         cur.close()
-        
         if row:
             print(f"Token verified for: {row[0]}")
             return row[0]
         return None
-        
     except Exception as e:
         print(f"Verify reset token error: {e}")
         return None
@@ -986,13 +842,11 @@ def verify_reset_token(token):
             conn.close()
 
 def clear_reset_token(email):
-    """Clear reset token after successful password reset"""
     conn = None
     try:
         conn = get_connection()
         if conn is None:
             return False
-        
         cur = conn.cursor()
         cur.execute("""
             UPDATE teacher_accounts
@@ -1003,7 +857,6 @@ def clear_reset_token(email):
         cur.close()
         print(f"Token cleared for: {email}")
         return True
-        
     except Exception as e:
         print(f"Clear reset token error: {e}")
         return False
@@ -1020,18 +873,13 @@ def teacher_login():
     if request.method == 'POST':
         identifier = request.form.get('identifier', '').strip()
         password = request.form.get('password', '').strip()
-
         print(f"Login attempt for: {identifier}")
-
         if not identifier or not password:
             flash('Please enter email and password.', 'error')
             return render_template('login.html')
-
         teacher = get_teacher_by_email(identifier)
-
         if teacher:
             print(f"Teacher account found: {teacher['email']}")
-
             if teacher['password_hash'] and check_password_hash(teacher['password_hash'], password):
                 session.permanent = True
                 session['teacher_logged_in'] = True
@@ -1039,7 +887,6 @@ def teacher_login():
                 session['teacher_account_id'] = teacher['account_id']
                 session['teacher_email'] = teacher['email']
                 session['teacher_name'] = teacher['full_name']
-
                 flash('Login successful!', 'success')
                 return redirect(url_for('admin_bp.teacher_profile'))
             else:
@@ -1048,19 +895,16 @@ def teacher_login():
         else:
             print("Teacher not found")
             flash('Invalid email or password.', 'error')
-
     return render_template('login.html')
 
 @admin_bp.route('/teacher/profile')
 @login_required
 def teacher_profile():
     teacher = get_teacher_by_id(session.get('teacher_id'))
-
     if not teacher:
         session.clear()
         flash('Session expired.', 'error')
         return redirect(url_for('admin_bp.teacher_login'))
-
     return render_template('teacher_profile.html', current_teacher=teacher)
 
 @admin_bp.route('/teacher/update_profile', methods=['POST'])
@@ -1068,13 +912,10 @@ def teacher_profile():
 def update_teacher_profile():
     data = request.get_json()
     teacher_id = session.get('teacher_id')
-
     if not teacher_id:
         return jsonify({"success": False, "message": "Not logged in"}), 401
-
     try:
         fields = {}
-
         if "first_name" in data:
             fields["first_name"] = data["first_name"]
         if "middle_name" in data:
@@ -1087,18 +928,9 @@ def update_teacher_profile():
             fields["contact_number"] = data["contact_number"]
         if "email" in data:
             fields["email"] = data["email"]
-        if "birthday" in data:
-            fields["birthday"] = data["birthday"]
-        if "subject" in data:
-            fields["subject"] = data["subject"]
-        if "department" in data:
-            fields["department"] = data["department"]
-        if "bio" in data:
-            fields["bio"] = data["bio"]
-
+        # REMOVED birthday since it doesn't exist in teachers table
         update_teacher_in_db(teacher_id, fields)
         return jsonify({"success": True, "message": "Profile updated successfully"})
-
     except Exception as e:
         print(f"update_teacher_profile error: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
@@ -1109,95 +941,54 @@ def update_teacher_profile():
 
 @admin_bp.route('/forgot_password_ajax', methods=['POST'])
 def forgot_password_ajax():
-    """Handle forgot password AJAX request"""
     print("\n=== Forgot Password Request ===")
-    
     try:
         data = request.get_json()
         email = data.get('email', '').strip()
-        
         print(f"Email: {email}")
-        
         if not email:
-            return jsonify({
-                'success': False,
-                'message': 'Please enter your email address.'
-            }), 400
-        
-        # Check if email exists
+            return jsonify({'success': False, 'message': 'Please enter your email address.'}), 400
         teacher = get_teacher_by_email_simple(email)
-        
         if not teacher:
             print(f"Email not found: {email}")
-            return jsonify({
-                'success': True,
-                'message': 'If an account exists with this email, you will receive password reset instructions.'
-            })
-        
+            return jsonify({'success': True, 'message': 'If an account exists with this email, you will receive password reset instructions.'})
         print(f"Email found: {email}")
-        
-        # Generate token
         reset_token = str(uuid.uuid4())
         print(f"Token generated: {reset_token}")
-        
-        # Save token
         if save_reset_token(email, reset_token):
-            # Send email
             if send_reset_email(email, reset_token):
-                return jsonify({
-                    'success': True,
-                    'message': 'Password reset instructions have been sent to your email.'
-                })
+                return jsonify({'success': True, 'message': 'Password reset instructions have been sent to your email.'})
             else:
-                return jsonify({
-                    'success': False,
-                    'message': 'Failed to send reset email. Please check your email configuration.'
-                }), 500
+                return jsonify({'success': False, 'message': 'Failed to send reset email. Please check your email configuration.'}), 500
         else:
-            return jsonify({
-                'success': False,
-                'message': 'Failed to process request. Please try again.'
-            }), 500
-            
+            return jsonify({'success': False, 'message': 'Failed to process request. Please try again.'}), 500
     except Exception as e:
         print(f"Forgot password error: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({
-            'success': False,
-            'message': f'An error occurred: {str(e)}'
-        }), 500
+        return jsonify({'success': False, 'message': f'An error occurred: {str(e)}'}), 500
 
 @admin_bp.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
-    """Handle password reset page"""
     print(f"\n=== Reset Password Request ===")
     print(f"Token: {token[:20]}...")
-    
     email = verify_reset_token(token)
-    
     if not email:
         flash('Invalid or expired reset link. Please request a new one.', 'error')
         return redirect(url_for('admin_bp.teacher_login'))
-    
     print(f"Email found: {email}")
-    
     if request.method == 'POST':
         password = request.form.get('password', '').strip()
         confirm_password = request.form.get('confirm_password', '').strip()
-        
         if not password:
             flash('Please enter a password.', 'error')
             return render_template('reset_password.html', token=token)
-        
         if len(password) < 6:
             flash('Password must be at least 6 characters long.', 'error')
             return render_template('reset_password.html', token=token)
-        
         if password != confirm_password:
             flash('Passwords do not match.', 'error')
             return render_template('reset_password.html', token=token)
-        
         try:
             if update_teacher_account_password_by_email(email, password):
                 clear_reset_token(email)
@@ -1209,9 +1000,7 @@ def reset_password(token):
         except Exception as e:
             print(f"Password reset error: {e}")
             flash('An error occurred. Please try again.', 'error')
-        
         return render_template('reset_password.html', token=token)
-    
     return render_template('reset_password.html', token=token)
 
 @admin_bp.route('/teacher/logout')
@@ -1221,48 +1010,13 @@ def teacher_logout():
     return redirect(url_for('admin_bp.teacher_login'))
 
 # =========================
-# PROFILE PICTURE UPLOAD
+# PROFILE PICTURE UPLOAD - DISABLED
 # =========================
-
-UPLOAD_FOLDER = 'static/uploads/teachers'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @admin_bp.route('/teacher/upload_profile_pic', methods=['POST'])
 @login_required
 def upload_teacher_profile_pic():
-    if 'profile_picture' not in request.files:
-        return jsonify({"success": False, "message": "No file provided"})
-
-    file = request.files['profile_picture']
-    if file.filename == '':
-        return jsonify({"success": False, "message": "No file selected"})
-
-    if file:
-        teacher_id = session.get('teacher_id')
-        filename = secure_filename(f"teacher_{teacher_id}_{int(time.time())}_{file.filename}")
-        save_path = os.path.join(UPLOAD_FOLDER, filename)
-        file.save(save_path)
-
-        image_url = f"/static/uploads/teachers/{filename}"
-        
-        try:
-            conn = get_connection()
-            cur = conn.cursor()
-            cur.execute("UPDATE teachers SET profile_picture = %s WHERE id = %s", (image_url, teacher_id))
-            conn.commit()
-            cur.close()
-            conn.close()
-            
-            return jsonify({
-                "success": True,
-                "image_url": image_url,
-                "message": "Profile picture uploaded successfully"
-            })
-        except Exception as e:
-            print(f"Error saving profile picture: {e}")
-            return jsonify({"success": False, "message": "Database error"})
-    
-    return jsonify({"success": False, "message": "Upload failed"})
+    return jsonify({"success": False, "message": "Profile picture upload feature is currently disabled"}), 501
 
 # =========================
 # DEBUG ROUTE
@@ -1270,7 +1024,6 @@ def upload_teacher_profile_pic():
 
 @admin_bp.route('/debug/db_test')
 def debug_db_test():
-    """Debug route to test database connection"""
     try:
         conn = get_connection()
         if conn is None:
@@ -1284,21 +1037,93 @@ def debug_db_test():
                     "port": os.getenv("DB_PORT")
                 }
             })
-        
         cur = conn.cursor()
         cur.execute("SELECT COUNT(*) FROM teacher_accounts")
         count = cur.fetchone()[0]
         cur.close()
         conn.close()
-        
-        return jsonify({
-            "status": "success",
-            "message": "Database connected successfully",
-            "teacher_accounts_count": count
-        })
-        
+        return jsonify({"status": "success", "message": "Database connected successfully", "teacher_accounts_count": count})
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        })
+        return jsonify({"status": "error", "message": str(e)})
+
+# =========================
+# MY CLASSES / SECTIONS ROUTES
+# =========================
+
+@admin_bp.route('/class_section/<section_id>')
+@login_required
+def class_section(section_id):
+    conn = get_connection()
+    if conn is None:
+        flash('Database connection error', 'error')
+        return render_template('class_section.html', section=section_id, students=[])
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("""
+            SELECT 
+                id,
+                uid,
+                first_name,
+                middle_name,
+                last_name,
+                extension,
+                contact_number,
+                email,
+                schedule,
+                section_id,
+                created_at
+            FROM students
+            WHERE section_id = %s
+            ORDER BY last_name ASC, first_name ASC;
+        """, (section_id,))
+        rows = cur.fetchall()
+        cur.close()
+        student_list = []
+        today = datetime.now().strftime('%Y-%m-%d')
+        for row in rows:
+            full_name = build_full_name(row[2], row[3], row[4], row[5])
+            cur2 = conn.cursor()
+            cur2.execute("""
+                SELECT created_at FROM rfid_cards 
+                WHERE DATE(created_at) = %s 
+                AND UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(uid, '')), ' ', ''), '-', ''), ':', '')) 
+                = UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(%s, '')), ' ', ''), '-', ''), ':', ''))
+                LIMIT 1
+            """, (today, row[1]))
+            attendance = cur2.fetchone()
+            cur2.close()
+            student_list.append({
+                "id": row[0],
+                "uid": format_uid(row[1]) if row[1] else "—",
+                "first_name": row[2] or "—",
+                "middle_name": row[3] or "—",
+                "last_name": row[4] or "—",
+                "extension": row[5] or "—",
+                "full_name": full_name if full_name else "—",
+                "birthday": str(row[6]) if row[6] else "—",
+                "contact_number": row[7] or "—",
+                "email": row[8] or "—",
+                "schedule": row[9] or "—",
+                "section_id": row[10],
+                "created_at": row[11].strftime("%b %d, %Y  %I:%M %p") if row[11] else "—",
+                "present_today": attendance is not None,
+                "scan_time": attendance[0].strftime("%I:%M:%S %p") if attendance else "—"
+            })
+        conn.close()
+        section_info = {
+            '1-A': {'name': 'Grade 1 - Section A', 'adviser': 'Ms. Maria Santos', 'room': 'Room 101', 'total_students': len(student_list), 'present_today': sum(1 for s in student_list if s['present_today'])},
+            '1-B': {'name': 'Grade 1 - Section B', 'adviser': 'Mr. John Reyes', 'room': 'Room 102', 'total_students': len(student_list), 'present_today': sum(1 for s in student_list if s['present_today'])},
+            '2-A': {'name': 'Grade 2 - Section A', 'adviser': 'Ms. Anna Garcia', 'room': 'Room 201', 'total_students': len(student_list), 'present_today': sum(1 for s in student_list if s['present_today'])},
+            '2-B': {'name': 'Grade 2 - Section B', 'adviser': 'Mr. Carlos Lopez', 'room': 'Room 202', 'total_students': len(student_list), 'present_today': sum(1 for s in student_list if s['present_today'])},
+            '3-A': {'name': 'Grade 3 - Section A', 'adviser': 'Ms. Elena Cruz', 'room': 'Room 301', 'total_students': len(student_list), 'present_today': sum(1 for s in student_list if s['present_today'])}
+        }
+        current_section = section_info.get(section_id, {'name': section_id, 'adviser': 'Not Assigned', 'room': 'Not Assigned', 'total_students': len(student_list), 'present_today': sum(1 for s in student_list if s['present_today'])})
+        return render_template('class_section.html', section=section_id, section_info=current_section, students=student_list)
+    except Exception as e:
+        print(f"Class section error: {e}")
+        import traceback
+        traceback.print_exc()
+        flash(f'Error loading class section: {str(e)}', 'error')
+        if conn:
+            conn.close()
+        return render_template('class_section.html', section=section_id, section_info={'name': section_id, 'adviser': 'Error', 'room': 'Error', 'total_students': 0, 'present_today': 0}, students=[])

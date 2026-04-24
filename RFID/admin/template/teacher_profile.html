@@ -10,102 +10,160 @@
         top: 20px;
         right: 20px;
         z-index: 9999;
-        min-width: 350px;
-        max-width: 500px;
-        padding: 18px 24px;
-        border-radius: 20px;
+        min-width: 300px;
+        max-width: 450px;
+        padding: 16px 20px;
+        border-radius: 16px;
         background: rgba(30, 58, 138, 0.95);
         backdrop-filter: blur(18px);
         box-shadow: 0 10px 40px rgba(0,0,0,0.3);
         display: flex;
         align-items: center;
-        gap: 14px;
+        gap: 12px;
         animation: slideInRight 0.3s ease;
         border: 1px solid rgba(255,255,255,0.15);
     }
     
     @keyframes slideInRight {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
     }
     
     @keyframes slideOutRight {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(100%);
-            opacity: 0;
-        }
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
     }
     
-    .toast.success {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95));
-        backdrop-filter: blur(18px);
-        border: 1px solid rgba(255,255,255,0.2);
+    .toast.success { background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95)); }
+    .toast.error { background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95)); }
+    .toast.info { background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.95)); }
+    .toast.warning { background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95)); }
+    
+    .toast-icon { font-size: 24px; flex-shrink: 0; }
+    .toast-content { flex: 1; }
+    .toast-title { font-weight: 600; margin-bottom: 4px; font-size: 14px; color: white; }
+    .toast-message { font-size: 13px; opacity: 0.95; color: white; }
+    .toast-close { cursor: pointer; opacity: 0.7; font-size: 18px; color: white; }
+    .toast-close:hover { opacity: 1; }
+    
+    /* White background card */
+    .white-card {
+        background: white;
+        border-radius: 1.5rem;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
     }
     
-    .toast.error {
-        background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95));
-        backdrop-filter: blur(18px);
-        border: 1px solid rgba(255,255,255,0.2);
+    /* Header gradient */
+    .header-gradient {
+        background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);
+        padding: 1.5rem 2rem;
     }
     
-    .toast.info {
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.95));
-        backdrop-filter: blur(18px);
-        border: 1px solid rgba(255,255,255,0.2);
+    .text-accent {
+        color: #f59e0b;
     }
     
-    .toast.warning {
-        background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95));
-        backdrop-filter: blur(18px);
-        border: 1px solid rgba(255,255,255,0.2);
+    /* Form inputs */
+    .form-input {
+        background: white;
+        border: 1px solid #e2e8f0;
+        color: #1e293b;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+        padding: 0.6rem 1rem;
+        border-radius: 0.75rem;
+        width: 100%;
     }
     
-    .toast-icon {
-        font-size: 28px;
-        flex-shrink: 0;
+    .form-input:focus {
+        outline: none;
+        border-color: #f59e0b;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
     }
     
-    .toast-content {
-        flex: 1;
+    .form-input::placeholder {
+        color: #94a3b8;
+        font-size: 0.85rem;
     }
     
-    .toast-title {
+    .form-input:disabled, 
+    .form-input[readonly] {
+        background: #f8fafc;
+        color: #64748b;
+        cursor: not-allowed;
+        border-color: #e2e8f0;
+    }
+    
+    label {
+        color: #1e293b;
+        font-size: 0.8rem;
         font-weight: 700;
-        margin-bottom: 5px;
-        font-size: 16px;
-        color: white;
+        margin-bottom: 0.5rem;
+        display: block;
+        letter-spacing: 0.3px;
     }
     
-    .toast-message {
-        font-size: 14px;
-        opacity: 0.95;
+    .btn-primary {
+        background: #f59e0b;
         color: white;
-    }
-    
-    .toast-close {
+        font-weight: 700;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+        padding: 0.75rem;
+        border: none;
         cursor: pointer;
-        opacity: 0.7;
-        transition: opacity 0.2s;
-        font-size: 20px;
-        flex-shrink: 0;
+        border-radius: 0.75rem;
+        width: 100%;
+    }
+    
+    .btn-primary:hover {
+        background: #d97706;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);
+    }
+    
+    .btn-primary:active {
+        transform: translateY(0);
+    }
+    
+    .info-display-box {
+        background: linear-gradient(135deg, #1e3a8a, #1e1b4b);
+        border-radius: 0.75rem;
+        padding: 0.875rem 1.125rem;
+        border-left: 3px solid #f59e0b;
+    }
+    
+    .info-display-label {
+        font-size: 0.7rem;
+        color: rgba(255,255,255,0.7);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.35rem;
+    }
+    
+    .info-display-value {
+        font-size: 0.9rem;
         color: white;
+        font-weight: 600;
     }
     
-    .toast-close:hover {
-        opacity: 1;
+    .section-header {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #f59e0b;
+        display: inline-block;
     }
     
-    /* Loading overlay for buttons */
+    textarea.form-input {
+        resize: vertical;
+        min-height: 80px;
+    }
+    
     .btn-loading {
         position: relative;
         pointer-events: none;
@@ -115,12 +173,12 @@
     .btn-loading::after {
         content: "";
         position: absolute;
-        width: 22px;
-        height: 22px;
+        width: 18px;
+        height: 18px;
         top: 50%;
-        right: 24px;
-        margin-top: -11px;
-        border: 2px solid #1e3a8a;
+        right: 20px;
+        margin-top: -9px;
+        border: 2px solid white;
         border-top-color: transparent;
         border-radius: 50%;
         animation: spin 0.6s linear infinite;
@@ -130,185 +188,63 @@
         to { transform: rotate(360deg); }
     }
     
-    /* Glass morphism card */
-    .profile-card {
-        background: rgba(255,255,255,0.08);
-        backdrop-filter: blur(18px);
-        -webkit-backdrop-filter: blur(18px);
-        border: 1px solid rgba(255,255,255,0.15);
-        border-radius: 1.5rem;
-        overflow: hidden;
-    }
-    
-    /* Form inputs - Compact */
-    .form-input {
-        background: rgba(255,255,255,0.1);
-        border: 1px solid rgba(255,255,255,0.2);
-        color: white;
-        transition: all 0.2s ease;
-        font-size: 0.9rem;
-        padding: 0.6rem 1rem;
-    }
-    
-    .form-input:focus {
-        outline: none;
-        border-color: #facc15;
-        background: rgba(255,255,255,0.15);
-        box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.1);
-    }
-    
-    .form-input::placeholder {
-        color: rgba(255,255,255,0.5);
-        font-size: 0.85rem;
-    }
-    
-    label {
-        color: rgba(255,255,255,0.9);
-        font-size: 0.8rem;
-        font-weight: 600;
-        margin-bottom: 0.25rem;
-        display: block;
-        letter-spacing: 0.3px;
-    }
-    
-    /* Yellow accent button */
-    .btn-primary {
-        background: #facc15;
-        color: #1e3a8a;
-        font-weight: 700;
-        transition: all 0.2s ease;
-        font-size: 0.9rem;
-        padding: 0.75rem;
-    }
-    
-    .btn-primary:hover {
-        background: #eab308;
-        transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(250, 204, 21, 0.3);
-    }
-    
-    .btn-primary:active {
-        transform: translateY(0);
-    }
-    
-    /* Display text */
-    .display-name {
-        color: white;
-        font-size: 1.25rem;
-        font-weight: 700;
-    }
-    
-    .display-subject {
-        color: #facc15;
-        font-size: 0.85rem;
-        font-weight: 500;
-    }
-    
-    /* Profile picture container */
-    .profile-img-container {
-        border: 3px solid #facc15;
-        box-shadow: 0 0 15px rgba(250, 204, 21, 0.2);
-    }
-    
-    /* Profile image */
-    .profile-image {
-        width: 100px;
-        height: 100px;
-        border-radius: 1.5rem;
-    }
-    
-    /* Camera button */
-    .camera-btn {
-        padding: 0.5rem;
-        border-radius: 0.75rem;
-        font-size: 0.8rem;
-        bottom: -5px;
-        right: -5px;
-    }
-    
-    /* Character counter */
-    .char-counter {
-        text-align: right;
-        font-size: 0.7rem;
-        color: rgba(255,255,255,0.5);
-        margin-top: 0.25rem;
-    }
-    
-    .char-counter.warning {
-        color: #facc15;
-    }
-    
-    .char-counter.danger {
-        color: #ef4444;
-    }
-    
-    /* Cover image */
-    .cover-image {
-        height: 120px;
-    }
-    
-    /* Info text */
     .info-text {
         font-size: 0.7rem;
-        color: rgba(255,255,255,0.45);
-        margin-top: 0.2rem;
+        color: #64748b;
+        margin-top: 0.3rem;
     }
     
     .info-text i {
         font-size: 0.65rem;
         margin-right: 0.25rem;
+        color: #f59e0b;
     }
     
-    /* Display info boxes */
-    .info-display-box {
-        background: rgba(0, 0, 0, 0.3);
-        border-radius: 0.75rem;
-        padding: 0.5rem 1rem;
-        border-left: 3px solid #facc15;
-    }
-    
-    .info-display-label {
-        font-size: 0.7rem;
-        color: rgba(255,255,255,0.6);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 0.2rem;
-    }
-    
-    .info-display-value {
-        font-size: 0.9rem;
-        color: white;
-        font-weight: 500;
+    @media (max-width: 768px) {
+        .form-input {
+            font-size: 0.85rem;
+            padding: 0.5rem 0.75rem;
+        }
+        
+        .info-display-value {
+            font-size: 0.8rem;
+        }
+        
+        .section-header {
+            font-size: 0.9rem;
+        }
+        
+        label {
+            font-size: 0.75rem;
+        }
+        
+        .header-gradient {
+            padding: 1rem 1.25rem;
+        }
+        
+        .info-display-box {
+            padding: 0.6rem 0.8rem;
+        }
     }
 </style>
 
 <div class="max-w-4xl mx-auto px-4 py-6">
 
-    <div class="profile-card">
+    <div class="white-card">
 
-        <!-- Cover with gradient -->
-        <div class="cover-image h-32 bg-gradient-to-r from-blue-900 to-indigo-900 relative">
-            <div class="absolute -bottom-10 left-6">
-                <div class="relative group">
-                    <img id="profilePic" 
-                         src="{{ current_teacher.profile_picture or 'https://via.placeholder.com/120x120/1e3a8a/facc15?text=👨‍🏫' }}"
-                         alt="Profile Picture"
-                         class="profile-image w-24 h-24 rounded-2xl border-3 border-yellow-400 object-cover shadow-lg profile-img-container">
-
-                    <label for="profileUpload" 
-                           class="camera-btn absolute bottom-0 right-0 bg-yellow-400 text-blue-900 hover:bg-yellow-300 p-1.5 rounded-lg shadow cursor-pointer transition">
-                        <i class="fa-solid fa-camera text-xs"></i>
-                    </label>
-                    <input type="file" id="profileUpload" accept="image/*" class="hidden"
-                           onchange="uploadProfilePicture()">
-                </div>
+        <!-- Header -->
+        <div class="header-gradient text-white">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-user-tie text-accent text-2xl"></i>
+                <h1 class="text-xl font-semibold">My Profile</h1>
             </div>
+            <p class="text-white/80 mt-1 text-sm">Manage your personal and professional information</p>
         </div>
 
-        <div class="pt-14 pb-6 px-6">
+        <div class="p-6">
 
-            <!-- Display Info on Top - Name, Subject, Department -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+            <!-- Display Info Boxes -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div class="info-display-box">
                     <div class="info-display-label">
                         <i class="fa-solid fa-user mr-1 text-yellow-400"></i> Full Name
@@ -335,76 +271,86 @@
                 </div>
             </div>
 
-            <!-- Edit Form - Compact -->
-            <form id="profileForm" class="space-y-4">
+            <!-- Edit Form -->
+            <form id="profileForm" class="space-y-5">
 
-                <!-- Full Name Input - Split into parts -->
+                <div>
+                    <h3 class="section-header">
+                        <i class="fa-solid fa-user-edit mr-2 text-yellow-500"></i> Personal Information
+                    </h3>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label>
-                            <i class="fa-solid fa-user mr-1 text-yellow-400"></i> First Name
-                        </label>
+                        <label>First Name <span class="text-red-500">*</span></label>
                         <input type="text" id="first_name" name="first_name"
                                value="{{ current_teacher.first_name }}"
-                               class="form-input w-full rounded-xl"
-                               placeholder="First Name"
+                               class="form-input"
+                               placeholder="Enter first name"
                                maxlength="50">
                     </div>
                     <div>
-                        <label>
-                            <i class="fa-solid fa-user mr-1 text-yellow-400"></i> Middle Name
-                        </label>
+                        <label>Middle Name</label>
                         <input type="text" id="middle_name" name="middle_name"
                                value="{{ current_teacher.middle_name or '' }}"
-                               class="form-input w-full rounded-xl"
-                               placeholder="Middle Name"
+                               class="form-input"
+                               placeholder="Enter middle name (optional)"
                                maxlength="50">
                     </div>
                     <div>
-                        <label>
-                            <i class="fa-solid fa-user mr-1 text-yellow-400"></i> Last Name
-                        </label>
+                        <label>Last Name <span class="text-red-500">*</span></label>
                         <input type="text" id="last_name" name="last_name"
                                value="{{ current_teacher.last_name }}"
-                               class="form-input w-full rounded-xl"
-                               placeholder="Last Name"
+                               class="form-input"
+                               placeholder="Enter last name"
                                maxlength="50">
                     </div>
                     <div>
-                        <label>
-                            <i class="fa-solid fa-tag mr-1 text-yellow-400"></i> Extension
-                        </label>
+                        <label>Extension</label>
                         <input type="text" id="extension" name="extension"
                                value="{{ current_teacher.extension or '' }}"
-                               class="form-input w-full rounded-xl"
+                               class="form-input"
                                placeholder="e.g., Jr., Sr., III"
                                maxlength="20">
                     </div>
                 </div>
 
-                <!-- Subject & Department - Side by side -->
+                <div>
+                    <label>Contact Number</label>
+                    <input type="tel" id="contact_number" name="contact_number"
+                           value="{{ current_teacher.contact_number or '' }}"
+                           class="form-input"
+                           placeholder="09123456789"
+                           maxlength="11">
+                    <div class="info-text">
+                        <i class="fa-solid fa-info-circle"></i> Numbers only • Max 11 digits
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <h3 class="section-header">
+                        <i class="fa-solid fa-briefcase mr-2 text-yellow-500"></i> Professional Information
+                    </h3>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label>
-                            <i class="fa-solid fa-book mr-1 text-yellow-400"></i> Subject
-                        </label>
+                        <label>Subject</label>
                         <input type="text" id="subject" name="subject"
                                value="{{ current_teacher.subject or '' }}"
-                               class="form-input w-full rounded-xl"
-                               placeholder="e.g., Mathematics"
+                               class="form-input"
+                               placeholder="e.g., Mathematics, English, Science"
                                maxlength="100">
                         <div class="info-text">
                             <i class="fa-solid fa-info-circle"></i> Your main teaching subject
                         </div>
                     </div>
                     <div>
-                        <label>
-                            <i class="fa-solid fa-building mr-1 text-yellow-400"></i> Department
-                        </label>
+                        <label>Department</label>
                         <input type="text" id="department" name="department"
                                value="{{ current_teacher.department or '' }}"
-                               class="form-input w-full rounded-xl"
-                               placeholder="e.g., High School"
+                               class="form-input"
+                               placeholder="e.g., High School, Elementary"
                                maxlength="100">
                         <div class="info-text">
                             <i class="fa-solid fa-info-circle"></i> Your department or division
@@ -412,56 +358,34 @@
                     </div>
                 </div>
 
-                <!-- Contact Number -->
                 <div>
-                    <label>
-                        <i class="fa-solid fa-phone mr-1 text-yellow-400"></i> Contact Number
-                    </label>
-                    <input type="tel" id="contact_number" name="contact_number"
-                           value="{{ current_teacher.contact_number or '' }}"
-                           class="form-input w-full rounded-xl number-input"
-                           placeholder="09123456789"
-                           inputmode="numeric"
-                           maxlength="11">
-                    <div class="info-text">
-                        <i class="fa-solid fa-info-circle"></i> Numbers only • Max 11 digits
+                    <label>Bio / About Me</label>
+                    <textarea id="bio" name="bio" 
+                              class="form-input"
+                              rows="4"
+                              maxlength="500"
+                              placeholder="Tell us about yourself...">{{ current_teacher.bio or '' }}</textarea>
+                    <div class="char-counter" id="bioCounter">
+                        <span id="bioCharCount">{{ current_teacher.bio|length if current_teacher.bio else 0 }}</span> / 500 characters
                     </div>
                 </div>
 
-                <!-- Email (read-only) -->
                 <div>
-                    <label>
-                        <i class="fa-solid fa-envelope mr-1 text-yellow-400"></i> Email Address
-                    </label>
+                    <label>Email Address</label>
                     <input type="email" id="email" name="email"
                            value="{{ current_teacher.email }}"
-                           class="form-input w-full rounded-xl bg-gray-700 cursor-not-allowed"
-                           readonly
-                           disabled>
+                           class="form-input"
+                           readonly disabled>
                     <div class="info-text">
-                        <i class="fa-solid fa-info-circle"></i> Email cannot be changed
+                        <i class="fa-solid fa-info-circle"></i> Email address cannot be changed
                     </div>
                 </div>
 
-                <!-- Birthday -->
-                <div>
-                    <label>
-                        <i class="fa-solid fa-cake-candles mr-1 text-yellow-400"></i> Birthday
-                    </label>
-                    <input type="date" id="birthday" name="birthday"
-                           value="{{ current_teacher.birthday.strftime('%Y-%m-%d') if current_teacher.birthday else '' }}"
-                           class="form-input w-full rounded-xl">
-                </div>
-
-                <!-- Bio / About Me -->
-           
-
-                <!-- Save Button -->
                 <div class="pt-4">
                     <button type="button" onclick="saveProfile()" id="saveBtn"
-                            class="btn-primary w-full font-semibold rounded-xl transition shadow">
+                            class="btn-primary font-semibold rounded-xl transition shadow-lg">
                         <i class="fa-solid fa-floppy-disk mr-2"></i>
-                        Save Changes
+                        Save Profile Changes
                     </button>
                 </div>
             </form>
@@ -471,79 +395,22 @@
 </div>
 
 <script>
-// Character counter for bio
 function updateCharCounter(textarea) {
     const count = textarea.value.length;
     const counterSpan = document.getElementById('bioCharCount');
-    const counterDiv = document.getElementById('bioCounter');
-    
     if (counterSpan) {
         counterSpan.textContent = count;
     }
-    
-    if (counterDiv) {
-        counterDiv.classList.remove('warning', 'danger');
-        if (count > 450 && count <= 500) {
-            counterDiv.classList.add('warning');
-        } else if (count > 500) {
-            counterDiv.classList.add('danger');
-        }
-    }
 }
 
-// Validate contact number
-function validateContactNumber(input) {
-    let value = input.value;
-    let cleaned = value.replace(/[^\d]/g, '');
-    
-    if (cleaned.length > 11) {
-        cleaned = cleaned.slice(0, 11);
-        showToast('Contact number cannot exceed 11 digits', 'warning', 'Too Long');
-    }
-    
-    if (value !== cleaned) {
-        input.value = cleaned;
-        if (value.match(/[a-zA-Z]/)) {
-            showToast('Only numbers are allowed in contact number field', 'warning', 'Invalid Input');
-        }
-    }
-}
-
-// Apply contact number validation
-document.getElementById('contact_number')?.addEventListener('input', function(e) {
-    validateContactNumber(this);
-});
-
-document.getElementById('contact_number')?.addEventListener('keypress', function(e) {
-    const charCode = e.which ? e.which : e.keyCode;
-    if (charCode < 48 || charCode > 57) {
-        e.preventDefault();
-        showToast('Only numbers are allowed in contact number field', 'warning', 'Invalid Input');
-        return false;
-    }
-    return true;
-});
-
-// Toast notification
-function showToast(message, type = 'warning', title = '') {
-    const titles = {
-        success: '✓ Success!',
-        error: '✗ Error!',
-        info: 'ℹ Info',
-        warning: '⚠ Warning'
-    };
-    
-    const icons = {
-        success: '✅',
-        error: '❌',
-        info: 'ℹ️',
-        warning: '⚠️'
-    };
+function showToast(message, type = 'success', title = '') {
+    const titles = { success: '✓ Success!', error: '✗ Error!', info: 'ℹ Info', warning: '⚠ Warning' };
+    const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
     
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     toast.innerHTML = `
-        <div class="toast-icon">${icons[type] || icons.warning}</div>
+        <div class="toast-icon">${icons[type] || icons.success}</div>
         <div class="toast-content">
             <div class="toast-title">${title || titles[type]}</div>
             <div class="toast-message">${message}</div>
@@ -552,21 +419,14 @@ function showToast(message, type = 'warning', title = '') {
     `;
     
     document.body.appendChild(toast);
-    
     setTimeout(() => {
         if (toast && toast.parentElement) {
             toast.style.animation = 'slideOutRight 0.3s ease';
             setTimeout(() => toast.remove(), 300);
         }
     }, 3000);
-    
-    toast.addEventListener('click', () => {
-        toast.style.animation = 'slideOutRight 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
-    });
 }
 
-// Loading state
 function setButtonLoading(button, isLoading) {
     if (isLoading) {
         button.classList.add('btn-loading');
@@ -575,53 +435,10 @@ function setButtonLoading(button, isLoading) {
     } else {
         button.classList.remove('btn-loading');
         button.disabled = false;
-        button.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Save Changes';
+        button.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Save Profile Changes';
     }
 }
 
-// Upload Profile Picture
-async function uploadProfilePicture() {
-    const fileInput = document.getElementById('profileUpload');
-    if (!fileInput.files.length) return;
-    
-    const file = fileInput.files[0];
-    const maxSize = 5 * 1024 * 1024;
-    
-    if (file.size > maxSize) {
-        showToast('Image size should be less than 5MB', 'error', 'File Too Large');
-        return;
-    }
-    
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
-    if (!allowedTypes.includes(file.type)) {
-        showToast('Please upload a valid image (JPEG, PNG, GIF)', 'error', 'Invalid Format');
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('profile_picture', file);
-
-    try {
-        const res = await fetch("{{ url_for('admin_bp.upload_teacher_profile_pic') }}", {
-            method: 'POST',
-            body: formData
-        });
-        const data = await res.json();
-
-        if (data.success) {
-            document.getElementById('profilePic').src = data.image_url + '?t=' + Date.now();
-            showToast('Profile picture updated successfully!', 'success', 'Photo Updated');
-            fileInput.value = '';
-        } else {
-            showToast(data.message || 'Failed to upload profile picture', 'error');
-        }
-    } catch (e) {
-        showToast('Network error. Please try again.', 'error', 'Upload Failed');
-        console.error(e);
-    }
-}
-
-// Save Profile
 async function saveProfile() {
     const saveBtn = document.getElementById('saveBtn');
     
@@ -633,7 +450,6 @@ async function saveProfile() {
     let department = document.getElementById('department').value.trim();
     const contactNumber = document.getElementById('contact_number').value.trim();
     const bio = document.getElementById('bio').value.trim();
-    const birthday = document.getElementById('birthday').value;
     
     if (!firstName) {
         showToast('First name is required', 'warning', 'Missing Field');
@@ -659,7 +475,7 @@ async function saveProfile() {
         return;
     }
     
-    if (bio.length > 500) {
+    if (bio && bio.length > 500) {
         showToast('Bio cannot exceed 500 characters', 'warning', 'Too Long');
         document.getElementById('bio').focus();
         return;
@@ -675,20 +491,19 @@ async function saveProfile() {
         subject: subject,
         department: department,
         contact_number: contactNumber,
-        bio: bio,
-        birthday: birthday
+        bio: bio
     };
 
     setButtonLoading(saveBtn, true);
 
     try {
-        const res = await fetch("{{ url_for('admin_bp.update_teacher_profile') }}", {
+        const response = await fetch("{{ url_for('admin_bp.update_teacher_profile') }}", {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
         });
 
-        const data = await res.json();
+        const data = await response.json();
 
         if (data.success) {
             showToast('Your profile has been updated successfully!', 'success', 'Profile Updated');
@@ -701,36 +516,26 @@ async function saveProfile() {
         } else {
             showToast(data.message || 'Failed to update profile.', 'error', 'Update Failed');
         }
-    } catch (e) {
+    } catch (error) {
+        console.error('Error:', error);
         showToast('Network error. Please try again.', 'error', 'Connection Error');
-        console.error(e);
     } finally {
         setButtonLoading(saveBtn, false);
     }
 }
 
-// Initialize
 document.addEventListener('DOMContentLoaded', () => {
     const bioTextarea = document.getElementById('bio');
     if (bioTextarea) {
         updateCharCounter(bioTextarea);
+        bioTextarea.addEventListener('input', function() {
+            updateCharCounter(this);
+        });
     }
     
-    const contactInput = document.getElementById('contact_number');
-    if (contactInput && !contactInput.value) {
-        contactInput.placeholder = '09123456789';
-    }
-});
-
-// Enter key to save
-document.querySelectorAll('#profileForm input, #profileForm textarea').forEach(input => {
-    if (input.id !== 'bio') {
-        input.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                saveProfile();
-            }
-        });
+    const contactField = document.getElementById('contact_number');
+    if (contactField && !contactField.value) {
+        contactField.placeholder = '09123456789';
     }
 });
 </script>
