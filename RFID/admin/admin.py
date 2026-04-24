@@ -30,21 +30,9 @@ latest_scan = {
 # DB CONNECTION - RAILWAY VERSION
 # =========================
 def get_db_connection():
-    """
-    🔥 THIS IS YOUR ONLY DB CONNECTION
-
-    ❌ NO SUPABASE
-    ❌ NO LOCALHOST
-    ❌ NO MULTIPLE CONFIGS
-
-    ✅ ONLY RAILWAY DATABASE_URL
-    """
-
     database_url = os.getenv("DATABASE_URL")
-
     if not database_url:
         raise Exception("❌ DATABASE_URL not found in .env")
-
     return psycopg2.connect(
         database_url.strip(),
         sslmode="require"
@@ -355,7 +343,6 @@ def registered_students():
 @admin_bp.route('/registered_students/api')
 @login_required
 def registered_students_api():
-    """API endpoint to get total students count for dashboard"""
     try:
         conn = get_connection()
         if conn is None:
@@ -545,7 +532,7 @@ def history_filter():
             conn.close()
 
 # =========================
-# TEACHER DB FUNCTIONS
+# TEACHER DB FUNCTIONS - FIXED
 # =========================
 
 def get_teacher_by_email(email):
@@ -564,9 +551,6 @@ def get_teacher_by_email(email):
                 t.contact_number,
                 t.email AS teacher_email,
                 t.created_at,
-                t.subject,
-                t.department,
-                t.bio,
                 ta.id AS account_id,
                 ta.teacher_id AS linked_teacher_id,
                 ta.email AS account_email,
@@ -601,10 +585,7 @@ def get_teacher_by_email(email):
             "email": row["account_email"],
             "password_hash": row["password"],
             "created_at": row["created_at"],
-            "reset_token": row["reset_token"],
-            "subject": row.get("subject", ""),
-            "department": row.get("department", ""),
-            "bio": row.get("bio", "")
+            "reset_token": row["reset_token"]
         }
     except Exception as e:
         print(f"get_teacher_by_email error: {e}")
@@ -628,10 +609,7 @@ def get_teacher_by_id(teacher_db_id):
                 extension,
                 contact_number,
                 email,
-                created_at,
-                subject,
-                department,
-                bio
+                created_at
             FROM teachers
             WHERE id = %s
             LIMIT 1;
@@ -655,10 +633,7 @@ def get_teacher_by_id(teacher_db_id):
             "full_name": full_name,
             "contact_number": row["contact_number"],
             "email": row["email"],
-            "created_at": row["created_at"],
-            "subject": row.get("subject", ""),
-            "department": row.get("department", ""),
-            "bio": row.get("bio", "")
+            "created_at": row["created_at"]
         }
     except Exception as e:
         print(f"get_teacher_by_id error: {e}")
@@ -674,7 +649,7 @@ def update_teacher_in_db(teacher_db_id, fields: dict):
     
     allowed = {
         "first_name", "middle_name", "last_name", "extension", 
-        "contact_number", "email", "subject", "department", "bio"
+        "contact_number", "email"
     }
     updates = {k: v for k, v in fields.items() if k in allowed}
     
@@ -935,12 +910,6 @@ def update_teacher_profile():
             fields["extension"] = data["extension"]
         if "contact_number" in data:
             fields["contact_number"] = data["contact_number"]
-        if "subject" in data:
-            fields["subject"] = data["subject"]
-        if "department" in data:
-            fields["department"] = data["department"]
-        if "bio" in data:
-            fields["bio"] = data["bio"]
         
         if not fields:
             return jsonify({"success": False, "message": "No fields to update"}), 400
