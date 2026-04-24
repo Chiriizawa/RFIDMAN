@@ -10,6 +10,10 @@ from dotenv import load_dotenv
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+import smtplib
+import uuid
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 load_dotenv()
 
@@ -23,46 +27,55 @@ latest_scan = {
 }
 
 # =========================
-# DB CONNECTION - SUPABASE VERSION
+# DB CONNECTION - SUPABASE VERSION (FIXED)
 # =========================
 
 def get_db_connection():
     try:
+        print(f"Attempting to connect to database...")
+        print(f"Host: {os.getenv('DB_HOST')}")
+        print(f"Database: {os.getenv('DB_NAME')}")
+        print(f"User: {os.getenv('DB_USER')}")
+        
         conn = psycopg2.connect(
             host=os.getenv("DB_HOST"),
             database=os.getenv("DB_NAME"),
             user=os.getenv("DB_USER"),
             password=os.getenv("DB_PASSWORD"),
             port=os.getenv("DB_PORT"),
-            sslmode='require'
+            sslmode='require',
+            connect_timeout=30
         )
         conn.autocommit = True
+        print("✓ Database connection successful")
         return conn
     except Exception as e:
-        print(f"Database connection error: {e}")
+        print(f"✗ Database connection error: {e}")
         return None
 
-
 def get_connection():
+    """Get database connection with test"""
     try:
         conn = get_db_connection()
         if conn:
+            # Test the connection
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
             return conn
         return None
     except Exception as e:
-        print(f"Connection error: {e}")
+        print(f"Connection error in get_connection: {e}")
         return None
 
-
-print("Testing Supabase connection...")
-print(f"Connecting to: {os.getenv('DB_HOST')}")
+# Test connection on startup
+print("\n=== Testing Database Connection ===")
 test_conn = get_connection()
 if test_conn:
     print("✓ Supabase connected successfully")
     test_conn.close()
 else:
     print("✗ Supabase connection failed! Please check your .env file")
-
+print("===================================\n")
 
 # =========================
 # SERIAL CONNECTION
@@ -76,7 +89,6 @@ try:
 except Exception as e:
     print(f"Serial connection error: {e}")
 
-
 # =========================
 # HELPER FUNCTIONS
 # =========================
@@ -86,13 +98,11 @@ def normalize_uid(uid):
         return ""
     return str(uid).replace(" ", "").replace("-", "").replace(":", "").strip().upper()
 
-
 def format_uid(uid):
     uid = normalize_uid(uid)
     if len(uid) == 8:
         return f"{uid[0:2]} {uid[2:4]} {uid[4:6]} {uid[6:8]}"
     return uid
-
 
 def is_valid_uid(uid):
     uid = normalize_uid(uid)
@@ -109,7 +119,6 @@ def is_valid_uid(uid):
 
     return True
 
-
 def build_full_name(first_name, middle_name, last_name, extension):
     parts = [
         str(first_name or "").strip(),
@@ -118,7 +127,6 @@ def build_full_name(first_name, middle_name, last_name, extension):
         str(extension or "").strip()
     ]
     return " ".join([p for p in parts if p])
-
 
 def get_all_students():
     conn = get_connection()
@@ -155,7 +163,6 @@ def get_all_students():
         if conn:
             conn.close()
 
-
 def get_student_name_by_uid(uid):
     conn = get_connection()
     if conn is None:
@@ -186,7 +193,6 @@ def get_student_name_by_uid(uid):
         if conn:
             conn.close()
 
-
 def save_uid_to_db(uid):
     conn = get_connection()
     if conn is None:
@@ -213,7 +219,6 @@ def save_uid_to_db(uid):
     finally:
         if conn:
             conn.close()
-
 
 def save_student_to_db(uid, first_name, middle_name, last_name, extension, birthday, contact_number, email, schedule_text, section_id=None):
     conn = get_connection()
@@ -258,7 +263,6 @@ def save_student_to_db(uid, first_name, middle_name, last_name, extension, birth
         if conn:
             conn.close()
 
-
 # =========================
 # LOGIN REQUIRED DECORATOR
 # =========================
@@ -271,7 +275,6 @@ def login_required(f):
         return f(*args, **kwargs)
     decorated_function.__name__ = f.__name__
     return decorated_function
-
 
 # =========================
 # RFID LISTEN & SAVE (Background Thread)
@@ -305,13 +308,11 @@ def listen():
 
         time.sleep(0.2)
 
-
 if ser and ser.is_open:
     threading.Thread(target=listen, daemon=True).start()
     print("RFID listener thread started")
 else:
     print("RFID listener not started - no serial connection")
-
 
 # =========================
 # BASIC ROUTES
@@ -324,11 +325,9 @@ def index():
         return redirect(url_for('admin_bp.teacher_login'))
     return render_template('dashboard.html')
 
-
 @admin_bp.route('/get_latest')
 def get_latest():
     return jsonify(latest_scan)
-
 
 @admin_bp.route('/test_db')
 def test_db():
@@ -354,7 +353,6 @@ def test_db():
     except Exception as e:
         print(f"Test DB error: {e}")
         return jsonify({"status": "error", "message": str(e)})
-
 
 # =========================
 # PROTECTED ROUTES
@@ -386,7 +384,6 @@ def registered_students():
         })
 
     return render_template('registered_students.html', students=student_list)
-
 
 @admin_bp.route('/schedules')
 @login_required
@@ -446,12 +443,10 @@ def schedules():
         if conn:
             conn.close()
 
-
 @admin_bp.route('/history')
 @login_required
 def history():
     return render_template('history.html')
-
 
 @admin_bp.route('/history/api')
 @login_required
@@ -517,7 +512,6 @@ def history_api():
         if conn:
             conn.close()
 
-
 @admin_bp.route('/history/filter')
 @login_required
 def history_filter():
@@ -582,7 +576,6 @@ def history_filter():
         if conn:
             conn.close()
 
-
 # =========================
 # TEACHER DB FUNCTIONS
 # =========================
@@ -639,8 +632,8 @@ def get_teacher_by_email(email):
         )
 
         return {
-            "id": row["id"],  # teachers.id
-            "teacher_id": row["linked_teacher_id"],  # teacher_accounts.teacher_id
+            "id": row["id"],
+            "teacher_id": row["linked_teacher_id"],
             "account_id": row["account_id"],
             "first_name": row["first_name"],
             "middle_name": row["middle_name"],
@@ -662,11 +655,12 @@ def get_teacher_by_email(email):
 
     except Exception as e:
         print(f"get_teacher_by_email error: {e}")
+        import traceback
+        traceback.print_exc()
         return None
     finally:
         if conn:
             conn.close()
-
 
 def get_teacher_by_id(teacher_db_id):
     conn = get_connection()
@@ -731,7 +725,6 @@ def get_teacher_by_id(teacher_db_id):
         if conn:
             conn.close()
 
-
 def update_teacher_in_db(teacher_db_id, fields: dict):
     conn = get_connection()
     if conn is None:
@@ -762,7 +755,6 @@ def update_teacher_in_db(teacher_db_id, fields: dict):
         if conn:
             conn.close()
 
-
 def update_teacher_account_password_by_email(email, new_password):
     conn = get_connection()
     if conn is None:
@@ -779,6 +771,7 @@ def update_teacher_account_password_by_email(email, new_password):
         conn.commit()
         updated = cur.rowcount > 0
         cur.close()
+        print(f"Password updated for {email}: {updated}")
         return updated
     except Exception as e:
         print(f"update_teacher_account_password_by_email error: {e}")
@@ -787,6 +780,236 @@ def update_teacher_account_password_by_email(email, new_password):
         if conn:
             conn.close()
 
+# =========================
+# FORGOT PASSWORD FUNCTIONS
+# =========================
+
+def send_reset_email(to_email, reset_token):
+    """Send password reset email using Gmail SMTP"""
+    try:
+        smtp_server = os.getenv("MAIL_HOST", "smtp.gmail.com")
+        smtp_port = int(os.getenv("MAIL_PORT", 587))
+        smtp_username = os.getenv("MAIL_USERNAME")
+        smtp_password = os.getenv("MAIL_PASSWORD")
+        from_email = os.getenv("MAIL_FROM", smtp_username)
+        
+        print(f"Sending reset email to: {to_email}")
+        
+        reset_link = f"http://127.0.0.1:5000/reset_password/{reset_token}"
+        
+        subject = "Password Reset Request - Tap & Know"
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Password Reset</title>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                }}
+                .container {{
+                    max-width: 600px;
+                    margin: 0 auto;
+                    padding: 20px;
+                    background: #f9f9f9;
+                    border-radius: 10px;
+                }}
+                .header {{
+                    background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);
+                    color: white;
+                    padding: 20px;
+                    text-align: center;
+                    border-radius: 10px 10px 0 0;
+                }}
+                .content {{
+                    background: white;
+                    padding: 30px;
+                    border-radius: 0 0 10px 10px;
+                }}
+                .button {{
+                    display: inline-block;
+                    padding: 12px 24px;
+                    background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 5px;
+                    margin: 20px 0;
+                }}
+                .footer {{
+                    text-align: center;
+                    margin-top: 20px;
+                    font-size: 12px;
+                    color: #666;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2>Tap & Know System</h2>
+                </div>
+                <div class="content">
+                    <h3>Password Reset Request</h3>
+                    <p>Hello,</p>
+                    <p>We received a request to reset your password for your Tap & Know teacher account.</p>
+                    <p>Click the button below to reset your password:</p>
+                    <p style="text-align: center;">
+                        <a href="{reset_link}" class="button">Reset Password</a>
+                    </p>
+                    <p>Or copy and paste this link into your browser:</p>
+                    <p style="background: #f0f0f0; padding: 10px; border-radius: 5px; word-break: break-all;">
+                        {reset_link}
+                    </p>
+                    <p><strong>Important:</strong> This link will expire after 24 hours.</p>
+                    <p>If you didn't request this password reset, please ignore this email.</p>
+                    <hr>
+                    <p style="font-size: 14px; color: #666;">
+                        Best regards,<br>
+                        Tap & Know Administration
+                    </p>
+                </div>
+                <div class="footer">
+                    <p>This is an automated message, please do not reply to this email.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = from_email
+        msg['To'] = to_email
+        msg.attach(MIMEText(html_content, 'html'))
+        
+        with smtplib.SMTP(smtp_server, smtp_port, timeout=30) as server:
+            server.starttls()
+            server.login(smtp_username, smtp_password)
+            server.send_message(msg)
+        
+        print(f"✓ Reset email sent successfully to {to_email}")
+        return True
+        
+    except Exception as e:
+        print(f"✗ Email sending error: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+def get_teacher_by_email_simple(email):
+    """Simplified function just to check if email exists"""
+    conn = None
+    try:
+        conn = get_connection()
+        if conn is None:
+            print("No database connection")
+            return None
+        
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT email FROM teacher_accounts
+            WHERE LOWER(TRIM(email)) = LOWER(TRIM(%s))
+            LIMIT 1;
+        """, (email,))
+        row = cur.fetchone()
+        cur.close()
+        
+        if row:
+            return {"email": row[0]}
+        return None
+        
+    except Exception as e:
+        print(f"get_teacher_by_email_simple error: {e}")
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+def save_reset_token(email, token):
+    """Save reset token to database"""
+    conn = None
+    try:
+        conn = get_connection()
+        if conn is None:
+            print("No database connection")
+            return False
+        
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE teacher_accounts
+            SET reset_token = %s
+            WHERE LOWER(TRIM(email)) = LOWER(TRIM(%s))
+        """, (token, email))
+        conn.commit()
+        updated = cur.rowcount > 0
+        cur.close()
+        
+        print(f"Token saved for {email}: {updated}")
+        return updated
+        
+    except Exception as e:
+        print(f"Save reset token error: {e}")
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+def verify_reset_token(token):
+    """Verify if reset token exists and get associated email"""
+    conn = None
+    try:
+        conn = get_connection()
+        if conn is None:
+            return None
+        
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT email FROM teacher_accounts
+            WHERE reset_token = %s
+        """, (token,))
+        row = cur.fetchone()
+        cur.close()
+        
+        if row:
+            print(f"Token verified for: {row[0]}")
+            return row[0]
+        return None
+        
+    except Exception as e:
+        print(f"Verify reset token error: {e}")
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+def clear_reset_token(email):
+    """Clear reset token after successful password reset"""
+    conn = None
+    try:
+        conn = get_connection()
+        if conn is None:
+            return False
+        
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE teacher_accounts
+            SET reset_token = NULL
+            WHERE LOWER(TRIM(email)) = LOWER(TRIM(%s))
+        """, (email,))
+        conn.commit()
+        cur.close()
+        print(f"Token cleared for: {email}")
+        return True
+        
+    except Exception as e:
+        print(f"Clear reset token error: {e}")
+        return False
+    finally:
+        if conn:
+            conn.close()
 
 # =========================
 # TEACHER LOGIN & PROFILE
@@ -828,7 +1051,6 @@ def teacher_login():
 
     return render_template('login.html')
 
-
 @admin_bp.route('/teacher/profile')
 @login_required
 def teacher_profile():
@@ -840,7 +1062,6 @@ def teacher_profile():
         return redirect(url_for('admin_bp.teacher_login'))
 
     return render_template('teacher_profile.html', current_teacher=teacher)
-
 
 @admin_bp.route('/teacher/update_profile', methods=['POST'])
 @login_required
@@ -882,13 +1103,122 @@ def update_teacher_profile():
         print(f"update_teacher_profile error: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
+# =========================
+# FORGOT PASSWORD ROUTES
+# =========================
+
+@admin_bp.route('/forgot_password_ajax', methods=['POST'])
+def forgot_password_ajax():
+    """Handle forgot password AJAX request"""
+    print("\n=== Forgot Password Request ===")
+    
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip()
+        
+        print(f"Email: {email}")
+        
+        if not email:
+            return jsonify({
+                'success': False,
+                'message': 'Please enter your email address.'
+            }), 400
+        
+        # Check if email exists
+        teacher = get_teacher_by_email_simple(email)
+        
+        if not teacher:
+            print(f"Email not found: {email}")
+            return jsonify({
+                'success': True,
+                'message': 'If an account exists with this email, you will receive password reset instructions.'
+            })
+        
+        print(f"Email found: {email}")
+        
+        # Generate token
+        reset_token = str(uuid.uuid4())
+        print(f"Token generated: {reset_token}")
+        
+        # Save token
+        if save_reset_token(email, reset_token):
+            # Send email
+            if send_reset_email(email, reset_token):
+                return jsonify({
+                    'success': True,
+                    'message': 'Password reset instructions have been sent to your email.'
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': 'Failed to send reset email. Please check your email configuration.'
+                }), 500
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to process request. Please try again.'
+            }), 500
+            
+    except Exception as e:
+        print(f"Forgot password error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': f'An error occurred: {str(e)}'
+        }), 500
+
+@admin_bp.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    """Handle password reset page"""
+    print(f"\n=== Reset Password Request ===")
+    print(f"Token: {token[:20]}...")
+    
+    email = verify_reset_token(token)
+    
+    if not email:
+        flash('Invalid or expired reset link. Please request a new one.', 'error')
+        return redirect(url_for('admin_bp.teacher_login'))
+    
+    print(f"Email found: {email}")
+    
+    if request.method == 'POST':
+        password = request.form.get('password', '').strip()
+        confirm_password = request.form.get('confirm_password', '').strip()
+        
+        if not password:
+            flash('Please enter a password.', 'error')
+            return render_template('reset_password.html', token=token)
+        
+        if len(password) < 6:
+            flash('Password must be at least 6 characters long.', 'error')
+            return render_template('reset_password.html', token=token)
+        
+        if password != confirm_password:
+            flash('Passwords do not match.', 'error')
+            return render_template('reset_password.html', token=token)
+        
+        try:
+            if update_teacher_account_password_by_email(email, password):
+                clear_reset_token(email)
+                flash('Password has been reset successfully! Please login with your new password.', 'success')
+                print(f"Password reset successful for: {email}")
+                return redirect(url_for('admin_bp.teacher_login'))
+            else:
+                flash('Failed to reset password. Please try again.', 'error')
+        except Exception as e:
+            print(f"Password reset error: {e}")
+            flash('An error occurred. Please try again.', 'error')
+        
+        return render_template('reset_password.html', token=token)
+    
+    return render_template('reset_password.html', token=token)
 
 @admin_bp.route('/teacher/logout')
 def teacher_logout():
     session.clear()
     flash('You have been logged out.', 'success')
     return redirect(url_for('admin_bp.teacher_login'))
-
 
 # =========================
 # PROFILE PICTURE UPLOAD
@@ -915,7 +1245,6 @@ def upload_teacher_profile_pic():
 
         image_url = f"/static/uploads/teachers/{filename}"
         
-        # Save to database
         try:
             conn = get_connection()
             cur = conn.cursor()
@@ -934,3 +1263,42 @@ def upload_teacher_profile_pic():
             return jsonify({"success": False, "message": "Database error"})
     
     return jsonify({"success": False, "message": "Upload failed"})
+
+# =========================
+# DEBUG ROUTE
+# =========================
+
+@admin_bp.route('/debug/db_test')
+def debug_db_test():
+    """Debug route to test database connection"""
+    try:
+        conn = get_connection()
+        if conn is None:
+            return jsonify({
+                "status": "error",
+                "message": "Cannot connect to database",
+                "config": {
+                    "host": os.getenv("DB_HOST"),
+                    "database": os.getenv("DB_NAME"),
+                    "user": os.getenv("DB_USER"),
+                    "port": os.getenv("DB_PORT")
+                }
+            })
+        
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM teacher_accounts")
+        count = cur.fetchone()[0]
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            "status": "success",
+            "message": "Database connected successfully",
+            "teacher_accounts_count": count
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        })
