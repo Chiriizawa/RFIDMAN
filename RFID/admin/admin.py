@@ -932,11 +932,7 @@ def update_teacher_profile():
             fields["extension"] = data["extension"]
         if "contact_number" in data:
             fields["contact_number"] = data["contact_number"]
-<<<<<<< HEAD
         
-=======
-
->>>>>>> cddc272487b54aaf91c2613b57e5636635e0ef36
         if not fields:
             return jsonify({"success": False, "message": "No fields to update"}), 400
         
