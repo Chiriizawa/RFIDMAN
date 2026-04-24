@@ -369,7 +369,7 @@
                         <span class="sidebar-text">Schedules</span>
                     </a>
 
-                    <!-- My Classes with Dropdown - Click to toggle -->
+                    <!-- My Classes with Dropdown - Dynamic -->
                     <div class="nav-item has-dropdown" id="myClassesDropdown">
                         <div class="flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-medium dropdown-toggle">
                             <div class="flex items-center gap-3">
@@ -379,36 +379,12 @@
                             <i class="fa-solid fa-chevron-down text-xs sidebar-text"></i>
                         </div>
                         <div class="dropdown-menu" id="dropdownMenu">
-                            <a href="{{ url_for('admin_bp.class_section', section_id='1-A') }}"
-                            class="dropdown-item text-sm font-medium
-                            {% if request.endpoint == 'admin_bp.class_section' and request.view_args.section_id == '1-A' %}active{% endif %}">
-                                <i class="fa-solid fa-layer-group w-4 text-center"></i>
-                                <span>Class 1-A</span>
-                            </a>
-                            <a href="{{ url_for('admin_bp.class_section', section_id='1-B') }}"
-                            class="dropdown-item text-sm font-medium
-                            {% if request.endpoint == 'admin_bp.class_section' and request.view_args.section_id == '1-B' %}active{% endif %}">
-                                <i class="fa-solid fa-layer-group w-4 text-center"></i>
-                                <span>Class 1-B</span>
-                            </a>
-                            <a href="{{ url_for('admin_bp.class_section', section_id='2-A') }}"
-                            class="dropdown-item text-sm font-medium
-                            {% if request.endpoint == 'admin_bp.class_section' and request.view_args.section_id == '2-A' %}active{% endif %}">
-                                <i class="fa-solid fa-layer-group w-4 text-center"></i>
-                                <span>Class 2-A</span>
-                            </a>
-                            <a href="{{ url_for('admin_bp.class_section', section_id='2-B') }}"
-                            class="dropdown-item text-sm font-medium
-                            {% if request.endpoint == 'admin_bp.class_section' and request.view_args.section_id == '2-B' %}active{% endif %}">
-                                <i class="fa-solid fa-layer-group w-4 text-center"></i>
-                                <span>Class 2-B</span>
-                            </a>
-                            <a href="{{ url_for('admin_bp.class_section', section_id='3-A') }}"
-                            class="dropdown-item text-sm font-medium
-                            {% if request.endpoint == 'admin_bp.class_section' and request.view_args.section_id == '3-A' %}active{% endif %}">
-                                <i class="fa-solid fa-layer-group w-4 text-center"></i>
-                                <span>Class 3-A</span>
-                            </a>
+                            <div id="dynamicClassesList">
+                                <div class="dropdown-item text-sm">
+                                    <i class="fa-solid fa-spinner fa-spin w-4 text-center"></i>
+                                    <span>Loading classes...</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -446,22 +422,89 @@
     </div>
 
     <script>
+        // Load sections dynamically for sidebar
+        async function loadSidebarSections() {
+            try {
+                const response = await fetch('/admin/api/get_sections_for_sidebar');
+                const data = await response.json();
+                
+                const container = document.getElementById('dynamicClassesList');
+                if (!container) return;
+                
+                if (data.success && data.sections && data.sections.length > 0) {
+                    container.innerHTML = '';
+                    
+                    data.sections.forEach(section => {
+                        const isActive = window.location.href.includes(`/class_section/${section.id}`);
+                        
+                        const link = document.createElement('a');
+                        link.href = `/admin/class_section/${section.id}`;
+                        link.className = `dropdown-item text-sm font-medium ${isActive ? 'active' : ''}`;
+                        link.innerHTML = `
+                            <i class="fa-solid fa-layer-group w-4 text-center"></i>
+                            <span>${section.section_name}</span>
+                            <span class="text-xs ml-auto opacity-70">(${section.student_count})</span>
+                        `;
+                        container.appendChild(link);
+                    });
+                    
+                    // Add Manage Sections link
+                    const manageLink = document.createElement('a');
+                    manageLink.href = "/admin/sections";
+                    manageLink.className = `dropdown-item text-sm font-medium border-t border-white/10 mt-2 pt-2 ${
+                        window.location.href.includes('/sections') ? 'active' : ''
+                    }`;
+                    manageLink.innerHTML = `
+                        <i class="fa-solid fa-gear w-4 text-center"></i>
+                        <span>Manage Sections</span>
+                    `;
+                    container.appendChild(manageLink);
+                } else {
+                    container.innerHTML = `
+                        <div class="dropdown-item text-sm">
+                            <i class="fa-solid fa-info-circle w-4 text-center"></i>
+                            <span>No sections found</span>
+                        </div>
+                        <a href="/admin/sections" class="dropdown-item text-sm font-medium">
+                            <i class="fa-solid fa-plus w-4 text-center"></i>
+                            <span>Add Section</span>
+                        </a>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading sections:', error);
+                const container = document.getElementById('dynamicClassesList');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="dropdown-item text-sm">
+                            <i class="fa-solid fa-exclamation-triangle w-4 text-center"></i>
+                            <span>Error loading sections</span>
+                        </div>
+                        <a href="/admin/sections" class="dropdown-item text-sm font-medium">
+                            <i class="fa-solid fa-gear w-4 text-center"></i>
+                            <span>Manage Sections</span>
+                        </a>
+                    `;
+                }
+            }
+        }
+        
         // Dropdown toggle functionality
         document.addEventListener('DOMContentLoaded', function() {
+            loadSidebarSections();
+            
             const dropdownToggle = document.querySelector('.dropdown-toggle');
             const dropdownMenu = document.getElementById('dropdownMenu');
             const dropdownContainer = document.getElementById('myClassesDropdown');
             
-            // Check if we're on a class section page
-            const isOnClassPage = window.location.href.includes('/class_section/');
+            const isOnClassPage = window.location.href.includes('/class_section/') || 
+                                 window.location.href.includes('/sections');
             
-            // If on a class page, keep dropdown open
             if (isOnClassPage) {
                 dropdownMenu.classList.add('show');
                 dropdownContainer.classList.add('open');
             }
             
-            // Dropdown click handler
             if (dropdownToggle && dropdownMenu) {
                 dropdownToggle.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -470,7 +513,6 @@
                 });
             }
             
-            // Close dropdown when clicking outside
             document.addEventListener('click', function(event) {
                 if (dropdownContainer && !dropdownContainer.contains(event.target)) {
                     dropdownMenu.classList.remove('show');

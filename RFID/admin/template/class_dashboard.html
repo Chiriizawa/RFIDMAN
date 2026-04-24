@@ -1,0 +1,512 @@
+{% extends "base.html" %}
+
+{% block title %}{{ section_info.name }} - Class Dashboard{% endblock %}
+
+{% block content %}
+<style>
+    /* Toast Notification Styles */
+    .toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+        max-width: 450px;
+        padding: 16px 20px;
+        border-radius: 16px;
+        background: rgba(30, 58, 138, 0.95);
+        backdrop-filter: blur(18px);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        animation: slideInRight 0.3s ease;
+        border: 1px solid rgba(255,255,255,0.15);
+    }
+    
+    @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes slideOutRight {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+    
+    .toast.success { background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95)); }
+    .toast.error { background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95)); }
+    .toast.info { background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.95)); }
+    .toast.warning { background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95)); }
+    
+    .toast-icon { font-size: 24px; flex-shrink: 0; }
+    .toast-content { flex: 1; }
+    .toast-title { font-weight: 600; margin-bottom: 4px; font-size: 14px; color: white; }
+    .toast-message { font-size: 13px; opacity: 0.95; color: white; }
+    .toast-close { cursor: pointer; opacity: 0.7; font-size: 18px; color: white; }
+    .toast-close:hover { opacity: 1; }
+    
+    .white-card {
+        background: white;
+        border-radius: 1.5rem;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    
+    .header-gradient {
+        background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);
+        padding: 1.5rem 2rem;
+    }
+    
+    .text-accent {
+        color: #f59e0b;
+    }
+    
+    .status-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+        padding: 1.25rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+    }
+    
+    .status-card:hover {
+        transform: translateY(-5px);
+        background: #f1f5f9;
+        border-color: #f59e0b;
+    }
+    
+    .status-card p:first-child {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-card p:last-child {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-top: 0.5rem;
+    }
+    
+    .success-banner {
+        background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+        border: 1px solid #10b981;
+        animation: pulse 0.5s ease;
+        padding: 1.5rem;
+        border-radius: 1.5rem;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(0.95); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    
+    .table-header {
+        background: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    
+    .table-header th {
+        color: #1e293b;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 1rem 1.5rem;
+    }
+    
+    .table-row {
+        border-bottom: 1px solid #e2e8f0;
+        transition: all 0.2s ease;
+    }
+    
+    .table-row:hover {
+        background: #f8fafc;
+    }
+    
+    .table-row td {
+        padding: 1rem 1.5rem;
+        color: #1e293b;
+    }
+    
+    .uid-badge {
+        background: #fef3c7;
+        color: #92400e;
+        font-family: monospace;
+        font-weight: 700;
+        padding: 0.5rem 1rem;
+        border-radius: 0.75rem;
+        display: inline-block;
+        border: 1px solid #fbbf24;
+        font-size: 0.85rem;
+    }
+    
+    .present-badge {
+        background: #dcfce7;
+        color: #166534;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+    
+    .absent-badge {
+        background: #fee2e2;
+        color: #991b1b;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+    
+    .stat-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        padding: 1.25rem;
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    
+    .empty-state {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    @keyframes scanPulse {
+        0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+        70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+    
+    .scanning {
+        animation: scanPulse 1.5s infinite;
+    }
+    
+    @media (max-width: 768px) {
+        .table-header th, .table-row td { padding: 0.75rem 1rem; }
+        .header-gradient { padding: 1rem 1.25rem; }
+        .status-card { padding: 1rem; }
+        .stat-card { padding: 1rem; }
+        .success-banner { padding: 1rem; }
+    }
+</style>
+
+<div class="max-w-7xl mx-auto">
+
+    <div class="white-card">
+        <div class="header-gradient text-white">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-chalkboard-user text-accent text-3xl"></i>
+                        <h1 class="text-2xl font-semibold">{{ section_info.name }}</h1>
+                    </div>
+                    <p class="text-white/80 mt-2 text-sm">
+                        <i class="fa-solid fa-user-tie mr-1"></i>
+                        Adviser: {{ section_info.adviser }} • 
+                        <i class="fa-solid fa-door-open ml-2 mr-1"></i>
+                        {{ section_info.room }}
+                    </p>
+                </div>
+                <div class="flex gap-3">
+                    <div class="text-right">
+                        <div class="text-accent text-sm font-medium">Today's Attendance</div>
+                        <div class="text-2xl font-bold" id="todayCount">{{ section_info.present_today }} / {{ section_info.total_students }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6">
+            <!-- RFID Scan Status Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-6">
+                <div class="status-card">
+                    <p><i class="fa-solid fa-circle-info mr-1 text-accent"></i> Current Status</p>
+                    <p id="message"><i class="fa-regular fa-clock mr-2"></i>Waiting for scan...</p>
+                </div>
+                <div class="status-card">
+                    <p><i class="fa-solid fa-id-card mr-1 text-accent"></i> Scanned UID</p>
+                    <p id="uid" class="font-mono text-accent">—</p>
+                </div>
+                <div class="status-card">
+                    <p><i class="fa-solid fa-user-graduate mr-1 text-accent"></i> Student Name</p>
+                    <p id="name">—</p>
+                </div>
+                <div class="status-card">
+                    <p><i class="fa-regular fa-clock mr-1 text-accent"></i> Scan Time</p>
+                    <p id="time">—</p>
+                </div>
+            </div>
+
+            <!-- Success Banner -->
+            <div id="nameBanner" class="mt-6 hidden success-banner">
+                <div class="flex items-center gap-4">
+                    <div class="text-5xl animate-bounce">✅</div>
+                    <div>
+                        <p class="text-emerald-700 font-semibold uppercase tracking-widest text-xs">
+                            <i class="fa-solid fa-check-circle mr-1"></i>
+                            Student Successfully Detected
+                        </p>
+                        <p id="bannerName" class="text-2xl font-bold text-gray-800 mt-1">—</p>
+                        <p id="bannerTime" class="text-gray-600 text-sm mt-1">
+                            <i class="fa-regular fa-clock mr-1"></i>
+                            —
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6 mb-6">
+                <div class="stat-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500 font-medium">Total Students</p>
+                            <p class="text-2xl font-bold text-gray-800" id="totalStudents">{{ section_info.total_students }}</p>
+                        </div>
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <i class="fa-solid fa-users text-blue-600"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500 font-medium">Present Today</p>
+                            <p class="text-2xl font-bold text-green-600" id="presentCount">{{ section_info.present_today }}</p>
+                        </div>
+                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                            <i class="fa-solid fa-check-circle text-green-600"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500 font-medium">Absent Today</p>
+                            <p class="text-2xl font-bold text-red-600" id="absentCount">{{ section_info.total_students - section_info.present_today }}</p>
+                        </div>
+                        <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                            <i class="fa-solid fa-times-circle text-red-600"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500 font-medium">Attendance Rate</p>
+                            <p class="text-2xl font-bold text-accent" id="attendanceRate">{{ "%.1f"|format(section_info.present_today / section_info.total_students * 100 if section_info.total_students > 0 else 0) }}%</p>
+                        </div>
+                        <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                            <i class="fa-solid fa-chart-line text-accent"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Students Table -->
+            <div class="mt-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-user-graduate text-accent"></i>
+                    Student List
+                </h2>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="table-header">
+                                <th class="text-left w-16">#</th>
+                                <th class="text-left">Student Name</th>
+                                <th class="text-left">UID</th>
+                                <th class="text-left">Status</th>
+                                <th class="text-left">Scan Time</th>
+                                <th class="text-left">Contact Number</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsTableBody">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let lastUID = '';
+    let bannerTimeout = null;
+    let studentsData = {{ students | tojson | safe }};
+    let sectionId = '{{ section }}';
+    
+    console.log("=== Class Section Loaded ===");
+    console.log("Section ID:", sectionId);
+    console.log("Students Data:", studentsData);
+    console.log("Total Students:", studentsData.length);
+    
+    function showToast(message, type = 'success', title = '') {
+        const titles = { success: '✓ Success!', error: '✗ Error!', info: 'ℹ Info', warning: '⚠ Warning' };
+        const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `<div class="toast-icon">${icons[type] || icons.success}</div><div class="toast-content"><div class="toast-title">${title || titles[type]}</div><div class="toast-message">${message}</div></div><div class="toast-close" onclick="this.parentElement.remove()">✕</div>`;
+        document.body.appendChild(toast);
+        setTimeout(() => { if (toast && toast.parentElement) { toast.style.animation = 'slideOutRight 0.3s ease'; setTimeout(() => toast.remove(), 300); } }, 3000);
+    }
+    
+    function renderStudentsTable() {
+        console.log("Rendering students table...");
+        const tbody = document.getElementById('studentsTableBody');
+        if (!studentsData || studentsData.length === 0) {
+            console.log("No students data available");
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8"><div class="empty-state"><i class="fa-regular fa-user text-4xl text-gray-400 mb-3"></i><p class="text-gray-500">No students in this class</p></div></td></tr>`;
+            return;
+        }
+        
+        console.log(`Rendering ${studentsData.length} students`);
+        tbody.innerHTML = studentsData.map((student, index) => `
+            <tr class="table-row">
+                <td class="font-medium">${index + 1}</td>
+                <td class="font-medium">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                            <i class="fa-solid fa-user text-amber-600 text-sm"></i>
+                        </div>
+                        ${student.full_name}
+                    </div>
+                </td>
+                <td><span class="uid-badge"><i class="fa-solid fa-id-card mr-1 text-xs"></i>${student.uid}</span></td>
+                <td id="status-${student.id}">
+                    ${student.present_today ? '<span class="present-badge"><i class="fa-solid fa-check-circle text-xs mr-1"></i> Present</span>' : '<span class="absent-badge"><i class="fa-solid fa-times-circle text-xs mr-1"></i> Absent</span>'}
+                </td>
+                <td id="time-${student.id}">${student.present_today ? student.scan_time : '—'}</td>
+                <td><i class="fa-solid fa-phone mr-1 text-gray-400 text-xs"></i>${student.contact_number}</td>
+              </tr>
+        `).join('');
+        console.log("Table rendered successfully");
+    }
+    
+    function updateStats() {
+        const total = studentsData.length;
+        const present = studentsData.filter(s => s.present_today).length;
+        const absent = total - present;
+        const rate = total > 0 ? (present / total * 100).toFixed(1) : 0;
+        
+        console.log("Stats updated - Total:", total, "Present:", present, "Absent:", absent, "Rate:", rate);
+        
+        document.getElementById('totalStudents').textContent = total;
+        document.getElementById('presentCount').textContent = present;
+        document.getElementById('absentCount').textContent = absent;
+        document.getElementById('attendanceRate').textContent = rate + '%';
+        document.getElementById('todayCount').textContent = `${present} / ${total}`;
+    }
+    
+    async function fetchLatestScan() {
+        try {
+            const response = await fetch('/admin/get_latest');
+            const data = await response.json();
+            
+            console.log("Latest scan received:", data);
+            
+            const uidEl = document.getElementById('uid');
+            const nameEl = document.getElementById('name');
+            const timeEl = document.getElementById('time');
+            const messageEl = document.getElementById('message');
+            
+            if (data.uid && data.uid !== lastUID) {
+                console.log("New UID detected:", data.uid);
+                console.log("Checking if student belongs to section:", sectionId);
+                
+                const scannedStudent = studentsData.find(s => s.uid === data.uid);
+                
+                if (scannedStudent) {
+                    console.log("Student found in this class:", scannedStudent.full_name);
+                    console.log("Current present status:", scannedStudent.present_today);
+                    
+                    uidEl.classList.add('scanning');
+                    setTimeout(() => uidEl.classList.remove('scanning'), 500);
+                    
+                    lastUID = data.uid;
+                    
+                    // Update student's attendance status
+                    if (!scannedStudent.present_today) {
+                        console.log("Updating student attendance to Present");
+                        scannedStudent.present_today = true;
+                        scannedStudent.scan_time = data.time || new Date().toLocaleTimeString();
+                        
+                        // Update the table row
+                        const statusCell = document.getElementById(`status-${scannedStudent.id}`);
+                        const timeCell = document.getElementById(`time-${scannedStudent.id}`);
+                        if (statusCell) {
+                            statusCell.innerHTML = '<span class="present-badge"><i class="fa-solid fa-check-circle text-xs mr-1"></i> Present</span>';
+                            console.log("Status cell updated");
+                        }
+                        if (timeCell) {
+                            timeCell.innerHTML = data.time || new Date().toLocaleTimeString();
+                            console.log("Time cell updated");
+                        }
+                        
+                        updateStats();
+                        showNameBanner(scannedStudent.full_name, data.time);
+                        showToast(`${scannedStudent.full_name} has been detected`, 'success', 'New Scan');
+                    } else {
+                        console.log("Student already marked as present today");
+                    }
+                } else {
+                    console.log("Student not enrolled in this class - UID:", data.uid);
+                    messageEl.innerHTML = '<i class="fa-solid fa-exclamation-triangle mr-2"></i>Student not enrolled in this class';
+                    setTimeout(() => {
+                        messageEl.innerHTML = '<i class="fa-regular fa-clock mr-2"></i>Waiting for scan...';
+                    }, 3000);
+                }
+                
+                uidEl.innerHTML = data.uid || '—';
+                nameEl.innerHTML = data.name || '—';
+                timeEl.innerHTML = data.time || '—';
+            }
+            
+            messageEl.innerHTML = data.message ? `<i class="fa-regular fa-clock mr-2"></i>${data.message}` : '<i class="fa-regular fa-clock mr-2"></i>Waiting for scan...';
+            
+        } catch (error) {
+            console.error('Error fetching latest scan:', error);
+            document.getElementById('message').innerHTML = '<i class="fa-solid fa-exclamation-triangle mr-2"></i>Connection lost...';
+        }
+    }
+    
+    function showNameBanner(name, time) {
+        console.log("Showing name banner for:", name);
+        const banner = document.getElementById('nameBanner');
+        document.getElementById('bannerName').textContent = name || 'No linked student';
+        document.getElementById('bannerTime').innerHTML = `<i class="fa-regular fa-clock mr-1"></i>${time || 'Just now'}`;
+        banner.classList.remove('hidden');
+        
+        if (bannerTimeout) clearTimeout(bannerTimeout);
+        bannerTimeout = setTimeout(() => banner.classList.add('hidden'), 5000);
+    }
+    
+    // Initialize
+    console.log("Initializing class dashboard...");
+    renderStudentsTable();
+    updateStats();
+    fetchLatestScan();
+    setInterval(fetchLatestScan, 1000);
+    console.log("Auto-refresh interval set to 1 second");
+</script>
+{% endblock %}

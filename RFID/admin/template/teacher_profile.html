@@ -128,6 +128,24 @@
         transform: translateY(0);
     }
     
+    .btn-secondary {
+        background: #e2e8f0;
+        color: #1e293b;
+        font-weight: 700;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+        padding: 0.75rem;
+        border: none;
+        cursor: pointer;
+        border-radius: 0.75rem;
+        width: 100%;
+    }
+    
+    .btn-secondary:hover {
+        background: #cbd5e1;
+        transform: translateY(-2px);
+    }
+    
     .info-display-box {
         background: linear-gradient(135deg, #1e3a8a, #1e1b4b);
         border-radius: 0.75rem;
@@ -195,6 +213,12 @@
         color: #f59e0b;
     }
     
+    .divider {
+        height: 1px;
+        background: linear-gradient(to right, #e2e8f0, transparent);
+        margin: 1.5rem 0;
+    }
+    
     @media (max-width: 768px) {
         .form-input {
             font-size: 0.85rem;
@@ -233,12 +257,12 @@
                 <i class="fa-solid fa-user-tie text-accent text-2xl"></i>
                 <h1 class="text-xl font-semibold">My Profile</h1>
             </div>
-            <p class="text-white/80 mt-1 text-sm">Manage your personal information</p>
+            <p class="text-white/80 mt-1 text-sm">Manage your personal information and password</p>
         </div>
 
         <div class="p-6">
 
-            <!-- Display Info Boxes - Simplified -->
+            <!-- Display Info Boxes -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div class="info-display-box">
                     <div class="info-display-label">
@@ -335,6 +359,37 @@
                 </div>
             </form>
 
+            <!-- Divider -->
+            <div class="divider"></div>
+
+            <!-- Change Password Section -->
+            <div class="space-y-5">
+                <div>
+                    <h3 class="section-header">
+                        <i class="fa-solid fa-key mr-2 text-yellow-500"></i> Change Password
+                    </h3>
+                </div>
+
+                <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                    <p class="text-gray-600 text-sm mb-4">
+                        <i class="fa-solid fa-envelope mr-2 text-accent"></i>
+                        A password reset link will be sent to your email address: 
+                        <strong class="text-gray-800">{{ current_teacher.email }}</strong>
+                    </p>
+                    
+                    <button type="button" onclick="sendPasswordReset()" id="resetPasswordBtn"
+                            class="btn-secondary font-semibold rounded-xl transition">
+                        <i class="fa-solid fa-paper-plane mr-2"></i>
+                        Send Password Reset Link
+                    </button>
+                    
+                    <div class="info-text mt-3">
+                        <i class="fa-solid fa-info-circle"></i> 
+                        You will receive an email with instructions to reset your password. The link will expire after 24 hours.
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -364,15 +419,20 @@ function showToast(message, type = 'success', title = '') {
     }, 3000);
 }
 
-function setButtonLoading(button, isLoading) {
+function setButtonLoading(button, isLoading, originalText, loadingText = 'Sending...') {
     if (isLoading) {
         button.classList.add('btn-loading');
         button.disabled = true;
-        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving...';
+        const icon = button.querySelector('i');
+        if (icon) {
+            button.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> ${loadingText}`;
+        } else {
+            button.innerHTML = loadingText;
+        }
     } else {
         button.classList.remove('btn-loading');
         button.disabled = false;
-        button.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Save Profile Changes';
+        button.innerHTML = originalText;
     }
 }
 
@@ -396,6 +456,7 @@ function validateContactNumber(input) {
 
 async function saveProfile() {
     const saveBtn = document.getElementById('saveBtn');
+    const originalText = '<i class="fa-solid fa-floppy-disk mr-2"></i> Save Profile Changes';
     
     let firstName = document.getElementById('first_name').value.trim();
     let middleName = document.getElementById('middle_name').value.trim();
@@ -437,7 +498,7 @@ async function saveProfile() {
         contact_number: contactNumber
     };
 
-    setButtonLoading(saveBtn, true);
+    setButtonLoading(saveBtn, true, originalText, 'Saving...');
 
     try {
         const response = await fetch("{{ url_for('admin_bp.update_teacher_profile') }}", {
@@ -460,7 +521,53 @@ async function saveProfile() {
         console.error('Error:', error);
         showToast('Network error. Please try again.', 'error', 'Connection Error');
     } finally {
-        setButtonLoading(saveBtn, false);
+        setButtonLoading(saveBtn, false, originalText);
+    }
+}
+
+async function sendPasswordReset() {
+    const resetBtn = document.getElementById('resetPasswordBtn');
+    const originalText = '<i class="fa-solid fa-paper-plane mr-2"></i> Send Password Reset Link';
+    const email = '{{ current_teacher.email }}';
+    
+    if (!email) {
+        showToast('No email address found for this account', 'error', 'Cannot Send');
+        return;
+    }
+    
+    setButtonLoading(resetBtn, true, originalText, 'Sending...');
+    
+    try {
+        const response = await fetch("{{ url_for('admin_bp.forgot_password_ajax') }}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast(data.message, 'success', 'Email Sent');
+            resetBtn.innerHTML = '<i class="fa-solid fa-check mr-2"></i> Reset Link Sent!';
+            setTimeout(() => {
+                if (resetBtn) {
+                    resetBtn.innerHTML = originalText;
+                }
+            }, 3000);
+        } else {
+            showToast(data.message || 'Failed to send reset link. Please try again.', 'error', 'Failed');
+        }
+    } catch (error) {
+        console.error('Error sending reset email:', error);
+        showToast('Network error. Please check your connection and try again.', 'error', 'Connection Error');
+    } finally {
+        setTimeout(() => {
+            if (resetBtn && !resetBtn.disabled) {
+                setButtonLoading(resetBtn, false, originalText);
+            } else if (resetBtn && resetBtn.innerHTML !== originalText && resetBtn.innerHTML !== '<i class="fa-solid fa-check mr-2"></i> Reset Link Sent!') {
+                setButtonLoading(resetBtn, false, originalText);
+            }
+        }, 2000);
     }
 }
 

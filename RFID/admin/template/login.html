@@ -118,6 +118,90 @@
         
         .login-btn:active { transform: translateY(0); }
 
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            background: rgba(30, 30, 50, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            max-width: 450px;
+            width: 90%;
+            animation: modalSlideIn 0.3s ease;
+        }
+        
+        @keyframes modalSlideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .modal-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .modal-header i {
+            font-size: 3rem;
+            color: #facc15;
+            margin-bottom: 0.5rem;
+        }
+        
+        .modal-header h3 {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .modal-header p {
+            color: #94a3b8;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        
+        .modal-btn {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            transition: all 0.3s ease;
+        }
+        
+        .modal-btn:hover {
+            background: linear-gradient(135deg, #d97706, #b45309);
+            transform: translateY(-2px);
+        }
+        
+        .modal-close {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .modal-close:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
         .toast {
             position: fixed;
             top: 20px;
@@ -259,8 +343,8 @@
                 </button>
                 
                 <p class="text-center mt-4">
-                    <button type="button" onclick="forgotPassword()" 
-                        class="text-yellow-400 hover:underline text-sm">
+                    <button type="button" onclick="openForgotModal()" 
+                        class="text-yellow-400 hover:underline text-sm transition">
                         <i class="fa-solid fa-key mr-1"></i>
                         Forgot Password?
                     </button>
@@ -282,6 +366,41 @@
         <p class="text-center text-blue-400/60 text-sm mt-6">
             Authorized teachers only
         </p>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgotModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <i class="fa-solid fa-key"></i>
+                <h3>Reset Password</h3>
+                <p>Enter your email address and we'll send you a link to reset your password</p>
+            </div>
+            
+            <form id="forgotForm" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-medium text-blue-200 mb-2">
+                        <i class="fa-solid fa-envelope mr-1 text-yellow-400/70"></i>
+                        Email Address
+                    </label>
+                    <input type="email" id="resetEmail" required
+                           placeholder="your.email@school.edu"
+                           class="glass-input w-full">
+                </div>
+                
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeForgotModal()"
+                            class="modal-close flex-1 text-white font-semibold py-3 rounded-xl transition">
+                        Cancel
+                    </button>
+                    <button type="submit" id="sendResetBtn"
+                            class="modal-btn flex-1 text-white font-semibold py-3 rounded-xl transition">
+                        <i class="fa-solid fa-paper-plane mr-2"></i>
+                        Send Reset Link
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script>
@@ -319,51 +438,76 @@
             icon.classList.toggle('fa-eye-slash', isHidden);
         }
 
-        function forgotPassword() {
-            const email = prompt("Enter your registered email address:");
+        function openForgotModal() {
+            document.getElementById('forgotModal').classList.add('show');
+            document.getElementById('resetEmail').focus();
+        }
 
-            if (!email || email.trim() === "") {
-                showToast("Please enter your email address.", "warning", "Email Required");
+        function closeForgotModal() {
+            document.getElementById('forgotModal').classList.remove('show');
+            document.getElementById('forgotForm').reset();
+        }
+
+        // Handle forgot password form submission
+        document.getElementById('forgotForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('resetEmail').value.trim();
+            const btn = document.getElementById('sendResetBtn');
+            const originalText = btn.innerHTML;
+            
+            if (!email) {
+                showToast('Please enter your email address.', 'warning', 'Email Required');
                 return;
             }
-
+            
             // Validate email format
             const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailPattern.test(email)) {
-                showToast("Please enter a valid email address.", "warning", "Invalid Email");
+                showToast('Please enter a valid email address.', 'warning', 'Invalid Email');
                 return;
             }
-
-            // Show loading indicator
-            const btn = event.target;
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Sending...';
+            
+            // Show loading state
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Sending...';
             btn.disabled = true;
-
-            fetch("/forgot_password_ajax", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ email: email.trim() })
-            })
-            .then(res => res.json())
-            .then(data => {
-                showToast(data.message, data.success ? "success" : "error");
-                if (!data.success) {
-                    console.error("Error:", data.message);
+            btn.classList.add('opacity-70');
+            
+            try {
+                const response = await fetch("{{ url_for('admin_bp.forgot_password_ajax') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email: email })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(data.message, 'success', 'Email Sent');
+                    closeForgotModal();
+                } else {
+                    showToast(data.message || 'Failed to send reset link. Please try again.', 'error', 'Failed');
                 }
-            })
-            .catch(error => {
-                console.error("Fetch error:", error);
-                showToast("Unable to connect to server. Please try again.", "error", "Connection Error");
-            })
-            .finally(() => {
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Network error. Please check your connection.', 'error', 'Connection Error');
+            } finally {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
-            });
-        }
+                btn.classList.remove('opacity-70');
+            }
+        });
 
+        // Close modal when clicking outside
+        document.getElementById('forgotModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeForgotModal();
+            }
+        });
+
+        // Handle login form submission
         document.getElementById('loginForm').addEventListener('submit', function (e) {
             const email    = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value.trim();
@@ -395,6 +539,7 @@
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Signing In...';
         });
 
+        // Display flash messages
         document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('email').focus();
 
