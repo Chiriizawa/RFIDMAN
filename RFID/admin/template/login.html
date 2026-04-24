@@ -25,7 +25,7 @@
             background-image: url("{{ url_for('static', filename='images/geminilogo.png') }}");
             position: relative;
             display: flex;
-            align-items: center;  /* Changed from flex-start to center */
+            align-items: center;
             justify-content: center;
             min-height: 100vh;
             padding: 1.5rem;
@@ -46,7 +46,7 @@
             width: 100%;
             max-width: 440px;
             animation: fadeInUp 0.5s ease;
-            margin: auto;  /* Added to ensure centering */
+            margin: auto;
         }
         
         @keyframes fadeInUp {
@@ -257,6 +257,14 @@
                     <i class="fa-solid fa-sign-in-alt mr-2"></i>
                     Sign In
                 </button>
+                
+                <p class="text-center mt-4">
+                    <button type="button" onclick="forgotPassword()" 
+                        class="text-yellow-400 hover:underline text-sm">
+                        <i class="fa-solid fa-key mr-1"></i>
+                        Forgot Password?
+                    </button>
+                </p>
             </form>
 
             {% with messages = get_flashed_messages(with_categories=true) %}
@@ -309,6 +317,51 @@
             input.type = isHidden ? 'text' : 'password';
             icon.classList.toggle('fa-eye', !isHidden);
             icon.classList.toggle('fa-eye-slash', isHidden);
+        }
+
+        function forgotPassword() {
+            const email = prompt("Enter your registered email address:");
+
+            if (!email || email.trim() === "") {
+                showToast("Please enter your email address.", "warning", "Email Required");
+                return;
+            }
+
+            // Validate email format
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(email)) {
+                showToast("Please enter a valid email address.", "warning", "Invalid Email");
+                return;
+            }
+
+            // Show loading indicator
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Sending...';
+            btn.disabled = true;
+
+            fetch("/forgot_password_ajax", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ email: email.trim() })
+            })
+            .then(res => res.json())
+            .then(data => {
+                showToast(data.message, data.success ? "success" : "error");
+                if (!data.success) {
+                    console.error("Error:", data.message);
+                }
+            })
+            .catch(error => {
+                console.error("Fetch error:", error);
+                showToast("Unable to connect to server. Please try again.", "error", "Connection Error");
+            })
+            .finally(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
         }
 
         document.getElementById('loginForm').addEventListener('submit', function (e) {
