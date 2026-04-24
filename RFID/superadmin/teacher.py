@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
@@ -68,10 +68,6 @@ def send_teacher_create_password_email(to_email, first_name, last_name, reset_li
                 <p style="font-size:13px;color:#2563eb;word-break:break-all;">
                     {reset_link}
                 </p>
-
-                <p style="font-size:14px;color:#6b7280;line-height:1.6;margin-top:24px;">
-                    If you did not expect this email, you may ignore it.
-                </p>
             </div>
         </div>
     </body>
@@ -125,6 +121,84 @@ def teachers():
             conn.close()
 
     return render_template("superadmin/teachers.html", teachers=teachers_list)
+
+
+@teacher_bp.route("/teachers/<int:teacher_id>/students", methods=["GET"])
+def view_teacher_students(teacher_id):
+    conn = None
+    cur = None
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute("""
+            SELECT id,
+                last_name,
+                first_name,
+                middle_name,
+                extension
+            FROM teachers
+            WHERE id = %s
+        """, (teacher_id,))
+        teacher = cur.fetchone()
+
+        if not teacher:
+            return jsonify({
+                "success": False,
+                "message": "Teacher not found.",
+                "teacher": None,
+                "students": []
+            }), 404
+
+        cur.execute("""
+            SELECT s.id,
+                   s.last_name,
+                   s.first_name,
+                   s.middle_name,
+                   s.extension,
+                   sec.section_name,
+                   sec.year_level
+            FROM students s
+            INNER JOIN sections sec ON sec.id = s.section_id
+            WHERE sec.teacher_id = %s
+            ORDER BY sec.year_level ASC,
+                     sec.section_name ASC,
+                     s.last_name ASC,
+                     s.first_name ASC
+        """, (teacher_id,))
+        students = cur.fetchall()
+
+        teacher_name = f"{teacher['last_name']}, {teacher['first_name']}"
+
+        if teacher["middle_name"]:
+            teacher_name += f" {teacher['middle_name']}"
+
+        if teacher["extension"]:
+            teacher_name += f" {teacher['extension']}"
+
+        return jsonify({
+            "success": True,
+            "teacher": {
+                "id": teacher["id"],
+                "name": teacher_name
+            },
+            "students": students
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": f"Database error: {str(e)}",
+            "teacher": None,
+            "students": []
+        }), 500
+
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
 
 
 @teacher_bp.route("/teachers/add", methods=["POST"])
@@ -300,7 +374,7 @@ def create_password(token):
 
         if not account:
             flash("Invalid or expired password link.", "error")
-            return render_template("teacher/create_password.html", token=token)
+            return render_template("superadmin/create_password.html", token=token)
 
         if request.method == "POST":
             password = request.form.get("password", "").strip()
@@ -308,15 +382,15 @@ def create_password(token):
 
             if not password or not confirm_password:
                 flash("Password and Confirm Password are required.", "error")
-                return render_template("teacher/create_password.html", token=token)
+                return render_template("superadmin/create_password.html", token=token)
 
             if password != confirm_password:
                 flash("Passwords do not match.", "error")
-                return render_template("teacher/create_password.html", token=token)
+                return render_template("superadmin/create_password.html", token=token)
 
             if len(password) < 6:
                 flash("Password must be at least 6 characters.", "error")
-                return render_template("teacher/create_password.html", token=token)
+                return render_template("superadmin/create_password.html", token=token)
 
             hashed_password = generate_password_hash(password)
 

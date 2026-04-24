@@ -373,70 +373,61 @@ def attendance():
         """)
         sections = cur.fetchall()
 
-        if selected_section:
-            cur.execute("""
+        query = """
+            SELECT
+                s.id AS student_id,
+                CONCAT(
+                    COALESCE(s.first_name, ''),
+                    CASE
+                        WHEN s.middle_name IS NOT NULL AND TRIM(s.middle_name) <> ''
+                        THEN ' ' || s.middle_name
+                        ELSE ''
+                    END,
+                    ' ',
+                    COALESCE(s.last_name, ''),
+                    CASE
+                        WHEN s.extension IS NOT NULL AND TRIM(s.extension) <> ''
+                        THEN ' ' || s.extension
+                        ELSE ''
+                    END
+                ) AS student_name,
+                s.uid,
+                sec.section_name,
+                latest_attendance.attendance_date,
+                latest_attendance.time_in,
+                latest_attendance.time_out,
+                latest_attendance.status,
+                latest_attendance.created_at
+            FROM students s
+            LEFT JOIN sections sec ON s.section_id = sec.id
+            LEFT JOIN LATERAL (
                 SELECT
-                    a.id,
-                    CONCAT(
-                        COALESCE(s.first_name, ''),
-                        CASE
-                            WHEN s.middle_name IS NOT NULL AND TRIM(s.middle_name) <> ''
-                            THEN ' ' || s.middle_name
-                            ELSE ''
-                        END,
-                        ' ',
-                        COALESCE(s.last_name, ''),
-                        CASE
-                            WHEN s.extension IS NOT NULL AND TRIM(s.extension) <> ''
-                            THEN ' ' || s.extension
-                            ELSE ''
-                        END
-                    ) AS student_name,
-                    a.uid,
-                    sec.section_name,
                     a.attendance_date,
                     a.time_in,
                     a.time_out,
                     a.status,
                     a.created_at
                 FROM attendance a
-                INNER JOIN students s ON a.student_id = s.id
-                LEFT JOIN sections sec ON s.section_id = sec.id
-                WHERE s.section_id = %s
+                WHERE a.student_id = s.id
                 ORDER BY a.attendance_date DESC, a.created_at DESC
-            """, (selected_section,))
-        else:
-            cur.execute("""
-                SELECT
-                    a.id,
-                    CONCAT(
-                        COALESCE(s.first_name, ''),
-                        CASE
-                            WHEN s.middle_name IS NOT NULL AND TRIM(s.middle_name) <> ''
-                            THEN ' ' || s.middle_name
-                            ELSE ''
-                        END,
-                        ' ',
-                        COALESCE(s.last_name, ''),
-                        CASE
-                            WHEN s.extension IS NOT NULL AND TRIM(s.extension) <> ''
-                            THEN ' ' || s.extension
-                            ELSE ''
-                        END
-                    ) AS student_name,
-                    a.uid,
-                    sec.section_name,
-                    a.attendance_date,
-                    a.time_in,
-                    a.time_out,
-                    a.status,
-                    a.created_at
-                FROM attendance a
-                INNER JOIN students s ON a.student_id = s.id
-                LEFT JOIN sections sec ON s.section_id = sec.id
-                ORDER BY a.attendance_date DESC, a.created_at DESC
-            """)
+                LIMIT 1
+            ) latest_attendance ON TRUE
+        """
 
+        params = []
+
+        if selected_section:
+            query += " WHERE s.section_id = %s "
+            params.append(selected_section)
+
+        query += """
+            ORDER BY
+                sec.section_name ASC,
+                s.last_name ASC,
+                s.first_name ASC
+        """
+
+        cur.execute(query, params)
         attendance_rows = cur.fetchall()
 
     except Exception as e:
@@ -454,7 +445,6 @@ def attendance():
         selected_section=selected_section,
         attendance_rows=attendance_rows
     )
-
 
 @sadmin.route('/backup-database')
 def backup_database():

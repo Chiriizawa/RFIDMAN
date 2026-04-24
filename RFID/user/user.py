@@ -9,6 +9,7 @@ load_dotenv()
 user = Blueprint("user", __name__, template_folder="template")
 
 
+# DB CONNECTION
 def get_db_connection():
     return psycopg2.connect(
         host=os.getenv("DB_HOST"),
@@ -19,32 +20,32 @@ def get_db_connection():
     )
 
 
-def format_full_name(first_name, middle_name, last_name, extension):
-    parts = [
-        first_name.strip() if first_name else "",
-        middle_name.strip() if middle_name else "",
-        last_name.strip() if last_name else "",
-        extension.strip() if extension else ""
-    ]
-    return " ".join([p for p in parts if p]).strip()
+# FULL NAME FORMATTER
+def format_full_name(first, middle, last, ext):
+    return " ".join(filter(None, [first, middle, last, ext]))
 
 
+# FRONTEND PAGE
 @user.route('/')
 def index():
     return render_template('user/index.html')
 
 
+# TEST ROUTE (CHECK IF WORKING)
+@user.route('/test')
+def test():
+    return "USER BLUEPRINT WORKING"
+
+
+# MAIN RFID FETCH
 @user.route('/get_latest_tap')
 def get_latest_tap():
-    conn = None
-    cur = None
-
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute("""
-            SELECT
+            SELECT 
                 r.uid,
                 r.created_at,
                 s.first_name,
@@ -53,11 +54,11 @@ def get_latest_tap():
                 s.extension
             FROM rfid_cards r
             LEFT JOIN students s
-                ON UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(r.uid, '')), ' ', ''), '-', ''), ':', ''))
-                = UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(s.uid, '')), ' ', ''), '-', ''), ':', ''))
+                ON REPLACE(LOWER(r.uid), ' ', '') = REPLACE(LOWER(s.uid), ' ', '')
             ORDER BY r.created_at DESC
             LIMIT 1
         """)
+
         row = cur.fetchone()
 
         if not row:
@@ -69,30 +70,30 @@ def get_latest_tap():
             })
 
         full_name = format_full_name(
-            row.get("first_name"),
-            row.get("middle_name"),
-            row.get("last_name"),
-            row.get("extension")
+            row["first_name"],
+            row["middle_name"],
+            row["last_name"],
+            row["extension"]
         )
 
         return jsonify({
             "success": True,
-            "name": full_name if full_name else "No linked student",
-            "uid": row.get("uid", ""),
-            "time": row["created_at"].strftime("%Y-%m-%d %I:%M:%S %p") if row.get("created_at") else ""
+            "name": full_name if full_name else "Unknown Student",
+            "uid": row["uid"],
+            "time": row["created_at"].strftime("%Y-%m-%d %I:%M:%S %p")
         })
 
     except Exception as e:
-        print("User latest tap error:", e)
+        print("ERROR:", e)
         return jsonify({
             "success": False,
-            "name": "Error loading scan",
+            "name": "Error loading data",
             "uid": "",
             "time": ""
         })
 
     finally:
-        if cur:
+        if 'cur' in locals():
             cur.close()
-        if conn:
+        if 'conn' in locals():
             conn.close()

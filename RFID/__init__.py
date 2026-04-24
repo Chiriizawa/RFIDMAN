@@ -5,6 +5,7 @@ from RFID.superadmin.sregister import sregister
 from RFID.superadmin.teacher import teacher_bp
 from RFID.superadmin.section import section_bp
 from RFID.user.user import user
+
 def create_app():
     app = Flask(
         __name__,

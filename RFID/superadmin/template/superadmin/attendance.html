@@ -5,23 +5,23 @@
 {% block content %}
 <div class="px-3 sm:px-4 md:px-6 space-y-6">
 
-    <!-- Header -->
     <div class="p-4"></div>
 
-    <!-- Real-Time Filter -->
     <div class="bg-white rounded-3xl shadow-sm border p-6">
         <div class="flex flex-col md:flex-row md:items-end gap-4">
             <div class="w-full md:w-96">
                 <label for="sectionFilter" class="block text-sm font-medium text-gray-700 mb-2">
                     Filter by Section
                 </label>
+
                 <select
                     id="sectionFilter"
                     class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 >
                     <option value="">All Sections</option>
                     {% for section in sections %}
-                        <option value="{{ section.section_name }}">
+                        <option value="{{ section.id }}"
+                            {% if selected_section|string == section.id|string %}selected{% endif %}>
                             {{ section.section_name }}
                         </option>
                     {% endfor %}
@@ -30,11 +30,10 @@
         </div>
     </div>
 
-    <!-- Table -->
     <div class="bg-white rounded-3xl shadow-sm border p-6">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
             <h3 class="text-lg font-semibold text-gray-800">Attendance Records</h3>
-            <span id="totalCount" class="text-sm text-gray-500">
+            <span class="text-sm text-gray-500">
                 Total: {{ attendance_rows|length if attendance_rows else 0 }}
             </span>
         </div>
@@ -53,39 +52,33 @@
                     </tr>
                 </thead>
 
-                <tbody id="attendanceTableBody" class="divide-y">
+                <tbody class="divide-y">
                     {% if attendance_rows %}
                         {% for row in attendance_rows %}
-                        <tr class="hover:bg-gray-50 attendance-row">
+                        <tr class="hover:bg-gray-50">
                             <td class="py-3 px-4 font-medium text-gray-800">{{ row.student_name }}</td>
                             <td class="py-3 px-4 text-gray-600">{{ row.uid or 'No UID' }}</td>
-                            <td class="py-3 px-4 text-gray-600 section-cell">{{ row.section_name or 'No Section' }}</td>
-                            <td class="py-3 px-4 text-gray-600">{{ row.attendance_date }}</td>
+                            <td class="py-3 px-4 text-gray-600">{{ row.section_name or 'No Section' }}</td>
+                            <td class="py-3 px-4 text-gray-600">{{ row.attendance_date or '-' }}</td>
                             <td class="py-3 px-4 text-gray-600">{{ row.time_in or '-' }}</td>
                             <td class="py-3 px-4 text-gray-600">{{ row.time_out or '-' }}</td>
                             <td class="py-3 px-4">
                                 {% if row.status == 'Present' %}
-                                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-                                        Present
-                                    </span>
+                                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">Present</span>
                                 {% elif row.status == 'Late' %}
-                                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">
-                                        Late
-                                    </span>
+                                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">Late</span>
                                 {% elif row.status == 'Absent' %}
-                                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
-                                        Absent
-                                    </span>
+                                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">Absent</span>
                                 {% else %}
-                                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
-                                        {{ row.status }}
+                                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                                        No Record
                                     </span>
                                 {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
                     {% else %}
-                        <tr id="noDataRow">
+                        <tr>
                             <td colspan="7" class="text-center py-8 text-gray-500">
                                 No attendance records found
                             </td>
@@ -93,11 +86,6 @@
                     {% endif %}
                 </tbody>
             </table>
-
-            <!-- No match message for filtering -->
-            <div id="noMatchMessage" class="hidden text-center py-8 text-gray-500">
-                No attendance records found for the selected section
-            </div>
         </div>
     </div>
 
@@ -106,43 +94,16 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     const sectionFilter = document.getElementById("sectionFilter");
-    const rows = document.querySelectorAll(".attendance-row");
-    const totalCount = document.getElementById("totalCount");
-    const noMatchMessage = document.getElementById("noMatchMessage");
-    const noDataRow = document.getElementById("noDataRow");
 
-    function updateFilter() {
-        const selectedSection = sectionFilter.value.trim().toLowerCase();
-        let visibleCount = 0;
+    sectionFilter.addEventListener("change", function () {
+        const sectionId = this.value;
 
-        rows.forEach(row => {
-            const sectionCell = row.querySelector(".section-cell");
-            const sectionText = sectionCell ? sectionCell.textContent.trim().toLowerCase() : "";
-
-            if (selectedSection === "" || sectionText === selectedSection) {
-                row.style.display = "";
-                visibleCount++;
-            } else {
-                row.style.display = "none";
-            }
-        });
-
-        totalCount.textContent = `Total: ${visibleCount}`;
-
-        if (rows.length > 0) {
-            if (visibleCount === 0) {
-                noMatchMessage.classList.remove("hidden");
-            } else {
-                noMatchMessage.classList.add("hidden");
-            }
+        if (sectionId === "") {
+            window.location.href = "{{ url_for('sadmin.attendance') }}";
+        } else {
+            window.location.href = "{{ url_for('sadmin.attendance') }}?section=" + encodeURIComponent(sectionId);
         }
-
-        if (noDataRow) {
-            noDataRow.style.display = "none";
-        }
-    }
-
-    sectionFilter.addEventListener("change", updateFilter);
+    });
 });
 </script>
 {% endblock %}
