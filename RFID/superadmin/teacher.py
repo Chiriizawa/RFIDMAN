@@ -102,7 +102,6 @@ def teachers():
                    first_name,
                    middle_name,
                    extension,
-                   birthday,
                    contact_number,
                    email,
                    created_at
@@ -207,12 +206,11 @@ def add_teacher():
     first_name = request.form.get("first_name", "").strip()
     middle_name = request.form.get("middle_name", "").strip()
     extension = request.form.get("extension", "").strip()
-    birthday = request.form.get("birthday", "").strip()
     contact_number = request.form.get("contact_number", "").strip()
     email = request.form.get("email", "").strip()
 
-    if not last_name or not first_name or not birthday or not contact_number or not email:
-        flash("Last Name, First Name, Birthday, Contact Number, and Email are required.", "error")
+    if not last_name or not first_name or not contact_number or not email:
+        flash("Last Name, First Name, Contact Number, and Email are required.", "error")
         return redirect(url_for("teacher_bp.teachers"))
 
     conn = None
@@ -228,18 +226,16 @@ def add_teacher():
                 first_name,
                 middle_name,
                 extension,
-                birthday,
                 contact_number,
                 email
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING id
         """, (
             last_name,
             first_name,
             middle_name if middle_name else None,
             extension if extension else None,
-            birthday,
             contact_number,
             email
         ))

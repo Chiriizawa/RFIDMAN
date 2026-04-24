@@ -62,7 +62,6 @@
                         <th class="text-left py-6 px-6 font-semibold">Full Name</th>
                         <th class="text-left py-6 px-6 font-semibold">Contact</th>
                         <th class="text-left py-6 px-6 font-semibold">Email</th>
-                        <th class="text-left py-6 px-6 font-semibold">Birthday</th>
                         <th class="text-left py-6 px-6 font-semibold">Registered</th>
                         <th class="text-center py-6 px-6 font-semibold">Action</th>
                     </tr>
@@ -90,10 +89,7 @@
                                 {{ teacher.email }}
                             </td>
 
-                            <td class="py-5 px-6 text-gray-600">
-                                {{ teacher.birthday.strftime('%b %d, %Y') if teacher.birthday else '—' }}
-                            </td>
-
+                           
                             <td class="py-5 px-6 text-gray-600">
                                 {{ teacher.created_at.strftime('%b %d, %Y') if teacher.created_at else '—' }}
                             </td>
@@ -190,11 +186,7 @@
                            placeholder="e.g. Jr., Sr., III">
                 </div>
 
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Birthday</label>
-                    <input type="date" name="birthday" required
-                           class="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
+                
 
             </div>
 

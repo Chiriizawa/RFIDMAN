@@ -1,99 +1,89 @@
-from flask import Blueprint, render_template, jsonify
+from flask import Blueprint, request, jsonify, render_template
 import psycopg2
-from psycopg2.extras import RealDictCursor
-from dotenv import load_dotenv
+import serial
+import threading
+import time
 import os
 
-load_dotenv()
+rfid_bp = Blueprint("rfid_bp", __name__, template_folder="template")
 
-user = Blueprint("user", __name__, template_folder="template")
-
-
-# DB CONNECTION
+# ================= SUPABASE DB =================
 def get_db_connection():
     return psycopg2.connect(
         host=os.getenv("DB_HOST"),
         database=os.getenv("DB_NAME"),
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
-        port=os.getenv("DB_PORT", 5432)
+        port=os.getenv("DB_PORT", 5432),
+        sslmode="require",
+        connect_timeout=10
     )
 
+# ================= GLOBAL UID =================
+latest_uid = "Wala pa"
 
-# FULL NAME FORMATTER
-def format_full_name(first, middle, last, ext):
-    return " ".join(filter(None, [first, middle, last, ext]))
+# ================= RFID LOOP =================
+def rfid_listener():
+    global latest_uid
 
+    print("🚀 RFID THREAD STARTED")
 
-# FRONTEND PAGE
-@user.route('/')
-def index():
-    return render_template('user/index.html')
+    # wait para hindi mag COM lock agad
+    time.sleep(2)
 
+    ser = None
 
-# TEST ROUTE (CHECK IF WORKING)
-@user.route('/test')
-def test():
-    return "USER BLUEPRINT WORKING"
-
-
-# MAIN RFID FETCH
-@user.route('/get_latest_tap')
-def get_latest_tap():
     try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-
-        cur.execute("""
-            SELECT 
-                r.uid,
-                r.created_at,
-                s.first_name,
-                s.middle_name,
-                s.last_name,
-                s.extension
-            FROM rfid_cards r
-            LEFT JOIN students s
-                ON REPLACE(LOWER(r.uid), ' ', '') = REPLACE(LOWER(s.uid), ' ', '')
-            ORDER BY r.created_at DESC
-            LIMIT 1
-        """)
-
-        row = cur.fetchone()
-
-        if not row:
-            return jsonify({
-                "success": True,
-                "name": "Waiting for scan...",
-                "uid": "",
-                "time": ""
-            })
-
-        full_name = format_full_name(
-            row["first_name"],
-            row["middle_name"],
-            row["last_name"],
-            row["extension"]
-        )
-
-        return jsonify({
-            "success": True,
-            "name": full_name if full_name else "Unknown Student",
-            "uid": row["uid"],
-            "time": row["created_at"].strftime("%Y-%m-%d %I:%M:%S %p")
-        })
+        ser = serial.Serial("COM3", 9600, timeout=1)
+        print("🔥 COM3 CONNECTED")
 
     except Exception as e:
-        print("ERROR:", e)
-        return jsonify({
-            "success": False,
-            "name": "Error loading data",
-            "uid": "",
-            "time": ""
-        })
+        print("❌ SERIAL ERROR:", e)
+        return
 
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
+    while True:
+        try:
+            uid = ser.readline().decode(errors='ignore').strip()
+
+            if uid:
+                print("📡 RFID:", uid)
+                latest_uid = uid
+
+                try:
+                    conn = get_db_connection()
+                    cur = conn.cursor()
+
+                    cur.execute("""
+                        INSERT INTO rfid_cards (uid, created_at)
+                        VALUES (%s, NOW())
+                    """, (uid,))
+
+                    conn.commit()
+                    cur.close()
+                    conn.close()
+
+                    print("💾 SAVED TO SUPABASE")
+
+                except Exception as db_error:
+                    print("❌ DB ERROR:", db_error)
+
+            time.sleep(0.2)
+
+        except Exception as loop_error:
+            print("❌ LOOP ERROR:", loop_error)
+
+# ================= SAFE START =================
+def start_rfid_thread():
+    thread = threading.Thread(target=rfid_listener, daemon=True)
+    thread.start()
+    print("🔥 RFID THREAD INITIALIZED")
+
+# ================= ROUTES =================
+
+@rfid_bp.route("/")
+def index():
+    return render_template("user/index.html")
+
+@rfid_bp.route("/get_uid")
+def get_uid():
+    return jsonify({"uid": latest_uid})
