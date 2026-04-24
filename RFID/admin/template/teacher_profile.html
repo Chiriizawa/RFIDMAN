@@ -322,7 +322,7 @@
                         <i class="fa-solid fa-book mr-1 text-yellow-400"></i> Subject
                     </div>
                     <div class="info-display-value" id="subjectDisplay">
-                        {{ current_teacher.subject }}
+                        {{ current_teacher.subject or 'Not specified' }}
                     </div>
                 </div>
                 <div class="info-display-box">
@@ -330,7 +330,7 @@
                         <i class="fa-solid fa-building mr-1 text-yellow-400"></i> Department
                     </div>
                     <div class="info-display-value" id="departmentDisplay">
-                        {{ current_teacher.department }}
+                        {{ current_teacher.department or 'Not specified' }}
                     </div>
                 </div>
             </div>
@@ -338,19 +338,47 @@
             <!-- Edit Form - Compact -->
             <form id="profileForm" class="space-y-4">
 
-                <!-- Full Name Input -->
-                <div>
-                    <label>
-                        <i class="fa-solid fa-user mr-1 text-yellow-400"></i> Edit Full Name
-                    </label>
-                    <input type="text" id="full_name" name="full_name"
-                           value="{{ current_teacher.full_name }}"
-                           class="form-input w-full rounded-xl"
-                           placeholder="Enter your full name"
-                           maxlength="100"
-                           oninput="validateName(this)">
-                    <div class="info-text">
-                        <i class="fa-solid fa-info-circle"></i> Letters and spaces only • No numbers
+                <!-- Full Name Input - Split into parts -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label>
+                            <i class="fa-solid fa-user mr-1 text-yellow-400"></i> First Name
+                        </label>
+                        <input type="text" id="first_name" name="first_name"
+                               value="{{ current_teacher.first_name }}"
+                               class="form-input w-full rounded-xl"
+                               placeholder="First Name"
+                               maxlength="50">
+                    </div>
+                    <div>
+                        <label>
+                            <i class="fa-solid fa-user mr-1 text-yellow-400"></i> Middle Name
+                        </label>
+                        <input type="text" id="middle_name" name="middle_name"
+                               value="{{ current_teacher.middle_name or '' }}"
+                               class="form-input w-full rounded-xl"
+                               placeholder="Middle Name"
+                               maxlength="50">
+                    </div>
+                    <div>
+                        <label>
+                            <i class="fa-solid fa-user mr-1 text-yellow-400"></i> Last Name
+                        </label>
+                        <input type="text" id="last_name" name="last_name"
+                               value="{{ current_teacher.last_name }}"
+                               class="form-input w-full rounded-xl"
+                               placeholder="Last Name"
+                               maxlength="50">
+                    </div>
+                    <div>
+                        <label>
+                            <i class="fa-solid fa-tag mr-1 text-yellow-400"></i> Extension
+                        </label>
+                        <input type="text" id="extension" name="extension"
+                               value="{{ current_teacher.extension or '' }}"
+                               class="form-input w-full rounded-xl"
+                               placeholder="e.g., Jr., Sr., III"
+                               maxlength="20">
                     </div>
                 </div>
 
@@ -358,30 +386,28 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label>
-                            <i class="fa-solid fa-book mr-1 text-yellow-400"></i> Edit Subject
+                            <i class="fa-solid fa-book mr-1 text-yellow-400"></i> Subject
                         </label>
                         <input type="text" id="subject" name="subject"
-                               value="{{ current_teacher.subject }}"
+                               value="{{ current_teacher.subject or '' }}"
                                class="form-input w-full rounded-xl"
                                placeholder="e.g., Mathematics"
-                               maxlength="100"
-                               oninput="validateSubject(this)">
+                               maxlength="100">
                         <div class="info-text">
-                            <i class="fa-solid fa-info-circle"></i> Letters, spaces, commas, hyphens only
+                            <i class="fa-solid fa-info-circle"></i> Your main teaching subject
                         </div>
                     </div>
                     <div>
                         <label>
-                            <i class="fa-solid fa-building mr-1 text-yellow-400"></i> Edit Department
+                            <i class="fa-solid fa-building mr-1 text-yellow-400"></i> Department
                         </label>
                         <input type="text" id="department" name="department"
-                               value="{{ current_teacher.department }}"
+                               value="{{ current_teacher.department or '' }}"
                                class="form-input w-full rounded-xl"
                                placeholder="e.g., High School"
-                               maxlength="100"
-                               oninput="validateDepartment(this)">
+                               maxlength="100">
                         <div class="info-text">
-                            <i class="fa-solid fa-info-circle"></i> Letters, spaces, commas, hyphens only
+                            <i class="fa-solid fa-info-circle"></i> Your department or division
                         </div>
                     </div>
                 </div>
@@ -396,28 +422,39 @@
                            class="form-input w-full rounded-xl number-input"
                            placeholder="09123456789"
                            inputmode="numeric"
-                           maxlength="11"
-                           oninput="validateContactNumber(this)">
+                           maxlength="11">
                     <div class="info-text">
                         <i class="fa-solid fa-info-circle"></i> Numbers only • Max 11 digits
                     </div>
                 </div>
 
-                <!-- Bio / About Me -->
+                <!-- Email (read-only) -->
                 <div>
                     <label>
-                        <i class="fa-regular fa-file-lines mr-1 text-yellow-400"></i> About Me (Bio)
+                        <i class="fa-solid fa-envelope mr-1 text-yellow-400"></i> Email Address
                     </label>
-                    <textarea id="bio" name="bio" rows="4"
-                              class="form-input w-full rounded-xl resize-y"
-                              placeholder="Tell us about yourself, your teaching philosophy, interests, etc."
-                              maxlength="500"
-                              oninput="updateCharCounter(this)"></textarea>
-                    <div class="char-counter" id="bioCounter">
-                        <i class="fa-regular fa-keyboard mr-1"></i>
-                        <span id="bioCharCount">0</span> / 500 characters
+                    <input type="email" id="email" name="email"
+                           value="{{ current_teacher.email }}"
+                           class="form-input w-full rounded-xl bg-gray-700 cursor-not-allowed"
+                           readonly
+                           disabled>
+                    <div class="info-text">
+                        <i class="fa-solid fa-info-circle"></i> Email cannot be changed
                     </div>
                 </div>
+
+                <!-- Birthday -->
+                <div>
+                    <label>
+                        <i class="fa-solid fa-cake-candles mr-1 text-yellow-400"></i> Birthday
+                    </label>
+                    <input type="date" id="birthday" name="birthday"
+                           value="{{ current_teacher.birthday.strftime('%Y-%m-%d') if current_teacher.birthday else '' }}"
+                           class="form-input w-full rounded-xl">
+                </div>
+
+                <!-- Bio / About Me -->
+           
 
                 <!-- Save Button -->
                 <div class="pt-4">
@@ -434,42 +471,6 @@
 </div>
 
 <script>
-// Validate full name
-function validateName(input) {
-    let value = input.value;
-    let cleaned = value.replace(/[0-9]/g, '');
-    cleaned = cleaned.replace(/[^a-zA-Z\s\.\-ñÑáéíóúÁÉÍÓÚ]/g, '');
-    
-    if (value !== cleaned) {
-        input.value = cleaned;
-        showToast('Numbers and special characters are not allowed in name field', 'warning', 'Invalid Input');
-    }
-}
-
-// Validate subject
-function validateSubject(input) {
-    let value = input.value;
-    let cleaned = value.replace(/[0-9]/g, '');
-    cleaned = cleaned.replace(/[^a-zA-Z\s\.\,\-\&\(\)]/g, '');
-    
-    if (value !== cleaned) {
-        input.value = cleaned;
-        showToast('Numbers are not allowed in subject field', 'warning', 'Invalid Input');
-    }
-}
-
-// Validate department
-function validateDepartment(input) {
-    let value = input.value;
-    let cleaned = value.replace(/[0-9]/g, '');
-    cleaned = cleaned.replace(/[^a-zA-Z\s\.\,\-\&]/g, '');
-    
-    if (value !== cleaned) {
-        input.value = cleaned;
-        showToast('Numbers are not allowed in department field', 'warning', 'Invalid Input');
-    }
-}
-
 // Character counter for bio
 function updateCharCounter(textarea) {
     const count = textarea.value.length;
@@ -508,35 +509,9 @@ function validateContactNumber(input) {
     }
 }
 
-// Keypress prevention
-document.getElementById('full_name')?.addEventListener('keypress', function(e) {
-    const charCode = e.which ? e.which : e.keyCode;
-    if (charCode >= 48 && charCode <= 57) {
-        e.preventDefault();
-        showToast('Numbers are not allowed in name field', 'warning', 'Invalid Input');
-        return false;
-    }
-    return true;
-});
-
-document.getElementById('subject')?.addEventListener('keypress', function(e) {
-    const charCode = e.which ? e.which : e.keyCode;
-    if (charCode >= 48 && charCode <= 57) {
-        e.preventDefault();
-        showToast('Numbers are not allowed in subject field', 'warning', 'Invalid Input');
-        return false;
-    }
-    return true;
-});
-
-document.getElementById('department')?.addEventListener('keypress', function(e) {
-    const charCode = e.which ? e.which : e.keyCode;
-    if (charCode >= 48 && charCode <= 57) {
-        e.preventDefault();
-        showToast('Numbers are not allowed in department field', 'warning', 'Invalid Input');
-        return false;
-    }
-    return true;
+// Apply contact number validation
+document.getElementById('contact_number')?.addEventListener('input', function(e) {
+    validateContactNumber(this);
 });
 
 document.getElementById('contact_number')?.addEventListener('keypress', function(e) {
@@ -650,31 +625,25 @@ async function uploadProfilePicture() {
 async function saveProfile() {
     const saveBtn = document.getElementById('saveBtn');
     
-    let fullName = document.getElementById('full_name').value.trim();
+    let firstName = document.getElementById('first_name').value.trim();
+    let middleName = document.getElementById('middle_name').value.trim();
+    let lastName = document.getElementById('last_name').value.trim();
+    let extension = document.getElementById('extension').value.trim();
     let subject = document.getElementById('subject').value.trim();
     let department = document.getElementById('department').value.trim();
     const contactNumber = document.getElementById('contact_number').value.trim();
     const bio = document.getElementById('bio').value.trim();
+    const birthday = document.getElementById('birthday').value;
     
-    fullName = fullName.replace(/[0-9]/g, '');
-    subject = subject.replace(/[0-9]/g, '');
-    department = department.replace(/[0-9]/g, '');
-    
-    if (!fullName) {
-        showToast('Full name is required', 'warning', 'Missing Field');
-        document.getElementById('full_name').focus();
+    if (!firstName) {
+        showToast('First name is required', 'warning', 'Missing Field');
+        document.getElementById('first_name').focus();
         return;
     }
     
-    if (!subject) {
-        showToast('Subject is required', 'warning', 'Missing Field');
-        document.getElementById('subject').focus();
-        return;
-    }
-    
-    if (!department) {
-        showToast('Department is required', 'warning', 'Missing Field');
-        document.getElementById('department').focus();
+    if (!lastName) {
+        showToast('Last name is required', 'warning', 'Missing Field');
+        document.getElementById('last_name').focus();
         return;
     }
     
@@ -696,12 +665,18 @@ async function saveProfile() {
         return;
     }
     
+    const fullName = [firstName, middleName, lastName, extension].filter(p => p).join(' ');
+    
     const formData = {
-        full_name: fullName,
+        first_name: firstName,
+        middle_name: middleName,
+        last_name: lastName,
+        extension: extension,
         subject: subject,
         department: department,
         contact_number: contactNumber,
-        bio: bio
+        bio: bio,
+        birthday: birthday
     };
 
     setButtonLoading(saveBtn, true);
@@ -718,11 +693,11 @@ async function saveProfile() {
         if (data.success) {
             showToast('Your profile has been updated successfully!', 'success', 'Profile Updated');
             
-            document.getElementById('teacherNameDisplay').textContent = formData.full_name;
-            document.getElementById('subjectDisplay').textContent = formData.subject;
-            document.getElementById('departmentDisplay').textContent = formData.department;
+            document.getElementById('teacherNameDisplay').textContent = fullName;
+            document.getElementById('subjectDisplay').textContent = subject || 'Not specified';
+            document.getElementById('departmentDisplay').textContent = department || 'Not specified';
             
-            document.title = `My Profile - ${formData.full_name}`;
+            document.title = `My Profile - ${fullName}`;
         } else {
             showToast(data.message || 'Failed to update profile.', 'error', 'Update Failed');
         }
@@ -749,12 +724,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Enter key to save
 document.querySelectorAll('#profileForm input, #profileForm textarea').forEach(input => {
-    input.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
-            e.preventDefault();
-            saveProfile();
-        }
-    });
+    if (input.id !== 'bio') {
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveProfile();
+            }
+        });
+    }
 });
 </script>
 {% endblock %}
