@@ -356,6 +356,11 @@
     let studentsData = {{ students | tojson | safe }};
     let sectionId = '{{ section }}';
     
+    console.log("=== Class Section Loaded ===");
+    console.log("Section ID:", sectionId);
+    console.log("Students Data:", studentsData);
+    console.log("Total Students:", studentsData.length);
+    
     function showToast(message, type = 'success', title = '') {
         const titles = { success: '✓ Success!', error: '✗ Error!', info: 'ℹ Info', warning: '⚠ Warning' };
         const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
@@ -367,12 +372,15 @@
     }
     
     function renderStudentsTable() {
+        console.log("Rendering students table...");
         const tbody = document.getElementById('studentsTableBody');
         if (!studentsData || studentsData.length === 0) {
+            console.log("No students data available");
             tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8"><div class="empty-state"><i class="fa-regular fa-user text-4xl text-gray-400 mb-3"></i><p class="text-gray-500">No students in this class</p></div></td></tr>`;
             return;
         }
         
+        console.log(`Rendering ${studentsData.length} students`);
         tbody.innerHTML = studentsData.map((student, index) => `
             <tr class="table-row">
                 <td class="font-medium">${index + 1}</td>
@@ -392,6 +400,7 @@
                 <td><i class="fa-solid fa-phone mr-1 text-gray-400 text-xs"></i>${student.contact_number}</td>
              </tr>
         `).join('');
+        console.log("Table rendered successfully");
     }
     
     function updateStats() {
@@ -399,6 +408,8 @@
         const present = studentsData.filter(s => s.present_today).length;
         const absent = total - present;
         const rate = total > 0 ? (present / total * 100).toFixed(1) : 0;
+        
+        console.log("Stats updated - Total:", total, "Present:", present, "Absent:", absent, "Rate:", rate);
         
         document.getElementById('totalStudents').textContent = total;
         document.getElementById('presentCount').textContent = present;
@@ -412,17 +423,23 @@
             const response = await fetch('/admin/get_latest');
             const data = await response.json();
             
+            console.log("Latest scan received:", data);
+            
             const uidEl = document.getElementById('uid');
             const nameEl = document.getElementById('name');
             const timeEl = document.getElementById('time');
             const messageEl = document.getElementById('message');
             
             if (data.uid && data.uid !== lastUID) {
-                // Check if scanned student belongs to this class
+                console.log("New UID detected:", data.uid);
+                console.log("Checking if student belongs to section:", sectionId);
+                
                 const scannedStudent = studentsData.find(s => s.uid === data.uid);
                 
                 if (scannedStudent) {
-                    // Student belongs to this class
+                    console.log("Student found in this class:", scannedStudent.full_name);
+                    console.log("Current present status:", scannedStudent.present_today);
+                    
                     uidEl.classList.add('scanning');
                     setTimeout(() => uidEl.classList.remove('scanning'), 500);
                     
@@ -430,6 +447,7 @@
                     
                     // Update student's attendance status
                     if (!scannedStudent.present_today) {
+                        console.log("Updating student attendance to Present");
                         scannedStudent.present_today = true;
                         scannedStudent.scan_time = data.time || new Date().toLocaleTimeString();
                         
@@ -438,17 +456,21 @@
                         const timeCell = document.getElementById(`time-${scannedStudent.id}`);
                         if (statusCell) {
                             statusCell.innerHTML = '<span class="present-badge"><i class="fa-solid fa-check-circle text-xs mr-1"></i> Present</span>';
+                            console.log("Status cell updated");
                         }
                         if (timeCell) {
                             timeCell.innerHTML = data.time || new Date().toLocaleTimeString();
+                            console.log("Time cell updated");
                         }
                         
                         updateStats();
                         showNameBanner(scannedStudent.full_name, data.time);
                         showToast(`${scannedStudent.full_name} has been detected`, 'success', 'New Scan');
+                    } else {
+                        console.log("Student already marked as present today");
                     }
                 } else {
-                    // Student not in this class - show message
+                    console.log("Student not enrolled in this class - UID:", data.uid);
                     messageEl.innerHTML = '<i class="fa-solid fa-exclamation-triangle mr-2"></i>Student not enrolled in this class';
                     setTimeout(() => {
                         messageEl.innerHTML = '<i class="fa-regular fa-clock mr-2"></i>Waiting for scan...';
@@ -469,6 +491,7 @@
     }
     
     function showNameBanner(name, time) {
+        console.log("Showing name banner for:", name);
         const banner = document.getElementById('nameBanner');
         document.getElementById('bannerName').textContent = name || 'No linked student';
         document.getElementById('bannerTime').innerHTML = `<i class="fa-regular fa-clock mr-1"></i>${time || 'Just now'}`;
@@ -479,9 +502,11 @@
     }
     
     // Initialize
+    console.log("Initializing class dashboard...");
     renderStudentsTable();
     updateStats();
     fetchLatestScan();
     setInterval(fetchLatestScan, 1000);
+    console.log("Auto-refresh interval set to 1 second");
 </script>
 {% endblock %}

@@ -161,13 +161,14 @@
             transition: all 0.3s ease;
         }
 
-        /* Dropdown menu styles */
+        /* Dropdown menu styles - ONLY SHOW ON HOVER */
         .dropdown-menu {
             display: none;
             margin-left: 2rem;
         }
         
-        .dropdown-menu.show {
+        /* Show dropdown ONLY when hovering over the parent */
+        .nav-item.has-dropdown:hover .dropdown-menu {
             display: block;
         }
         
@@ -198,15 +199,12 @@
             position: relative;
         }
         
-        .nav-item.has-dropdown .dropdown-toggle {
-            cursor: pointer;
-        }
-        
         .nav-item.has-dropdown .fa-chevron-down {
             transition: transform 0.3s ease;
         }
         
-        .nav-item.has-dropdown.open .fa-chevron-down {
+        /* Rotate chevron on hover */
+        .nav-item.has-dropdown:hover .fa-chevron-down {
             transform: rotate(180deg);
         }
 
@@ -369,16 +367,16 @@
                         <span class="sidebar-text">Schedules</span>
                     </a>
 
-                    <!-- My Classes with Dropdown - Stays open when on class pages -->
+                    <!-- My Classes with Dropdown - ONLY SHOWS ON HOVER -->
                     <div class="nav-item has-dropdown" id="myClassesDropdown">
-                        <div class="flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-medium dropdown-toggle">
+                        <div class="flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-medium">
                             <div class="flex items-center gap-3">
                                 <i class="fa-solid fa-chalkboard-user w-5 text-center"></i>
                                 <span class="sidebar-text">My Classes</span>
                             </div>
                             <i class="fa-solid fa-chevron-down text-xs sidebar-text"></i>
                         </div>
-                        <div class="dropdown-menu" id="dropdownMenu">
+                        <div class="dropdown-menu">
                             <a href="{{ url_for('admin_bp.class_section', section_id='1-A') }}"
                             class="dropdown-item text-sm font-medium
                             {% if request.endpoint == 'admin_bp.class_section' and request.view_args.section_id == '1-A' %}active{% endif %}">
@@ -412,13 +410,6 @@
                         </div>
                     </div>
 
-                    <a href="{{ url_for('admin_bp.history') }}"
-                    class="nav-item flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium
-                    {% if request.endpoint == 'admin_bp.history' %}active{% endif %}">
-                        <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i>
-                        <span class="sidebar-text">Logs</span>
-                    </a>
-
                     <a href="{{ url_for('admin_bp.registered_students') }}"
                     class="nav-item flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium
                     {% if request.endpoint == 'admin_bp.registered_students' %}active{% endif %}">
@@ -451,47 +442,6 @@
         </main>
 
     </div>
-
-    <script>
-        // Dropdown toggle functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const dropdownToggle = document.querySelector('.dropdown-toggle');
-            const dropdownMenu = document.getElementById('dropdownMenu');
-            const dropdownContainer = document.getElementById('myClassesDropdown');
-            
-            // Check if we're on a class section page
-            const isOnClassPage = window.location.href.includes('/class_section/');
-            
-            // If on a class page, keep dropdown open
-            if (isOnClassPage) {
-                dropdownMenu.classList.add('show');
-                dropdownContainer.classList.add('open');
-            }
-            
-            // Dropdown click handler - only works if NOT on class page
-            if (dropdownToggle && dropdownMenu) {
-                dropdownToggle.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    
-                    // Only toggle if we're NOT on a class page
-                    if (!window.location.href.includes('/class_section/')) {
-                        dropdownMenu.classList.toggle('show');
-                        dropdownContainer.classList.toggle('open');
-                    }
-                });
-            }
-            
-            // Close dropdown when clicking outside (only when not on class page)
-            document.addEventListener('click', function(event) {
-                const isOnClassPage = window.location.href.includes('/class_section/');
-                
-                if (!isOnClassPage && dropdownContainer && !dropdownContainer.contains(event.target)) {
-                    dropdownMenu.classList.remove('show');
-                    dropdownContainer.classList.remove('open');
-                }
-            });
-        });
-    </script>
 
 </body>
 </html>

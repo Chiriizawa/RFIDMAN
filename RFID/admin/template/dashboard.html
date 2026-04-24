@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}RFID Dashboard{% endblock %}
+{% block title %}School Dashboard - Tap & Know{% endblock %}
 
 {% block content %}
 <style>
@@ -54,6 +54,55 @@
         box-shadow: 0 20px 40px rgba(0,0,0,0.1);
     }
     
+    /* Header gradient */
+    .header-gradient {
+        background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);
+        padding: 1.5rem 2rem;
+    }
+    
+    .text-accent {
+        color: #f59e0b;
+    }
+    
+    /* KPI Cards */
+    .kpi-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.25rem;
+        transition: all 0.3s ease;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    .kpi-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 20px rgba(0,0,0,0.1);
+        border-color: #f59e0b;
+    }
+    
+    .kpi-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .kpi-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+    
+    .kpi-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
     /* Status cards */
     .status-card {
         transition: all 0.3s ease;
@@ -68,6 +117,22 @@
         transform: translateY(-5px);
         background: #f1f5f9;
         border-color: #f59e0b;
+    }
+    
+    .status-card p:first-child {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-card p:last-child {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-top: 0.5rem;
+        word-break: break-word;
     }
     
     /* Success banner */
@@ -93,7 +158,7 @@
     .table-header th {
         color: #1e293b;
         font-weight: 700;
-        font-size: 0.9rem;
+        font-size: 0.8rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         padding: 1rem 1.5rem;
@@ -111,7 +176,7 @@
     .table-row td {
         padding: 1rem 1.5rem;
         color: #1e293b;
-        font-size: 0.9rem;
+        font-size: 0.875rem;
     }
     
     /* UID badge */
@@ -121,11 +186,11 @@
         font-family: monospace;
         font-weight: 700;
         letter-spacing: 0.5px;
-        padding: 0.5rem 1rem;
-        border-radius: 0.75rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 0.5rem;
         display: inline-block;
         border: 1px solid #fbbf24;
-        font-size: 0.85rem;
+        font-size: 0.75rem;
     }
     
     /* Scanning animation */
@@ -147,107 +212,145 @@
         padding: 2rem;
     }
     
-    /* Header gradient */
-    .header-gradient {
-        background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);
-        padding: 1.5rem 2rem;
+    /* View toggle buttons */
+    .view-toggle {
+        background: #f1f5f9;
+        border-radius: 0.75rem;
+        padding: 0.25rem;
     }
     
-    .text-accent {
-        color: #f59e0b;
-    }
-    
-    /* Status card text */
-    .status-card p:first-child {
-        font-size: 0.8rem;
+    .view-btn {
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.75rem;
         font-weight: 600;
-        color: #64748b;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        transition: all 0.2s;
+        cursor: pointer;
     }
     
-    .status-card p:last-child {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: #1e293b;
-        margin-top: 0.5rem;
+    .view-btn.active {
+        background: white;
+        color: #f59e0b;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     
-    /* Responsive */
     @media (max-width: 768px) {
         .status-card { padding: 1rem; }
         .table-header th, .table-row td { padding: 0.75rem 1rem; }
         .header-gradient { padding: 1rem 1.25rem; }
         .success-banner { padding: 1rem; }
-        .success-banner .text-5xl { font-size: 2.5rem; }
-        .success-banner .text-2xl { font-size: 1.25rem; }
+        .kpi-value { font-size: 1.25rem; }
+        .kpi-icon { width: 36px; height: 36px; }
     }
 </style>
 
 <div class="max-w-7xl mx-auto px-4">
 
-    <div class="white-card">
+    <!-- Welcome Section -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">School Dashboard</h1>
+        <p class="text-gray-500 text-sm mt-1">Real-time student attendance monitoring system</p>
+    </div>
 
-        <!-- Header -->
-        <div class="header-gradient text-white">
+    <!-- KPI Cards Row -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="kpi-card">
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="text-2xl font-semibold flex items-center gap-3">
-                        <i class="fa-solid fa-rfid text-accent"></i>
-                        RFID Dashboard
-                    </h1>
-                    <p class="text-white/80 mt-1 text-sm">Real-time attendance monitoring system</p>
+                    <p class="kpi-label">Total Students</p>
+                    <p class="kpi-value" id="totalStudents">--</p>
                 </div>
-                <div class="flex items-center gap-2">
-                    <div class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
-                    <span class="text-white/80 text-xs">Live Monitoring Active</span>
+                <div class="kpi-icon bg-blue-100">
+                    <i class="fa-solid fa-users text-blue-600 text-xl"></i>
                 </div>
             </div>
         </div>
-
-        <!-- Info Boxes -->
-        <div class="p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-
-                <!-- Current Status -->
-                <div class="status-card">
-                    <p><i class="fa-solid fa-circle-info mr-1 text-accent"></i> Current Status</p>
-                    <p id="message"><i class="fa-regular fa-clock mr-2"></i>Waiting for scan...</p>
+        
+        <div class="kpi-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="kpi-label">Present Today</p>
+                    <p class="kpi-value text-green-600" id="presentCount">--</p>
                 </div>
-
-                <!-- Scanned UID -->
-                <div class="status-card">
-                    <p><i class="fa-solid fa-id-card mr-1 text-accent"></i> Scanned UID</p>
-                    <p id="uid" class="font-mono text-accent">—</p>
+                <div class="kpi-icon bg-green-100">
+                    <i class="fa-solid fa-check-circle text-green-600 text-xl"></i>
                 </div>
-
-                <!-- Student Name -->
-                <div class="status-card">
-                    <p><i class="fa-solid fa-user-graduate mr-1 text-accent"></i> Student Name</p>
-                    <p id="name">—</p>
-                </div>
-
-                <!-- Scan Time -->
-                <div class="status-card">
-                    <p><i class="fa-regular fa-clock mr-1 text-accent"></i> Scan Time</p>
-                    <p id="time">—</p>
-                </div>
-
             </div>
+        </div>
+        
+        <div class="kpi-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="kpi-label">Absent Today</p>
+                    <p class="kpi-value text-red-600" id="absentCount">--</p>
+                </div>
+                <div class="kpi-icon bg-red-100">
+                    <i class="fa-solid fa-clock text-red-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="kpi-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="kpi-label">Attendance Rate</p>
+                    <p class="kpi-value text-accent" id="attendanceRate">--</p>
+                </div>
+                <div class="kpi-icon bg-amber-100">
+                    <i class="fa-solid fa-chart-line text-accent text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <!-- Live Scan Status -->
+    <div class="white-card mb-6">
+        <div class="header-gradient text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-semibold flex items-center gap-2">
+                        <i class="fa-solid fa-waveform text-accent"></i>
+                        Live Scan Monitor
+                    </h2>
+                    <p class="text-white/80 text-xs mt-1">Real-time RFID scanning status</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span class="text-white/70 text-xs">Active</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="status-card">
+                    <p><i class="fa-solid fa-circle-info mr-1 text-accent"></i> Status</p>
+                    <p id="message"><i class="fa-regular fa-clock mr-1"></i>Waiting...</p>
+                </div>
+                <div class="status-card">
+                    <p><i class="fa-solid fa-id-card mr-1 text-accent"></i> UID</p>
+                    <p id="uid" class="font-mono text-accent text-sm">—</p>
+                </div>
+                <div class="status-card">
+                    <p><i class="fa-solid fa-user-graduate mr-1 text-accent"></i> Student</p>
+                    <p id="name" class="text-sm">—</p>
+                </div>
+                <div class="status-card">
+                    <p><i class="fa-regular fa-clock mr-1 text-accent"></i> Time</p>
+                    <p id="time" class="text-sm">—</p>
+                </div>
+            </div>
+            
             <!-- Success Banner -->
-            <div id="nameBanner" class="mt-6 hidden success-banner">
-                <div class="flex items-center gap-4">
-                    <div class="text-5xl animate-bounce">✅</div>
+            <div id="nameBanner" class="mt-4 hidden success-banner">
+                <div class="flex items-center gap-3">
+                    <div class="text-4xl animate-bounce">✅</div>
                     <div>
-                        <p class="text-emerald-700 font-semibold uppercase tracking-widest text-xs">
-                            <i class="fa-solid fa-check-circle mr-1"></i>
-                            Student Successfully Detected
-                        </p>
-                        <p id="bannerName" class="text-2xl font-bold text-gray-800 mt-1">—</p>
-                        <p id="bannerTime" class="text-gray-600 text-sm mt-1">
+                        <p class="text-emerald-700 font-semibold text-xs">New Scan Detected</p>
+                        <p id="bannerName" class="text-lg font-bold text-gray-800 mt-1">—</p>
+                        <p id="bannerTime" class="text-gray-500 text-xs mt-1">
                             <i class="fa-regular fa-clock mr-1"></i>
-                            —
+                            Just now
                         </p>
                     </div>
                 </div>
@@ -255,37 +358,47 @@
         </div>
     </div>
 
-    <!-- Recent Scanned Cards Table -->
-    <div class="mt-6">
-        <div class="flex justify-between items-end mb-4">
-            <div>
-                <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                    <i class="fa-solid fa-history text-accent"></i>
-                    Recent Scanned Cards
-                </h2>
-                <p class="text-gray-500 mt-1 text-xs">
-                    <i class="fa-regular fa-hourglass-half mr-1"></i>
-                    Last 60 seconds only • Real-time updates
-                </p>
-            </div>
-            <div class="text-gray-500 text-xs">
-                <i class="fa-regular fa-bell mr-1"></i>
-                Auto-refreshing every second
+    <!-- Recent Activity -->
+    <div class="white-card">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <div class="flex justify-between items-center flex-wrap gap-3">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                        <i class="fa-solid fa-history text-accent"></i>
+                        Recent Activity
+                    </h2>
+                    <p class="text-gray-400 text-xs mt-1">Last 60 seconds of scans</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="manualRefresh()" class="text-gray-400 hover:text-accent text-sm transition px-3 py-1 rounded-lg hover:bg-gray-100">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
+                    </button>
+                    <button onclick="clearRecentScans()" class="text-gray-400 hover:text-red-500 text-sm transition px-3 py-1 rounded-lg hover:bg-gray-100">
+                        <i class="fa-solid fa-trash-alt mr-1"></i> Clear
+                    </button>
+                </div>
             </div>
         </div>
-
-        <div class="white-card overflow-hidden">
-            <table class="w-full text-sm">
+        
+        <div class="overflow-x-auto">
+            <table class="w-full">
                 <thead class="table-header">
                     <tr>
                         <th class="text-left w-16">#</th>
                         <th class="text-left">UID</th>
                         <th class="text-left">Student Name</th>
-                        <th class="text-left">Scanned At</th>
+                        <th class="text-left">Time</th>
                     </tr>
                 </thead>
-                <tbody id="uid-table-body" class="divide-y divide-gray-100">
-                    <!-- Populated by JavaScript -->
+                <tbody id="uid-table-body">
+                    <tr>
+                        <td colspan="4" class="text-center py-8">
+                            <div class="empty-state">
+                                <i class="fa-regular fa-clock text-3xl text-gray-400 mb-2"></i>
+                                <p class="text-gray-500 text-sm">No recent scans</p>
+                            </div>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -300,6 +413,8 @@
     let recentScans = [];
     let connectionStatus = true;
     let reconnectAttempts = 0;
+    let totalStudentsCount = 0;
+    let totalPresentToday = 0;
 
     const TABLE_EXPIRATION_TIME = 60 * 1000;
 
@@ -311,7 +426,49 @@
         toast.innerHTML = `<div class="toast-icon">${icons[type] || icons.success}</div><div class="toast-content"><div class="toast-title">${title || titles[type]}</div><div class="toast-message">${message}</div></div><div class="toast-close" onclick="this.parentElement.remove()">✕</div>`;
         document.body.appendChild(toast);
         setTimeout(() => { if (toast && toast.parentElement) { toast.style.animation = 'slideOutRight 0.3s ease'; setTimeout(() => toast.remove(), 300); } }, 3000);
-        toast.addEventListener('click', () => { toast.style.animation = 'slideOutRight 0.3s ease'; setTimeout(() => toast.remove(), 300); });
+    }
+
+    async function fetchTotalStudents() {
+        try {
+            const response = await fetch('/admin/registered_students/api');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    totalStudentsCount = data.total;
+                    updateKPIs();
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching total students:', error);
+        }
+    }
+
+    async function fetchTodayAttendance() {
+        try {
+            const response = await fetch('/admin/history/api');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    const today = new Date().toLocaleDateString();
+                    const todayScans = data.history.filter(scan => scan.scan_date === today);
+                    const uniqueStudents = new Set(todayScans.map(scan => scan.full_name));
+                    totalPresentToday = uniqueStudents.size;
+                    updateKPIs();
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching attendance:', error);
+        }
+    }
+
+    function updateKPIs() {
+        const absent = Math.max(0, totalStudentsCount - totalPresentToday);
+        const rate = totalStudentsCount > 0 ? (totalPresentToday / totalStudentsCount * 100).toFixed(1) : 0;
+        
+        document.getElementById('totalStudents').textContent = totalStudentsCount || '--';
+        document.getElementById('presentCount').textContent = totalPresentToday || '--';
+        document.getElementById('absentCount').textContent = absent || '--';
+        document.getElementById('attendanceRate').textContent = rate + '%';
     }
 
     async function refreshData() {
@@ -336,11 +493,18 @@
                 
                 lastUID = data.uid;
 
+                // Check if this student was already scanned today
+                const existingScan = recentScans.find(s => s.uid === data.uid);
+                if (!existingScan) {
+                    totalPresentToday++;
+                    updateKPIs();
+                }
+
                 recentScans.unshift({
                     id: Date.now(),
                     uid: data.uid,
-                    full_name: data.name || 'No linked student',
-                    created_at: data.time || new Date().toLocaleString()
+                    full_name: data.name || 'Unknown Student',
+                    created_at: data.time || new Date().toLocaleTimeString()
                 });
 
                 if (recentScans.length > 10) recentScans.pop();
@@ -351,7 +515,7 @@
                 startTableExpirationTimer();
             }
 
-            messageEl.innerHTML = data.message ? `<i class="fa-regular fa-clock mr-2"></i>${data.message}` : '<i class="fa-regular fa-clock mr-2"></i>Waiting for scan...';
+            messageEl.innerHTML = data.message ? `<i class="fa-regular fa-clock mr-1"></i>${data.message}` : '<i class="fa-regular fa-clock mr-1"></i>Waiting for scan...';
             uidEl.innerHTML = data.uid || '—';
             nameEl.innerHTML = data.name || '—';
             timeEl.innerHTML = data.time || '—';
@@ -365,44 +529,41 @@
                     showToast('Connection lost. Check if server is running.', 'error', 'Connection Error');
                 }
             }
-            document.getElementById('message').innerHTML = '<i class="fa-solid fa-exclamation-triangle mr-2"></i>Connection lost...';
+            document.getElementById('message').innerHTML = '<i class="fa-solid fa-exclamation-triangle mr-1"></i>Connection lost...';
         }
     }
 
     function showNameBanner(name, time) {
         const banner = document.getElementById('nameBanner');
-        document.getElementById('bannerName').textContent = name || 'No linked student';
+        document.getElementById('bannerName').textContent = name || 'Unknown Student';
         document.getElementById('bannerTime').innerHTML = `<i class="fa-regular fa-clock mr-1"></i>${time || 'Just now'}`;
         banner.classList.remove('hidden');
         
-        if (name && name !== 'No linked student') {
+        if (name && name !== 'Unknown Student') {
             showToast(`${name} has been detected`, 'success', 'New Scan');
         }
         
         if (bannerTimeout) clearTimeout(bannerTimeout);
-        bannerTimeout = setTimeout(() => banner.classList.add('hidden'), 8000);
+        bannerTimeout = setTimeout(() => banner.classList.add('hidden'), 5000);
     }
 
     function startExpirationTimer() {
         if (expirationTimeout) clearTimeout(expirationTimeout);
-        expirationTimeout = setTimeout(resetDashboard, 5 * 60 * 1000);
-    }
-
-    function resetDashboard() {
-        lastUID = '';
-        document.getElementById('message').innerHTML = '<i class="fa-regular fa-clock mr-2"></i>Waiting for scan...';
-        document.getElementById('uid').textContent = '—';
-        document.getElementById('name').textContent = '—';
-        document.getElementById('time').textContent = '—';
-        document.getElementById('nameBanner').classList.add('hidden');
-        showToast('Dashboard reset due to inactivity', 'info', 'Session Expired');
+        expirationTimeout = setTimeout(() => {
+            lastUID = '';
+            document.getElementById('message').innerHTML = '<i class="fa-regular fa-clock mr-1"></i>Waiting for scan...';
+            document.getElementById('uid').textContent = '—';
+            document.getElementById('name').textContent = '—';
+            document.getElementById('time').textContent = '—';
+            document.getElementById('nameBanner').classList.add('hidden');
+        }, 5 * 60 * 1000);
     }
 
     function refreshRecentTable() {
         const tbody = document.getElementById('uid-table-body');
 
         if (recentScans.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8"><div class="empty-state"><i class="fa-regular fa-clock text-3xl text-gray-400 mb-2"></i><p class="text-gray-500 text-sm">No recent scans in the last minute...</p></div></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8"><div class="empty-state"><i class="fa-regular fa-clock text-3xl text-gray-400 mb-2"></i><p class="text-gray-500 text-sm">No recent scans</p></div></td></tr>`;
             return;
         }
 
@@ -410,8 +571,8 @@
             <tr class="table-row">
                 <td class="font-medium">${index + 1}</td>
                 <td><span class="uid-badge"><i class="fa-solid fa-id-card mr-1 text-xs"></i>${row.uid}</span></td>
-                <td class="font-medium"><div class="flex items-center gap-2"><div class="w-7 h-7 bg-amber-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-user text-amber-600 text-xs"></i></div>${row.full_name}</div></td>
-                <td><i class="fa-regular fa-clock mr-1 text-gray-400"></i>${row.created_at}</td>
+                <td class="font-medium"><div class="flex items-center gap-2"><div class="w-6 h-6 bg-amber-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-user text-amber-600 text-xs"></i></div>${row.full_name}</div></td>
+                <td class="text-sm"><i class="fa-regular fa-clock mr-1 text-gray-400"></i>${row.created_at}</td>
             </tr>
         `).join('');
     }
@@ -421,21 +582,39 @@
         tableTimeout = setTimeout(() => {
             recentScans = [];
             refreshRecentTable();
-            showToast('Recent scans list has been cleared', 'info', 'List Refreshed');
+            showToast('Recent activity list refreshed', 'info', 'Auto-refresh');
         }, TABLE_EXPIRATION_TIME);
     }
 
-    function manualRefresh() { refreshData(); showToast('Manual refresh triggered', 'info', 'Refreshing'); }
-    function clearRecentScans() { recentScans = []; refreshRecentTable(); showToast('Recent scans cleared', 'success', 'List Cleared'); }
+    function manualRefresh() { 
+        refreshData(); 
+        fetchTotalStudents();
+        fetchTodayAttendance();
+        showToast('Dashboard refreshed', 'info', 'Refreshing'); 
+    }
+    
+    function clearRecentScans() { 
+        recentScans = []; 
+        refreshRecentTable(); 
+        totalPresentToday = 0;
+        updateKPIs();
+        showToast('Recent activity cleared', 'success', 'Cleared'); 
+    }
 
     document.addEventListener('keydown', (e) => {
         if (e.ctrlKey && e.key === 'r') { e.preventDefault(); manualRefresh(); }
         else if (e.ctrlKey && e.key === 'c') { e.preventDefault(); clearRecentScans(); }
     });
 
+    // Initialize
     refreshData();
     refreshRecentTable();
+    fetchTotalStudents();
+    fetchTodayAttendance();
     setInterval(refreshData, 1000);
-    console.log('RFID Dashboard loaded - Keyboard shortcuts: Ctrl+R (Refresh), Ctrl+C (Clear scans)');
+    setInterval(fetchTotalStudents, 30000);
+    setInterval(fetchTodayAttendance, 30000);
+    
+    console.log('School Dashboard loaded - Keyboard shortcuts: Ctrl+R (Refresh), Ctrl+C (Clear scans)');
 </script>
 {% endblock %}
