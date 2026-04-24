@@ -1,704 +1,996 @@
-```html
+{% extends "superadmin/base.html" %}
+
+{% block title %}Registered Students{% endblock %}
+
+{% block content %}
+<div class="min-h-screen px-4 py-8 md:px-8">
+
+  <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+    <div></div>
+    <div class="flex items-center gap-3 flex-wrap">
+
+      <button type="button"
+              onclick="openAddStudentModal()"
+              class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 transition-colors text-white font-medium px-6 py-3 rounded-3xl shadow-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
+        </svg>
+        Add New Student
+      </button>
+
+      <div class="relative">
+        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 01-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <input
+          id="searchInput"
+          type="text"
+          onkeyup="filterTable()"
+          placeholder="Search name, UID, email, section..."
+          class="w-80 pl-11 pr-4 py-3 bg-white border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-3xl text-sm outline-none transition-all">
+      </div>
+
+      <button onclick="exportToCSV()"
+              class="flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-medium px-5 py-3 rounded-3xl transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v-4m0 0l4 4m-4-4l4-4m12 0v4m0 0l-4-4m4 4l-4 4" />
+        </svg>
+        Export CSV
+      </button>
+
+      <button onclick="triggerImportFile()"
+              class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 transition-colors text-white font-medium px-6 py-3 rounded-3xl shadow-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v-4m0 0l4 4m-4-4l4-4m12 0v4m0 0l-4-4m4 4l-4 4M4 4h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2z" />
+        </svg>
+        Import CSV / Excel
+      </button>
+    </div>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="mb-4 px-6 py-4 rounded-3xl text-sm flex items-center gap-3
+                    {% if category == 'success' %}bg-green-50 text-green-700 border border-green-100
+                    {% elif category == 'error' %}bg-red-50 text-red-700 border border-red-100
+                    {% else %}bg-blue-50 text-blue-700 border border-blue-100{% endif %}">
+          {{ message }}
+          <button onclick="this.parentElement.remove()" class="ml-auto text-xs font-medium underline">Dismiss</button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
+    <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-5 flex items-center justify-between text-white">
+      <div></div>
+      <div class="flex items-center gap-2 text-blue-100 text-sm font-medium">
+        <div class="bg-white/20 px-4 py-1 rounded-3xl flex items-center gap-1">
+          <span>{{ students | length }}</span>
+          <span>records</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="p-2">
+      {% if students %}
+      <div class="overflow-x-auto">
+        <table id="studentsTable" class="w-full min-w-full">
+          <thead>
+            <tr class="border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-widest">
+              <th class="text-left py-5 px-4">UID</th>
+              <th class="text-left py-5 px-4">Full Name</th>
+              <th class="text-left py-5 px-4">Section</th>
+              <th class="text-left py-5 px-4">Year Level</th>
+              <th class="text-left py-5 px-4 w-32">Birthday</th>
+              <th class="text-left py-5 px-4 w-40">Contact</th>
+              <th class="text-left py-5 px-4">Email</th>
+              <th class="text-left py-5 px-4 w-72">Schedule</th>
+              <th class="text-left py-5 px-4 w-36">Registered</th>
+              <th class="text-left py-5 px-4 w-44">Action</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 text-sm">
+            {% for s in students %}
+            <tr class="hover:bg-blue-50/50 transition-colors">
+              <td class="py-5 px-4 align-top">
+                <code class="bg-blue-50 text-blue-700 px-3 py-1 rounded-2xl text-xs font-semibold">
+                  {{ s.uid or '—' }}
+                </code>
+              </td>
+              <td class="py-5 px-4 align-top">
+                <span class="font-semibold text-gray-900">
+                  {{ s.last_name }}, {{ s.first_name }}{% if s.middle_name %} {{ s.middle_name }}{% endif %}{% if s.extension %} {{ s.extension }}{% endif %}
+                </span>
+              </td>
+              <td class="py-5 px-4 text-gray-500 align-top">{{ s.section_name or '—' }}</td>
+              <td class="py-5 px-4 text-gray-500 align-top">{{ s.year_level or '—' }}</td>
+              <td class="py-5 px-4 text-gray-500 align-top">{{ s.birthday }}</td>
+              <td class="py-5 px-4 text-gray-500 align-top">{{ s.contact_number }}</td>
+              <td class="py-5 px-4 text-gray-500 align-top break-all">{{ s.email }}</td>
+              <td class="py-5 px-4 text-gray-500 text-sm align-top">
+                <div class="schedule-cell whitespace-pre-line leading-6 max-w-xs">
+                  {{ s.schedule or '—' }}
+                </div>
+              </td>
+              <td class="py-5 px-4 text-gray-500 text-sm align-top">
+                {{ s.created_at.strftime('%b %d, %Y') if s.created_at else '—' }}
+              </td>
+              <td class="py-5 px-4 align-top">
+                <div class="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onclick='openViewStudentModal({
+                      id: {{ s.id | tojson }},
+                      uid: {{ (s.uid or "—") | tojson }},
+                      last_name: {{ (s.last_name or "") | tojson }},
+                      first_name: {{ (s.first_name or "") | tojson }},
+                      middle_name: {{ (s.middle_name or "") | tojson }},
+                      extension: {{ (s.extension or "") | tojson }},
+                      section_name: {{ (s.section_name or "—") | tojson }},
+                      year_level: {{ (s.year_level or "—") | tojson }},
+                      teacher_name: {{ (s.teacher_name or "—") | tojson }},
+                      birthday: {{ (s.birthday or "—") | string | tojson }},
+                      contact_number: {{ (s.contact_number or "—") | tojson }},
+                      email: {{ (s.email or "—") | tojson }},
+                      schedule: {{ (s.schedule or "—") | tojson }},
+                      created_at: {{ (s.created_at.strftime("%b %d, %Y") if s.created_at else "—") | tojson }}
+                    })'
+                    class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-2xl shadow-sm transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    View
+                  </button>
+
+                  <button
+                    type="button"
+                    onclick='openEditStudentModal({
+                      id: {{ s.id | tojson }},
+                      uid: {{ (s.uid or "") | tojson }},
+                      last_name: {{ (s.last_name or "") | tojson }},
+                      first_name: {{ (s.first_name or "") | tojson }},
+                      middle_name: {{ (s.middle_name or "") | tojson }},
+                      extension: {{ (s.extension or "") | tojson }},
+                      birthday: {{ (s.birthday or "") | string | tojson }},
+                      contact_number: {{ (s.contact_number or "") | tojson }},
+                      email: {{ (s.email or "") | tojson }},
+                      schedule: {{ (s.schedule or "") | tojson }},
+                      section_id: {{ s.section_id | tojson }}
+                    })'
+                    class="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-500 text-white text-sm font-medium px-4 py-2 rounded-2xl shadow-sm transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M16.586 3.586a2 2 0 112.828 2.828L12 13.828l-4 1 1-4 7.586-7.242z" />
+                    </svg>
+                    Edit
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="py-20 text-center">
+        <div class="mx-auto w-24 h-24 bg-blue-50 rounded-3xl flex items-center justify-center text-6xl mb-6">🎓</div>
+        <h3 class="text-2xl font-semibold text-gray-900 mb-2">No students yet</h3>
+        <p class="text-gray-500 max-w-xs mx-auto">When you add your first student, they'll appear here.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ===== ADD STUDENT MODAL ===== -->
+<div id="addStudentModal" class="modal-overlay hidden">
+  <div class="modal-panel modal-panel-lg animate-fadeIn">
+    <div class="modal-header bg-gradient-to-r from-blue-600 to-blue-700">
+      <div>
+        <h2 class="text-white text-xl font-semibold">Add New Student</h2>
+        <p class="text-blue-200 text-sm mt-0.5">Fill in the student's information below</p>
+      </div>
+      <button type="button" onclick="closeAddStudentModal()"
+              class="modal-close-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <form id="addStudentForm" action="{{ url_for('sregister.add_student') }}" method="POST" class="p-8">
+
+        <div class="mb-6">
+          <label class="form-label">Available UID <span class="text-gray-400 font-normal">(Optional)</span></label>
+          <select name="uid" class="form-select">
+            <option value="">Select available UID</option>
+            {% for uid in available_uids %}
+              <option value="{{ uid }}">{{ uid }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <hr class="border-gray-100 my-6">
+
+        <div class="rounded-2xl border border-dashed border-blue-300 bg-blue-50/50 p-6 mb-6">
+          <div class="mb-5">
+            <p class="text-sm font-semibold text-blue-700">Section <span class="font-normal text-blue-500">(Optional)</span></p>
+            <p class="text-xs text-gray-500 mt-1">Pumili ng existing section o gumawa ng bagong section sa baba.</p>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label">Existing Section</label>
+            <select name="section_id" class="form-select">
+              <option value="">Select existing section</option>
+              {% for section in sections %}
+                <option value="{{ section.id }}">
+                  {{ section.section_name }}{% if section.year_level %} — {{ section.year_level }}{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="flex items-center gap-3 mb-4">
+            <div class="flex-1 h-px bg-blue-200"></div>
+            <span class="text-xs text-blue-400 font-medium">OR create a new section below</span>
+            <div class="flex-1 h-px bg-blue-200"></div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="form-label">New Section Name</label>
+              <input type="text" name="new_section_name" placeholder="e.g. BSIT-1A" class="form-input">
+            </div>
+            <div>
+              <label class="form-label">Year Level</label>
+              <input type="text" name="new_year_level" placeholder="e.g. 1st Year" class="form-input">
+            </div>
+            <div>
+              <label class="form-label">Teacher Adviser</label>
+              <select name="new_teacher_id" class="form-select">
+                <option value="">Select teacher (Optional)</option>
+                {% for teacher in teachers %}
+                  <option value="{{ teacher.id }}">
+                    {{ teacher.full_name }}{% if teacher.teacher_id %} ({{ teacher.teacher_id }}){% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <hr class="border-gray-100 my-6">
+
+        <div class="mb-2">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Personal Information</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <label class="form-label">Last Name <span class="text-red-400">*</span></label>
+              <input type="text" name="last_name" required class="form-input" placeholder="e.g. Santos">
+            </div>
+            <div>
+              <label class="form-label">First Name <span class="text-red-400">*</span></label>
+              <input type="text" name="first_name" required class="form-input" placeholder="e.g. Maria">
+            </div>
+            <div>
+              <label class="form-label">Middle Name <span class="text-gray-400 font-normal">(Optional)</span></label>
+              <input type="text" name="middle_name" class="form-input" placeholder="e.g. Dela Cruz">
+            </div>
+            <div>
+              <label class="form-label">Extension <span class="text-gray-400 font-normal">(Optional)</span></label>
+              <input type="text" name="extension" class="form-input" placeholder="e.g. Jr., Sr., III">
+            </div>
+          </div>
+        </div>
+
+        <hr class="border-gray-100 my-6">
+
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Contact & Details</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
+          <div>
+            <label class="form-label">Birthday <span class="text-red-400">*</span></label>
+            <input type="date" name="birthday" required class="form-input">
+          </div>
+          <div>
+            <label class="form-label">Contact Number <span class="text-red-400">*</span></label>
+            <input type="text" name="contact_number" required class="form-input" placeholder="e.g. 09XX-XXX-XXXX">
+          </div>
+          <div class="sm:col-span-2">
+            <label class="form-label">Email Address <span class="text-red-400">*</span></label>
+            <input type="email" name="email" required class="form-input" placeholder="e.g. student@school.edu.ph">
+          </div>
+        </div>
+
+        <hr class="border-gray-100 my-6">
+
+        <div class="mb-2">
+          <label class="form-label">Schedule <span class="text-red-400">*</span></label>
+          <textarea name="schedule" rows="4" required class="form-input resize-none"
+                    placeholder="e.g. Mon 7:30-9:30 IT3217&#10;Wed 7:30-9:30 SD3203"></textarea>
+        </div>
+
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" onclick="closeAddStudentModal()"
+              class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors">
+        Cancel
+      </button>
+      <button type="submit" form="addStudentForm"
+              class="px-7 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors">
+        Save Student
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== VIEW STUDENT MODAL ===== -->
+<div id="viewStudentModal" class="modal-overlay hidden">
+  <div class="modal-panel modal-panel-md animate-fadeIn">
+    <div class="modal-header bg-gradient-to-r from-blue-600 to-blue-700">
+      <div>
+        <h2 class="text-white text-xl font-semibold">Student Details</h2>
+        <p class="text-blue-200 text-sm mt-0.5">View-only information</p>
+      </div>
+      <button type="button" onclick="closeViewStudentModal()"
+              class="modal-close-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body flex-1 p-8">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+        <div>
+          <label class="view-label">UID</label>
+          <div id="view_uid" class="view-field"></div>
+        </div>
+        <div>
+          <label class="view-label">Registered</label>
+          <div id="view_created_at" class="view-field"></div>
+        </div>
+        <div>
+          <label class="view-label">Last Name</label>
+          <div id="view_last_name" class="view-field"></div>
+        </div>
+        <div>
+          <label class="view-label">First Name</label>
+          <div id="view_first_name" class="view-field"></div>
+        </div>
+        <div>
+          <label class="view-label">Middle Name</label>
+          <div id="view_middle_name" class="view-field"></div>
+        </div>
+        <div>
+          <label class="view-label">Extension</label>
+          <div id="view_extension" class="view-field"></div>
+        </div>
+        <div>
+          <label class="view-label">Section</label>
+          <div id="view_section_name" class="view-field"></div>
+        </div>
+        <div>
+          <label class="view-label">Year Level</label>
+          <div id="view_year_level" class="view-field"></div>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="view-label">Teacher Adviser</label>
+          <div id="view_teacher_name" class="view-field"></div>
+        </div>
+        <div>
+          <label class="view-label">Birthday</label>
+          <div id="view_birthday" class="view-field"></div>
+        </div>
+        <div>
+          <label class="view-label">Contact Number</label>
+          <div id="view_contact_number" class="view-field"></div>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="view-label">Email Address</label>
+          <div id="view_email" class="view-field break-all"></div>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="view-label">Schedule</label>
+          <div id="view_schedule" class="view-field whitespace-pre-line leading-7 min-h-[100px]"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" onclick="closeViewStudentModal()"
+              class="px-7 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors">
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EDIT STUDENT MODAL ===== -->
+<div id="editStudentModal" class="modal-overlay hidden">
+  <div class="modal-panel modal-panel-lg animate-fadeIn">
+    <div class="modal-header bg-gradient-to-r from-amber-400 to-amber-500">
+      <div>
+        <h2 class="text-white text-xl font-semibold">Edit Student</h2>
+        <p class="text-amber-50 text-sm mt-0.5">Update the student's information below</p>
+      </div>
+      <button type="button" onclick="closeEditStudentModal()"
+              class="modal-close-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <form id="editStudentForm" method="POST" class="p-8">
+
+        <div class="mb-6">
+          <label class="form-label">UID</label>
+          <input type="text" id="edit_uid" class="form-input bg-gray-100" readonly>
+          <p class="text-xs text-gray-400 mt-2">Readonly muna ang UID para safe ang existing RFID link.</p>
+        </div>
+
+        <hr class="border-gray-100 my-6">
+
+        <div class="mb-6">
+          <label class="form-label">Section</label>
+          <select id="edit_section_id" name="section_id" class="form-select">
+            <option value="">No Section</option>
+            {% for section in sections %}
+              <option value="{{ section.id }}">
+                {{ section.section_name }}{% if section.year_level %} — {{ section.year_level }}{% endif %}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <hr class="border-gray-100 my-6">
+
+        <div class="mb-2">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Personal Information</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <label class="form-label">Last Name <span class="text-red-400">*</span></label>
+              <input type="text" id="edit_last_name" name="last_name" required class="form-input" placeholder="e.g. Santos">
+            </div>
+            <div>
+              <label class="form-label">First Name <span class="text-red-400">*</span></label>
+              <input type="text" id="edit_first_name" name="first_name" required class="form-input" placeholder="e.g. Maria">
+            </div>
+            <div>
+              <label class="form-label">Middle Name <span class="text-gray-400 font-normal">(Optional)</span></label>
+              <input type="text" id="edit_middle_name" name="middle_name" class="form-input" placeholder="e.g. Dela Cruz">
+            </div>
+            <div>
+              <label class="form-label">Extension <span class="text-gray-400 font-normal">(Optional)</span></label>
+              <input type="text" id="edit_extension" name="extension" class="form-input" placeholder="e.g. Jr., Sr., III">
+            </div>
+          </div>
+        </div>
+
+        <hr class="border-gray-100 my-6">
+
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Contact & Details</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
+          <div>
+            <label class="form-label">Birthday <span class="text-red-400">*</span></label>
+            <input type="date" id="edit_birthday" name="birthday" required class="form-input">
+          </div>
+          <div>
+            <label class="form-label">Contact Number <span class="text-red-400">*</span></label>
+            <input type="text" id="edit_contact_number" name="contact_number" required class="form-input" placeholder="e.g. 09XX-XXX-XXXX">
+          </div>
+          <div class="sm:col-span-2">
+            <label class="form-label">Email Address <span class="text-red-400">*</span></label>
+            <input type="email" id="edit_email" name="email" required class="form-input" placeholder="e.g. student@school.edu.ph">
+          </div>
+        </div>
+
+        <hr class="border-gray-100 my-6">
+
+        <div class="mb-2">
+          <label class="form-label">Schedule <span class="text-red-400">*</span></label>
+          <textarea id="edit_schedule" name="schedule" rows="4" required class="form-input resize-none"
+                    placeholder="e.g. Mon 7:30-9:30 IT3217&#10;Wed 7:30-9:30 SD3203"></textarea>
+        </div>
+
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" onclick="closeEditStudentModal()"
+              class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors">
+        Cancel
+      </button>
+      <button type="submit" form="editStudentForm"
+              class="px-7 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-500 text-white font-medium text-sm shadow-sm transition-colors">
+        Update Student
+      </button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
 function filterTable() {
   const input = document.getElementById('searchInput').value.toLowerCase().trim()
   const rows = document.querySelectorAll('#studentsTable tbody tr')
-
   rows.forEach(row => {
-    row.style.display = row.textContent.toLowerCase().includes(input)
-      ? ''
-      : 'none'
+    row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none'
   })
 }
 
 function exportToCSV() {
-
   const table = document.getElementById('studentsTable')
-
-  const data = []
-
-  data.push([
-    "UID",
-    "Full Name",
-    "Section",
-    "Year Level",
-    "Birthday",
-    "Contact",
-    "Email",
-    "Schedule",
-    "Registered"
-  ])
-
-  const rows = table.querySelectorAll('tbody tr')
-
-  rows.forEach(row => {
-
-    if (row.style.display === 'none') return
-
-    const cells = row.querySelectorAll('td')
-
-    const uid =
-      cells[0]?.innerText.trim() || ''
-
-    const fullName =
-      cells[1]?.innerText
-        .replace(/\n/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim() || ''
-
-    const section =
-      cells[2]?.innerText.trim() || ''
-
-    const yearLevel =
-      cells[3]?.innerText.trim() || ''
-
-    const birthday =
-      cells[4]?.innerText.trim() || ''
-
-    const contact =
-      cells[5]?.innerText.trim() || ''
-
-    const email =
-      cells[6]?.innerText.trim() || ''
-
-    const schedule =
-      cells[7]?.innerText
-        .replace(/\n/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim() || ''
-
-    const registered =
-      cells[8]?.innerText.trim() || ''
-
-    data.push([
-      uid,
-      fullName,
-      section,
-      yearLevel,
-      birthday,
-      contact,
-      email,
-      schedule,
-      registered
-    ])
+  let csv = []
+  const headers = Array.from(table.querySelectorAll('thead th')).map(th => `"${th.textContent.trim()}"`)
+  csv.push(headers.join(','))
+  table.querySelectorAll('tbody tr').forEach(row => {
+    const cols = Array.from(row.querySelectorAll('td')).map(td => `"${td.textContent.trim().replace(/"/g, '""')}"`)
+    csv.push(cols.join(','))
   })
+  const blob = new Blob([csv.join('\n')], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `students_${new Date().toISOString().slice(0,10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
-  const ws = XLSX.utils.aoa_to_sheet(data)
-
-  const range = XLSX.utils.decode_range(ws['!ref'])
-
-  for (let R = 1; R <= range.e.r; R++) {
-
-    const contactCell =
-      XLSX.utils.encode_cell({
-        r: R,
-        c: 5
-      })
-
-    if (ws[contactCell]) {
-      ws[contactCell].t = 's'
+function moveModalsToBody() {
+  ['addStudentModal', 'viewStudentModal', 'editStudentModal'].forEach(id => {
+    const modal = document.getElementById(id)
+    if (modal && modal.parentElement !== document.body) {
+      document.body.appendChild(modal)
     }
+  })
+}
+
+function lockBodyScroll() {
+  document.documentElement.classList.add('modal-open')
+  document.body.classList.add('modal-open')
+}
+
+function unlockBodyScroll() {
+  if (
+    !document.getElementById('addStudentModal').classList.contains('is-open') &&
+    !document.getElementById('viewStudentModal').classList.contains('is-open') &&
+    !document.getElementById('editStudentModal').classList.contains('is-open')
+  ) {
+    document.documentElement.classList.remove('modal-open')
+    document.body.classList.remove('modal-open')
   }
+}
 
-  ws['!cols'] = [
-    { wch: 18 },
-    { wch: 30 },
-    { wch: 20 },
-    { wch: 15 },
-    { wch: 15 },
-    { wch: 18 },
-    { wch: 35 },
-    { wch: 50 },
-    { wch: 18 }
-  ]
+function openModal(modalId) {
+  const modal = document.getElementById(modalId)
+  if (!modal) return
+  modal.classList.remove('hidden')
+  requestAnimationFrame(() => {
+    modal.classList.add('is-open')
+  })
+  lockBodyScroll()
+}
 
-  const wb = XLSX.utils.book_new()
-
-  XLSX.utils.book_append_sheet(
-    wb,
-    ws,
-    "Students"
-  )
-
-  XLSX.writeFile(
-    wb,
-    `students_${new Date().toISOString().slice(0,10)}.xlsx`
-  )
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId)
+  if (!modal) return
+  modal.classList.remove('is-open')
+  setTimeout(() => {
+    if (!modal.classList.contains('is-open')) {
+      modal.classList.add('hidden')
+      unlockBodyScroll()
+    }
+  }, 180)
 }
 
 function openAddStudentModal() {
-
-  const modal =
-    document.getElementById(
-      'addStudentModal'
-    )
-
-  modal.classList.remove('hidden')
-  modal.classList.add('flex')
+  openModal('addStudentModal')
 }
 
 function closeAddStudentModal() {
-
-  const modal =
-    document.getElementById(
-      'addStudentModal'
-    )
-
-  modal.classList.add('hidden')
-  modal.classList.remove('flex')
+  closeModal('addStudentModal')
 }
 
 function formatSchedule(schedule) {
-
-  if (!schedule || schedule === '—')
-    return '—'
-
-  return schedule
-    .replace(
-      /,\s*(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/g,
-      '\n$1'
-    )
-    .trim()
+  if (!schedule || schedule === '—') return '—'
+  return schedule.replace(/,\s*(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/g, '\n$1').trim()
 }
 
 function formatScheduleHtml(schedule) {
-
-  return formatSchedule(schedule)
-    .replace(/\n/g, '<br>')
+  return formatSchedule(schedule).replace(/\n/g, '<br>')
 }
 
 function openViewStudentModal(student) {
+  document.getElementById('view_uid').textContent = student.uid || '—'
+  document.getElementById('view_created_at').textContent = student.created_at || '—'
+  document.getElementById('view_last_name').textContent = student.last_name || '—'
+  document.getElementById('view_first_name').textContent = student.first_name || '—'
+  document.getElementById('view_middle_name').textContent = student.middle_name || '—'
+  document.getElementById('view_extension').textContent = student.extension || '—'
+  document.getElementById('view_section_name').textContent = student.section_name || '—'
+  document.getElementById('view_year_level').textContent = student.year_level || '—'
+  document.getElementById('view_teacher_name').textContent = student.teacher_name || '—'
+  document.getElementById('view_birthday').textContent = student.birthday || '—'
+  document.getElementById('view_contact_number').textContent = student.contact_number || '—'
+  document.getElementById('view_email').textContent = student.email || '—'
+  document.getElementById('view_schedule').textContent = formatSchedule(student.schedule)
 
-  document.getElementById(
-    'view_uid'
-  ).textContent =
-    student.uid || '—'
-
-  document.getElementById(
-    'view_created_at'
-  ).textContent =
-    student.created_at || '—'
-
-  document.getElementById(
-    'view_last_name'
-  ).textContent =
-    student.last_name || '—'
-
-  document.getElementById(
-    'view_first_name'
-  ).textContent =
-    student.first_name || '—'
-
-  document.getElementById(
-    'view_middle_name'
-  ).textContent =
-    student.middle_name || '—'
-
-  document.getElementById(
-    'view_extension'
-  ).textContent =
-    student.extension || '—'
-
-  document.getElementById(
-    'view_section_name'
-  ).textContent =
-    student.section_name || '—'
-
-  document.getElementById(
-    'view_year_level'
-  ).textContent =
-    student.year_level || '—'
-
-  document.getElementById(
-    'view_teacher_name'
-  ).textContent =
-    student.teacher_name || '—'
-
-  document.getElementById(
-    'view_birthday'
-  ).textContent =
-    student.birthday || '—'
-
-  document.getElementById(
-    'view_contact_number'
-  ).textContent =
-    student.contact_number || '—'
-
-  document.getElementById(
-    'view_email'
-  ).textContent =
-    student.email || '—'
-
-  document.getElementById(
-    'view_schedule'
-  ).textContent =
-    formatSchedule(student.schedule)
-
-  const modal =
-    document.getElementById(
-      'viewStudentModal'
-    )
-
-  modal.classList.remove('hidden')
-  modal.classList.add('flex')
+  openModal('viewStudentModal')
 }
 
 function closeViewStudentModal() {
-
-  const modal =
-    document.getElementById(
-      'viewStudentModal'
-    )
-
-  modal.classList.add('hidden')
-  modal.classList.remove('flex')
+  closeModal('viewStudentModal')
 }
 
-window.addEventListener(
-  'click',
-  function(e) {
+function openEditStudentModal(student) {
+  const form = document.getElementById('editStudentForm')
+  const updateUrlTemplate = "{{ url_for('sregister.update_student', student_id=0) }}"
+  form.action = updateUrlTemplate.replace('/0', '/' + student.id)
 
-    if (
-      e.target ===
-      document.getElementById(
-        'addStudentModal'
-      )
-    ) {
-      closeAddStudentModal()
-    }
+  document.getElementById('edit_uid').value = student.uid || ''
+  document.getElementById('edit_last_name').value = student.last_name || ''
+  document.getElementById('edit_first_name').value = student.first_name || ''
+  document.getElementById('edit_middle_name').value = student.middle_name || ''
+  document.getElementById('edit_extension').value = student.extension || ''
+  document.getElementById('edit_birthday').value = student.birthday || ''
+  document.getElementById('edit_contact_number').value = student.contact_number || ''
+  document.getElementById('edit_email').value = student.email || ''
+  document.getElementById('edit_schedule').value = student.schedule || ''
+  document.getElementById('edit_section_id').value = student.section_id ?? ''
 
-    if (
-      e.target ===
-      document.getElementById(
-        'viewStudentModal'
-      )
-    ) {
-      closeViewStudentModal()
-    }
+  openModal('editStudentModal')
+}
+
+function closeEditStudentModal() {
+  closeModal('editStudentModal')
+}
+
+window.addEventListener('click', function(e) {
+  if (e.target === document.getElementById('addStudentModal')) closeAddStudentModal()
+  if (e.target === document.getElementById('viewStudentModal')) closeViewStudentModal()
+  if (e.target === document.getElementById('editStudentModal')) closeEditStudentModal()
+})
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeAddStudentModal()
+    closeViewStudentModal()
+    closeEditStudentModal()
   }
-)
-
-document.addEventListener(
-  'keydown',
-  function(e) {
-
-    if (e.key === 'Escape') {
-
-      closeAddStudentModal()
-
-      closeViewStudentModal()
-    }
-  }
-)
+})
 
 function excelSerialToDate(serial) {
-
-  const date_info =
-    new Date(
-      Math.floor(serial - 25569)
-      * 86400 * 1000
-    )
-
-  const y =
-    date_info.getUTCFullYear()
-
-  const m =
-    String(
-      date_info.getUTCMonth() + 1
-    ).padStart(2, '0')
-
-  const d =
-    String(
-      date_info.getUTCDate()
-    ).padStart(2, '0')
-
+  const date_info = new Date(Math.floor(serial - 25569) * 86400 * 1000)
+  const y = date_info.getUTCFullYear()
+  const m = String(date_info.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(date_info.getUTCDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
 }
 
 function normalizeBirthday(value) {
-
-  const raw =
-    String(value || '').trim()
-
+  const raw = String(value || '').trim()
   if (!raw) return ''
-
-  if (
-    /^\d{4}-\d{2}-\d{2}$/
-      .test(raw)
-  ) {
-    return raw
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw
+  if (/^\d+(\.\d+)?$/.test(raw)) return excelSerialToDate(parseFloat(raw))
+  const parsed = new Date(raw)
+  if (!isNaN(parsed.getTime())) {
+    return `${parsed.getFullYear()}-${String(parsed.getMonth()+1).padStart(2,'0')}-${String(parsed.getDate()).padStart(2,'0')}`
   }
-
-  if (
-    /^\d+(\.\d+)?$/
-      .test(raw)
-  ) {
-    return excelSerialToDate(
-      parseFloat(raw)
-    )
-  }
-
-  const parsed =
-    new Date(raw)
-
-  if (
-    !isNaN(parsed.getTime())
-  ) {
-
-    return `${parsed.getFullYear()}-${
-      String(
-        parsed.getMonth() + 1
-      ).padStart(2,'0')
-    }-${
-      String(
-        parsed.getDate()
-      ).padStart(2,'0')
-    }`
-  }
-
   return raw
 }
 
 function triggerImportFile() {
-
-  const input =
-    document.createElement(
-      'input'
-    )
-
+  const input = document.createElement('input')
   input.type = 'file'
-
-  input.accept =
-    '.csv,.xlsx,.xls'
-
-  input.onchange =
-    function(e) {
-
-      const file =
-        e.target.files[0]
-
-      if (!file) return
-
-      const reader =
-        new FileReader()
-
-      const isExcel =
-        /\.(xlsx|xls)$/i
-          .test(file.name)
-
-      if (isExcel) {
-
-        reader.onload =
-          ev => {
-
-            const wb =
-              XLSX.read(
-                new Uint8Array(
-                  ev.target.result
-                ),
-                {
-                  type: 'array'
-                }
-              )
-
-            processImportedSheet(
-              wb,
-              file.name
-            )
-          }
-
-        reader.readAsArrayBuffer(
-          file
-        )
-
-      } else {
-
-        reader.onload =
-          ev => {
-
-            const wb =
-              XLSX.read(
-                ev.target.result,
-                {
-                  type: 'string'
-                }
-              )
-
-            processImportedSheet(
-              wb,
-              file.name
-            )
-          }
-
-        reader.readAsText(file)
+  input.accept = '.csv,.xlsx,.xls'
+  input.onchange = function(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    const reader = new FileReader()
+    const isExcel = /\.(xlsx|xls)$/i.test(file.name)
+    if (isExcel) {
+      reader.onload = ev => {
+        const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' })
+        processImportedSheet(wb, file.name)
       }
+      reader.readAsArrayBuffer(file)
+    } else {
+      reader.onload = ev => {
+        const wb = XLSX.read(ev.target.result, { type: 'string' })
+        processImportedSheet(wb, file.name)
+      }
+      reader.readAsText(file)
     }
-
+  }
   input.click()
 }
 
-function processImportedSheet(
-  wb,
-  filename
-) {
-
-  const ws =
-    wb.Sheets[
-      wb.SheetNames[0]
-    ]
-
-  const rows =
-    XLSX.utils.sheet_to_json(
-      ws,
-      {
-        header: 1,
-        defval: ''
-      }
-    )
-
-  parseAndImport(
-    rows,
-    filename
-  )
+function processImportedSheet(wb, filename) {
+  const ws = wb.Sheets[wb.SheetNames[0]]
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
+  parseAndImport(rows, filename)
 }
 
-function parseAndImport(
-  rows,
-  filename
-) {
+function parseAndImport(rows, filename) {
+  if (rows.length < 2) { alert('❌ No data found in the file.'); return }
 
-  if (rows.length < 2) {
-
-    alert(
-      '❌ No data found in the file.'
-    )
-
-    return
-  }
-
-  const headers =
-    rows[0].map(
-      h =>
-        (h || '')
-          .toString()
-          .trim()
-          .toLowerCase()
-    )
-
+  const headers = rows[0].map(h => (h || '').toString().trim().toLowerCase())
   const students = []
 
-  for (
-    let row of rows.slice(1)
-  ) {
-
-    if (
-      !row ||
-      row.every(
-        cell =>
-          cell === '' ||
-          cell == null
-      )
-    ) {
-      continue
-    }
-
+  for (let row of rows.slice(1)) {
+    if (!row || row.every(cell => cell === '' || cell == null)) continue
     const student = {}
-
-    headers.forEach(
-      (header, i) => {
-
-        const value =
-          (row[i] ?? '')
-            .toString()
-            .trim()
-
-        if (!value) return
-
-        if (
-          header.includes('last')
-        ) {
-          student.last_name =
-            value
-        }
-
-        else if (
-          header.includes('first')
-        ) {
-          student.first_name =
-            value
-        }
-
-        else if (
-          header.includes('middle')
-        ) {
-          student.middle_name =
-            value
-        }
-
-        else if (
-          header.includes('extension')
-          ||
-          header.includes('ext')
-        ) {
-          student.extension =
-            value
-        }
-
-        else if (
-          header.includes('birth')
-        ) {
-          student.birthday =
-            normalizeBirthday(
-              value
-            )
-        }
-
-        else if (
-          header.includes('contact')
-          ||
-          header.includes('phone')
-          ||
-          header.includes('number')
-        ) {
-          student.contact_number =
-            value
-        }
-
-        else if (
-          header.includes('email')
-        ) {
-          student.email =
-            value
-        }
-
-        else if (
-          header.includes('schedule')
-          ||
-          header.includes('sched')
-        ) {
-          student.schedule =
-            value
-        }
-
-        else if (
-          header.includes('section')
-        ) {
-          student.section_name =
-            value
-        }
-
-        else if (
-          header.includes('year')
-        ) {
-          student.year_level =
-            value
-        }
-      }
-    )
-
-    if (
-      student.last_name &&
-      student.first_name &&
-      student.birthday &&
-      student.contact_number &&
-      student.email &&
-      student.schedule
-    ) {
+    headers.forEach((header, i) => {
+      const value = (row[i] ?? '').toString().trim()
+      if (!value) return
+      if (header.includes('last')) student.last_name = value
+      else if (header.includes('first')) student.first_name = value
+      else if (header.includes('middle')) student.middle_name = value
+      else if (header.includes('extension') || header.includes('ext')) student.extension = value
+      else if (header.includes('birth')) student.birthday = normalizeBirthday(value)
+      else if (header.includes('contact') || header.includes('phone') || header.includes('number')) student.contact_number = value
+      else if (header.includes('email')) student.email = value
+      else if (header.includes('schedule') || header.includes('sched')) student.schedule = value
+      else if (header.includes('section')) student.section_name = value
+      else if (header.includes('year')) student.year_level = value
+    })
+    if (student.last_name && student.first_name && student.birthday && student.contact_number && student.email && student.schedule) {
       students.push(student)
     }
   }
 
-  if (
-    students.length === 0
-  ) {
-
-    alert(
-      '❌ No valid student rows found.'
-    )
-
+  if (students.length === 0) {
+    alert('❌ No valid student rows found.\n\nMake sure your file has columns like:\nlast_name, first_name, middle_name, extension, birthday, contact_number, email, schedule, section_name, year_level\n\n⚠️ UID is NOT required — it will be auto-linked from available RFID cards.')
     return
   }
 
-  if (
-    confirm(
-      `✅ Found ${students.length} students in "${filename}".\n\nImport them now?`
-    )
-  ) {
-
-    fetch(
-      '/superadmin/import-excel',
-      {
-        method: 'POST',
-
-        headers: {
-          'Content-Type':
-            'application/json'
-        },
-
-        body: JSON.stringify({
-          students
-        })
-      }
-    )
-
+  if (confirm(`✅ Found ${students.length} students in "${filename}".\n\nImport them now?`)) {
+    fetch('/superadmin/import-excel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ students })
+    })
     .then(async res => {
-
-      const data =
-        await res.json()
-          .catch(() => ({}))
-
-      if (!res.ok) {
-
-        throw new Error(
-          data.message
-          ||
-          'Import failed.'
-        )
-      }
-
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.message || 'Import failed.')
       return data
     })
-
     .then(data => {
-
-      alert(
-        data.message
-        ||
-        `🎉 Successfully imported ${students.length} students!`
-      )
-
+      alert(data.message || `🎉 Successfully imported ${students.length} students!`)
       window.location.reload()
     })
-
-    .catch(err => {
-
-      alert(
-        `❌ ${
-          err.message
-          ||
-          'Import failed.'
-        }`
-      )
-    })
+    .catch(err => alert(`❌ ${err.message || 'Import failed.'}`))
   }
 }
 
-document.addEventListener(
-  'DOMContentLoaded',
-  function() {
+document.addEventListener('DOMContentLoaded', function() {
+  moveModalsToBody()
 
-    document.querySelectorAll(
-      '.schedule-cell'
-    ).forEach(el => {
-
-      el.innerHTML =
-        formatScheduleHtml(
-          el.textContent
-        )
-    })
-  }
-)
+  document.querySelectorAll('.schedule-cell').forEach(el => {
+    el.innerHTML = formatScheduleHtml(el.textContent)
+  })
+})
 </script>
-```
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+  body { font-family: 'Inter', system-ui, sans-serif; }
+
+  html.modal-open,
+  body.modal-open {
+    overflow: hidden !important;
+  }
+
+  .form-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-input {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: #111827;
+    background: #fff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 0.875rem;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .form-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  }
+
+  .form-input::placeholder {
+    color: #9ca3af;
+  }
+
+  .form-select {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 2.5rem 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: #111827;
+    background: #fff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") no-repeat right 0.75rem center / 1.25rem;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 0.875rem;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  }
+
+  .view-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #9ca3af;
+    margin-bottom: 0.4rem;
+  }
+
+  .view-field {
+    background: #f9fafb;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 0.875rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: #1f2937;
+    min-height: 2.75rem;
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483000;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px 16px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: rgba(17, 24, 39, 0.58);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    isolation: isolate;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease;
+  }
+
+  .modal-overlay.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .modal-panel {
+    position: relative;
+    z-index: 2147483001;
+    width: 100%;
+    background: #ffffff;
+    border-radius: 1.5rem;
+    box-shadow:
+      0 25px 50px -12px rgba(0, 0, 0, 0.35),
+      0 0 0 1px rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    margin: auto 0;
+    max-height: calc(100vh - 48px);
+    transform: translateY(10px) scale(0.985);
+    transition: transform 0.18s ease, opacity 0.18s ease;
+  }
+
+  .modal-overlay.is-open .modal-panel {
+    transform: translateY(0) scale(1);
+  }
+
+  .modal-panel-lg {
+    max-width: 960px;
+  }
+
+  .modal-panel-md {
+    max-width: 768px;
+  }
+
+  .modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    padding: 1.25rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .modal-body {
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex: 1 1 auto;
+  }
+
+  .modal-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+    padding: 1.25rem 2rem;
+    border-top: 1px solid #f3f4f6;
+    background: rgba(249, 250, 251, 0.96);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .modal-close-btn {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease;
+  }
+
+  .modal-close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.97) translateY(8px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  @media (max-width: 640px) {
+    .modal-overlay {
+      padding: 12px;
+      align-items: stretch;
+    }
+
+    .modal-panel {
+      max-height: calc(100vh - 24px);
+      border-radius: 1.25rem;
+    }
+
+    .modal-header,
+    .modal-footer {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+  }
+</style>
+{% endblock %}
