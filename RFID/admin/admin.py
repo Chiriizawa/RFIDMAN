@@ -648,11 +648,7 @@ def update_teacher_in_db(teacher_db_id, fields: dict):
         raise Exception("Database not connected")
     
     allowed = {
-<<<<<<< HEAD
         "first_name", "middle_name", "last_name", "extension", 
-=======
-        "first_name", "middle_name", "last_name", "extension",
->>>>>>> cddc272487b54aaf91c2613b57e5636635e0ef36
         "contact_number", "email"
     }
     updates = {k: v for k, v in fields.items() if k in allowed}
