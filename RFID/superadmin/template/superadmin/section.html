@@ -1,0 +1,397 @@
+{% extends "superadmin/base.html" %}
+
+{% block title %}Sections{% endblock %}
+
+{% block content %}
+<style>
+    .card-shadow {
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    .top-gradient {
+        background: linear-gradient(90deg, #1f46c7 0%, #3d7cf0 100%);
+    }
+
+    .table-head {
+        letter-spacing: 0.08em;
+        font-size: 12px;
+    }
+
+    .modal-backdrop {
+        background: rgba(15, 23, 42, 0.45);
+    }
+</style>
+
+<div class="p-7">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="mb-4 rounded-2xl px-6 py-4 border
+                    {% if category == 'error' %}
+                        bg-red-50 text-red-700 border-red-200
+                    {% else %}
+                        bg-green-50 text-green-700 border-green-200
+                    {% endif %}
+                ">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-end gap-4 mb-7">
+        <button onclick="openAddModal()"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-full font-semibold shadow flex items-center gap-3">
+            <i class="fa-solid fa-plus"></i>
+            Add New Section
+        </button>
+
+        <form method="GET" action="{{ url_for('section_bp.section') }}" class="flex-1 max-w-md">
+            <div class="bg-white border rounded-full px-5 py-3 flex items-center gap-3 shadow-sm">
+                <i class="fa-solid fa-magnifying-glass text-blue-500"></i>
+                <input type="text"
+                       name="search"
+                       value="{{ search }}"
+                       placeholder="Search section, year level, adviser..."
+                       class="w-full outline-none text-sm bg-transparent">
+            </div>
+        </form>
+    </div>
+
+    <div class="bg-white rounded-[28px] overflow-hidden card-shadow">
+        <div class="top-gradient px-7 py-5 flex items-center justify-between">
+            <h2 class="text-white text-xl font-semibold"></h2>
+            <span class="bg-white/20 text-white px-4 py-2 rounded-full text-sm">
+                {{ total_sections }} record{{ '' if total_sections == 1 else 's' }}
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-white border-b">
+                    <tr class="table-head text-slate-500 uppercase text-left">
+                        <th class="px-6 py-6">Section Name</th>
+                        <th class="px-6 py-6">Year Level</th>
+                        <th class="px-6 py-6">Adviser</th>
+                        <th class="px-6 py-6">Students</th>
+                        <th class="px-6 py-6 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if sections %}
+                        {% for section in sections %}
+                            <tr class="border-b last:border-b-0 hover:bg-slate-50 transition">
+                                
+
+                                <td class="px-6 py-6 font-semibold text-slate-800">
+                                    {{ section.section_name }}
+                                </td>
+
+                                <td class="px-6 py-6 text-slate-600">
+                                    {{ section.year_level if section.year_level else '—' }}
+                                </td>
+
+                                <td class="px-6 py-6 text-slate-600">
+                                    {{ section.adviser_name if section.adviser_name else '—' }}
+                                </td>
+
+                                <td class="px-6 py-6 text-slate-600">
+                                    {{ section.total_students }}
+                                </td>
+
+                                <td class="px-6 py-6">
+                                    <div class="flex items-center justify-center gap-2">
+                                        <button
+                                            type="button"
+                                            onclick='openEditModal(
+                                                "{{ section.id }}",
+                                                "{{ section.section_name|e }}",
+                                                "{{ section.year_level if section.year_level else "" }}",
+                                                "{{ section.teacher_id if section.teacher_id else "" }}"
+                                            )'
+                                            class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-full text-sm font-semibold">
+                                            <i class="fa-solid fa-pen-to-square mr-1"></i> Edit
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onclick='openDeleteModal("{{ section.id }}", "{{ section.section_name|e }}")'
+                                            class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-semibold">
+                                            <i class="fa-solid fa-trash mr-1"></i> Delete
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-12 text-center text-slate-500">
+                                No sections found.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Modal -->
+<div id="addModal" class="fixed inset-0 hidden items-center justify-center modal-backdrop z-50 p-4">
+    <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden">
+        <div class="top-gradient px-6 py-4 flex items-center justify-between">
+            <h3 class="text-white text-xl font-semibold">Add Section</h3>
+            <button type="button" onclick="closeAddModal()" class="text-white text-2xl">&times;</button>
+        </div>
+
+        <form method="POST" class="p-6 space-y-5">
+            <input type="hidden" name="action" value="add_section">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Section Name</label>
+                    <input type="text"
+                           name="section_name"
+                           required
+                           class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Year Level</label>
+
+                    <select name="year_level"
+                            class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
+
+                        <option value="">Select Year Level</option>
+
+                        <option value="Grade 11">
+                            Grade 11
+                        </option>
+
+                        <option value="Grade 12">
+                            Grade 12
+                        </option>
+
+                    </select>
+                </div>
+
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Adviser</label>
+
+                <select name="teacher_id"
+                        class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
+
+                    <option value="">No Adviser</option>
+
+                    {% for teacher in teachers %}
+                        <option value="{{ teacher.id }}">
+                            {{ teacher.last_name }}, {{ teacher.first_name }}
+                            {% if teacher.middle_name %}
+                                {{ teacher.middle_name }}
+                            {% endif %}
+                        </option>
+                    {% endfor %}
+
+                </select>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+
+                <button type="button"
+                        onclick="closeAddModal()"
+                        class="px-5 py-3 rounded-2xl border font-semibold text-slate-700">
+                    Cancel
+                </button>
+
+                <button type="submit"
+                        class="px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-semibold">
+                    Save Section
+                </button>
+
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="fixed inset-0 hidden items-center justify-center modal-backdrop z-50 p-4">
+    <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden">
+
+        <div class="top-gradient px-6 py-4 flex items-center justify-between">
+            <h3 class="text-white text-xl font-semibold">Edit Section</h3>
+            <button type="button" onclick="closeEditModal()" class="text-white text-2xl">&times;</button>
+        </div>
+
+        <form method="POST" class="p-6 space-y-5">
+
+            <input type="hidden" name="action" value="edit_section">
+            <input type="hidden" name="section_id" id="edit_section_id">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">
+                        Section Name
+                    </label>
+
+                    <input type="text"
+                           name="section_name"
+                           id="edit_section_name"
+                           required
+                           class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">
+                        Year Level
+                    </label>
+
+                    <select name="year_level"
+                            id="edit_year_level"
+                            class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
+
+                        <option value="">Select Year Level</option>
+
+                        <option value="Grade 11">
+                            Grade 11
+                        </option>
+
+                        <option value="Grade 12">
+                            Grade 12
+                        </option>
+
+                    </select>
+                </div>
+
+            </div>
+
+            <div>
+
+                <label class="block text-sm font-semibold text-slate-700 mb-2">
+                    Adviser
+                </label>
+
+                <select name="teacher_id"
+                        id="edit_teacher_id"
+                        class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
+
+                    <option value="">No Adviser</option>
+
+                    {% for teacher in teachers %}
+                        <option value="{{ teacher.id }}">
+                            {{ teacher.last_name }}, {{ teacher.first_name }}
+                            {% if teacher.middle_name %}
+                                {{ teacher.middle_name }}
+                            {% endif %}
+                        </option>
+                    {% endfor %}
+
+                </select>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+
+                <button type="button"
+                        onclick="closeEditModal()"
+                        class="px-5 py-3 rounded-2xl border font-semibold text-slate-700">
+                    Cancel
+                </button>
+
+                <button type="submit"
+                        class="px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-semibold">
+                    Update Section
+                </button>
+
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div id="deleteModal" class="fixed inset-0 hidden items-center justify-center modal-backdrop z-50 p-4">
+
+    <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden">
+
+        <div class="top-gradient px-6 py-4 flex items-center justify-between">
+            <h3 class="text-white text-xl font-semibold">Delete Section</h3>
+            <button type="button" onclick="closeDeleteModal()" class="text-white text-2xl">&times;</button>
+        </div>
+
+        <form method="POST" class="p-6">
+
+            <input type="hidden" name="action" value="delete_section">
+            <input type="hidden" name="section_id" id="delete_section_id">
+
+            <p class="text-slate-700 text-base">
+                Are you sure you want to delete
+                <span id="delete_section_name" class="font-bold text-red-600"></span>?
+            </p>
+
+            <div class="flex justify-end gap-3 pt-6">
+
+                <button type="button"
+                        onclick="closeDeleteModal()"
+                        class="px-5 py-3 rounded-2xl border font-semibold text-slate-700">
+                    Cancel
+                </button>
+
+                <button type="submit"
+                        class="px-5 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-semibold">
+                    Delete
+                </button>
+
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+
+    function openAddModal() {
+        document.getElementById('addModal').classList.remove('hidden');
+        document.getElementById('addModal').classList.add('flex');
+    }
+
+    function closeAddModal() {
+        document.getElementById('addModal').classList.add('hidden');
+        document.getElementById('addModal').classList.remove('flex');
+    }
+
+    function openEditModal(id, sectionName, yearLevel, teacherId) {
+
+        document.getElementById('edit_section_id').value = id;
+        document.getElementById('edit_section_name').value = sectionName;
+        document.getElementById('edit_year_level').value = yearLevel;
+        document.getElementById('edit_teacher_id').value = teacherId;
+
+        document.getElementById('editModal').classList.remove('hidden');
+        document.getElementById('editModal').classList.add('flex');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').classList.add('hidden');
+        document.getElementById('editModal').classList.remove('flex');
+    }
+
+    function openDeleteModal(id, sectionName) {
+
+        document.getElementById('delete_section_id').value = id;
+        document.getElementById('delete_section_name').textContent = sectionName;
+
+        document.getElementById('deleteModal').classList.remove('hidden');
+        document.getElementById('deleteModal').classList.add('flex');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.add('hidden');
+        document.getElementById('deleteModal').classList.remove('flex');
+    }
+
+</script>
+
+{% endblock %}
+```
