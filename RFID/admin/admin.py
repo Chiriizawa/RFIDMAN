@@ -30,21 +30,9 @@ latest_scan = {
 # DB CONNECTION - RAILWAY VERSION
 # =========================
 def get_db_connection():
-    """
-    🔥 THIS IS YOUR ONLY DB CONNECTION
-
-    ❌ NO SUPABASE
-    ❌ NO LOCALHOST
-    ❌ NO MULTIPLE CONFIGS
-
-    ✅ ONLY RAILWAY DATABASE_URL
-    """
-
     database_url = os.getenv("DATABASE_URL")
-
     if not database_url:
         raise Exception("❌ DATABASE_URL not found in .env")
-
     return psycopg2.connect(
         database_url.strip(),
         sslmode="require"
@@ -355,7 +343,6 @@ def registered_students():
 @admin_bp.route('/registered_students/api')
 @login_required
 def registered_students_api():
-    """API endpoint to get total students count for dashboard"""
     try:
         conn = get_connection()
         if conn is None:
@@ -545,7 +532,7 @@ def history_filter():
             conn.close()
 
 # =========================
-# TEACHER DB FUNCTIONS
+# TEACHER DB FUNCTIONS - FIXED
 # =========================
 
 def get_teacher_by_email(email):
@@ -661,7 +648,11 @@ def update_teacher_in_db(teacher_db_id, fields: dict):
         raise Exception("Database not connected")
     
     allowed = {
+<<<<<<< HEAD
+        "first_name", "middle_name", "last_name", "extension", 
+=======
         "first_name", "middle_name", "last_name", "extension",
+>>>>>>> cddc272487b54aaf91c2613b57e5636635e0ef36
         "contact_number", "email"
     }
     updates = {k: v for k, v in fields.items() if k in allowed}
@@ -945,7 +936,11 @@ def update_teacher_profile():
             fields["extension"] = data["extension"]
         if "contact_number" in data:
             fields["contact_number"] = data["contact_number"]
+<<<<<<< HEAD
+        
+=======
 
+>>>>>>> cddc272487b54aaf91c2613b57e5636635e0ef36
         if not fields:
             return jsonify({"success": False, "message": "No fields to update"}), 400
         

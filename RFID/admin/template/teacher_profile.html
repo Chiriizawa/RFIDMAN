@@ -159,11 +159,6 @@
         display: inline-block;
     }
     
-    textarea.form-input {
-        resize: vertical;
-        min-height: 80px;
-    }
-    
     .btn-loading {
         position: relative;
         pointer-events: none;
@@ -238,13 +233,13 @@
                 <i class="fa-solid fa-user-tie text-accent text-2xl"></i>
                 <h1 class="text-xl font-semibold">My Profile</h1>
             </div>
-            <p class="text-white/80 mt-1 text-sm">Manage your personal and professional information</p>
+            <p class="text-white/80 mt-1 text-sm">Manage your personal information</p>
         </div>
 
         <div class="p-6">
 
-            <!-- Display Info Boxes -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <!-- Display Info Boxes - Simplified -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div class="info-display-box">
                     <div class="info-display-label">
                         <i class="fa-solid fa-user mr-1 text-yellow-400"></i> Full Name
@@ -255,18 +250,10 @@
                 </div>
                 <div class="info-display-box">
                     <div class="info-display-label">
-                        <i class="fa-solid fa-book mr-1 text-yellow-400"></i> Subject
+                        <i class="fa-solid fa-envelope mr-1 text-yellow-400"></i> Email Address
                     </div>
-                    <div class="info-display-value" id="subjectDisplay">
-                        {{ current_teacher.subject or 'Not specified' }}
-                    </div>
-                </div>
-                <div class="info-display-box">
-                    <div class="info-display-label">
-                        <i class="fa-solid fa-building mr-1 text-yellow-400"></i> Department
-                    </div>
-                    <div class="info-display-value" id="departmentDisplay">
-                        {{ current_teacher.department or 'Not specified' }}
+                    <div class="info-display-value">
+                        {{ current_teacher.email }}
                     </div>
                 </div>
             </div>
@@ -285,31 +272,31 @@
                         <label>First Name <span class="text-red-500">*</span></label>
                         <input type="text" id="first_name" name="first_name"
                                value="{{ current_teacher.first_name }}"
-                               class="form-input name-input"
-                               placeholder="Enter first name (letters only)"
+                               class="form-input"
+                               placeholder="Enter first name"
                                maxlength="50">
                     </div>
                     <div>
                         <label>Middle Name</label>
                         <input type="text" id="middle_name" name="middle_name"
                                value="{{ current_teacher.middle_name or '' }}"
-                               class="form-input name-input"
-                               placeholder="Enter middle name (optional, letters only)"
+                               class="form-input"
+                               placeholder="Enter middle name (optional)"
                                maxlength="50">
                     </div>
                     <div>
                         <label>Last Name <span class="text-red-500">*</span></label>
                         <input type="text" id="last_name" name="last_name"
                                value="{{ current_teacher.last_name }}"
-                               class="form-input name-input"
-                               placeholder="Enter last name (letters only)"
+                               class="form-input"
+                               placeholder="Enter last name"
                                maxlength="50">
                     </div>
                     <div>
                         <label>Extension</label>
                         <input type="text" id="extension" name="extension"
                                value="{{ current_teacher.extension or '' }}"
-                               class="form-input name-input"
+                               class="form-input"
                                placeholder="e.g., Jr., Sr., III"
                                maxlength="20">
                     </div>
@@ -319,42 +306,12 @@
                     <label>Contact Number</label>
                     <input type="tel" id="contact_number" name="contact_number"
                            value="{{ current_teacher.contact_number or '' }}"
-                           class="form-input number-input"
+                           class="form-input"
                            placeholder="09123456789"
-                           maxlength="11">
+                           maxlength="11"
+                           inputmode="numeric">
                     <div class="info-text">
                         <i class="fa-solid fa-info-circle"></i> Numbers only • Max 11 digits
-                    </div>
-                </div>
-
-                <div class="mt-4">
-                    <h3 class="section-header">
-                        <i class="fa-solid fa-briefcase mr-2 text-yellow-500"></i> Professional Information
-                    </h3>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label>Subject</label>
-                        <input type="text" id="subject" name="subject"
-                               value="{{ current_teacher.subject or '' }}"
-                               class="form-input name-input"
-                               placeholder="e.g., Mathematics, English, Science"
-                               maxlength="100">
-                        <div class="info-text">
-                            <i class="fa-solid fa-info-circle"></i> Letters and spaces only
-                        </div>
-                    </div>
-                    <div>
-                        <label>Department</label>
-                        <input type="text" id="department" name="department"
-                               value="{{ current_teacher.department or '' }}"
-                               class="form-input name-input"
-                               placeholder="e.g., High School, Elementary"
-                               maxlength="100">
-                        <div class="info-text">
-                            <i class="fa-solid fa-info-circle"></i> Letters and spaces only
-                        </div>
                     </div>
                 </div>
 
@@ -383,14 +340,6 @@
 </div>
 
 <script>
-function updateCharCounter(textarea) {
-    const count = textarea.value.length;
-    const counterSpan = document.getElementById('bioCharCount');
-    if (counterSpan) {
-        counterSpan.textContent = count;
-    }
-}
-
 function showToast(message, type = 'success', title = '') {
     const titles = { success: '✓ Success!', error: '✗ Error!', info: 'ℹ Info', warning: '⚠ Warning' };
     const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
@@ -427,19 +376,7 @@ function setButtonLoading(button, isLoading) {
     }
 }
 
-// Function to validate name fields (letters, spaces, hyphens, apostrophes only)
-function validateNameField(input) {
-    let value = input.value;
-    // Allow letters, spaces, hyphens, apostrophes, and periods (for Jr., Sr., etc.)
-    let cleaned = value.replace(/[^a-zA-Z\s\-\.\']/g, '');
-    
-    if (value !== cleaned) {
-        input.value = cleaned;
-        showToast('Only letters, spaces, hyphens, apostrophes, and periods are allowed', 'warning', 'Invalid Input');
-    }
-}
-
-// Validate contact number function with regex
+// Validate contact number function
 function validateContactNumber(input) {
     let value = input.value;
     let cleaned = value.replace(/[^\d]/g, '');
@@ -464,12 +401,7 @@ async function saveProfile() {
     let middleName = document.getElementById('middle_name').value.trim();
     let lastName = document.getElementById('last_name').value.trim();
     let extension = document.getElementById('extension').value.trim();
-    let subject = document.getElementById('subject').value.trim();
-    let department = document.getElementById('department').value.trim();
     const contactNumber = document.getElementById('contact_number').value.trim();
-    
-    // Validate name fields for letters only
-    const nameRegex = /^[a-zA-Z\s\-\.\']+$/;
     
     if (!firstName) {
         showToast('First name is required', 'warning', 'Missing Field');
@@ -477,45 +409,9 @@ async function saveProfile() {
         return;
     }
     
-    if (!nameRegex.test(firstName)) {
-        showToast('First name can only contain letters, spaces, hyphens, apostrophes, and periods', 'warning', 'Invalid Format');
-        document.getElementById('first_name').focus();
-        return;
-    }
-    
-    if (middleName && !nameRegex.test(middleName)) {
-        showToast('Middle name can only contain letters, spaces, hyphens, apostrophes, and periods', 'warning', 'Invalid Format');
-        document.getElementById('middle_name').focus();
-        return;
-    }
-    
     if (!lastName) {
         showToast('Last name is required', 'warning', 'Missing Field');
         document.getElementById('last_name').focus();
-        return;
-    }
-    
-    if (!nameRegex.test(lastName)) {
-        showToast('Last name can only contain letters, spaces, hyphens, apostrophes, and periods', 'warning', 'Invalid Format');
-        document.getElementById('last_name').focus();
-        return;
-    }
-    
-    if (extension && !nameRegex.test(extension)) {
-        showToast('Extension can only contain letters, spaces, hyphens, apostrophes, and periods', 'warning', 'Invalid Format');
-        document.getElementById('extension').focus();
-        return;
-    }
-    
-    if (subject && !nameRegex.test(subject)) {
-        showToast('Subject can only contain letters and spaces', 'warning', 'Invalid Format');
-        document.getElementById('subject').focus();
-        return;
-    }
-    
-    if (department && !nameRegex.test(department)) {
-        showToast('Department can only contain letters and spaces', 'warning', 'Invalid Format');
-        document.getElementById('department').focus();
         return;
     }
     
@@ -538,8 +434,6 @@ async function saveProfile() {
         middle_name: middleName,
         last_name: lastName,
         extension: extension,
-        subject: subject,
-        department: department,
         contact_number: contactNumber
     };
 
@@ -558,9 +452,6 @@ async function saveProfile() {
             showToast('Your profile has been updated successfully!', 'success', 'Profile Updated');
             
             document.getElementById('teacherNameDisplay').textContent = fullName;
-            document.getElementById('subjectDisplay').textContent = subject || 'Not specified';
-            document.getElementById('departmentDisplay').textContent = department || 'Not specified';
-            
             document.title = `My Profile - ${fullName}`;
         } else {
             showToast(data.message || 'Failed to update profile.', 'error', 'Update Failed');
@@ -574,27 +465,6 @@ async function saveProfile() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Add validation for all name input fields
-    const nameInputs = document.querySelectorAll('.name-input');
-    nameInputs.forEach(input => {
-        input.addEventListener('input', function(e) {
-            validateNameField(this);
-        });
-        
-        input.addEventListener('keypress', function(e) {
-            const charCode = e.which ? e.which : e.keyCode;
-            // Allow letters (a-z, A-Z), space, hyphen, apostrophe, period
-            const char = String.fromCharCode(charCode);
-            const allowedRegex = /[a-zA-Z\s\-\.\']/;
-            if (!allowedRegex.test(char)) {
-                e.preventDefault();
-                showToast('Only letters, spaces, hyphens, apostrophes, and periods are allowed', 'warning', 'Invalid Input');
-                return false;
-            }
-            return true;
-        });
-    });
-    
     const contactField = document.getElementById('contact_number');
     if (contactField) {
         contactField.placeholder = '09123456789';
