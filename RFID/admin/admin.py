@@ -27,25 +27,28 @@ latest_scan = {
 }
 
 # =========================
-# DB CONNECTION - SUPABASE VERSION
+# DB CONNECTION - RAILWAY VERSION
 # =========================
-
 def get_db_connection():
-    try:
-        conn = psycopg2.connect(
-            host=os.getenv("DB_HOST"),
-            database=os.getenv("DB_NAME"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            port=os.getenv("DB_PORT"),
-            sslmode='require',
-            connect_timeout=30
-        )
-        conn.autocommit = True
-        return conn
-    except Exception as e:
-        print(f"Database connection error: {e}")
-        return None
+    """
+    🔥 THIS IS YOUR ONLY DB CONNECTION
+
+    ❌ NO SUPABASE
+    ❌ NO LOCALHOST
+    ❌ NO MULTIPLE CONFIGS
+
+    ✅ ONLY RAILWAY DATABASE_URL
+    """
+
+    database_url = os.getenv("DATABASE_URL")
+
+    if not database_url:
+        raise Exception("❌ DATABASE_URL not found in .env")
+
+    return psycopg2.connect(
+        database_url.strip(),
+        sslmode="require"
+    )
 
 def get_connection():
     """Get database connection with test"""
@@ -64,10 +67,10 @@ def get_connection():
 print("\n=== Testing Database Connection ===")
 test_conn = get_connection()
 if test_conn:
-    print("✓ Supabase connected successfully")
+    print("✓ Railway connected successfully")
     test_conn.close()
 else:
-    print("✗ Supabase connection failed! Please check your .env file")
+    print("✗ Railway connection failed! Please check your .env file")
 print("===================================\n")
 
 # =========================
@@ -307,7 +310,7 @@ def test_db():
         if conn is None:
             return jsonify({
                 "status": "error",
-                "message": "Database connection failed. Check your .env file and Supabase credentials"
+                "message": "Database connection failed. Check your .env file and Railway credentials"
             })
         cur = conn.cursor()
         cur.execute("SELECT NOW();")
@@ -316,7 +319,7 @@ def test_db():
         conn.close()
         return jsonify({
             "status": "success",
-            "message": "Supabase connected successfully",
+            "message": "Railway connected successfully",
             "server_time": str(result[0])
         })
     except Exception as e:

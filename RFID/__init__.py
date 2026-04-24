@@ -1,4 +1,11 @@
 from flask import Flask
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file in the parent directory
+env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
+load_dotenv(env_path)
+
 from RFID.admin.admin import admin_bp
 from RFID.superadmin.sadmin import sadmin
 from RFID.superadmin.sregister import sregister

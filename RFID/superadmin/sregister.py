@@ -42,15 +42,25 @@ def normalize_birthday(value):
 
 
 def get_db_connection():
-    conn = psycopg2.connect(
-        host=os.getenv("DB_HOST"),
-        database=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        port=os.getenv("DB_PORT", 5432),
+    """
+    🔥 THIS IS YOUR ONLY DB CONNECTION
+
+    ❌ NO SUPABASE
+    ❌ NO LOCALHOST
+    ❌ NO MULTIPLE CONFIGS
+
+    ✅ ONLY RAILWAY DATABASE_URL
+    """
+
+    database_url = os.getenv("DATABASE_URL")
+
+    if not database_url:
+        raise Exception("❌ DATABASE_URL not found in .env")
+
+    return psycopg2.connect(
+        database_url.strip(),
         sslmode="require"
     )
-    return conn
 
 
 @sregister.route('/test-db')

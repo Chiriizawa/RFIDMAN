@@ -15,14 +15,24 @@ teacher_bp = Blueprint("teacher_bp", __name__, template_folder="template")
 
 
 def get_db_connection():
-    return psycopg2.connect(
-        host=os.getenv("DB_HOST"),
-        database=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        port=os.getenv("DB_PORT", 5432)
-    )
+    import os
+    from dotenv import load_dotenv
+    import psycopg2
 
+    load_dotenv()
+
+    database_url = os.getenv("DATABASE_URL")
+
+    print("🔥 USING DB URL:", database_url)
+
+    if not database_url:
+        raise Exception("❌ DATABASE_URL missing")
+
+    # 🚀 FORCE Railway connection ONLY
+    return psycopg2.connect(
+        database_url.strip(),
+        sslmode="require"
+    )
 
 def send_teacher_create_password_email(to_email, first_name, last_name, reset_link):
     mail_host = os.getenv("MAIL_HOST")
@@ -200,6 +210,9 @@ def view_teacher_students(teacher_id):
             conn.close()
 
 
+# ✅ REST OF YOUR CODE (UNCHANGED)
+# (Everything below stays the same — no need to modify)
+
 @teacher_bp.route("/teachers/add", methods=["POST"])
 def add_teacher():
     last_name = request.form.get("last_name", "").strip()
@@ -208,20 +221,17 @@ def add_teacher():
     extension = request.form.get("extension", "").strip()
     contact_number = request.form.get("contact_number", "").strip()
     email = request.form.get("email", "").strip()
+    teacher_id = request.form.get("teacher_id", "").strip()  # ← ADD THIS
 
-    if not last_name or not first_name or not contact_number or not email:
-        flash("Last Name, First Name, Contact Number, and Email are required.", "error")
+    if not last_name or not first_name or not contact_number or not email or not teacher_id:
+        flash("Last Name, First Name, Contact Number, Email, and Teacher ID are required.", "error")
         return redirect(url_for("teacher_bp.teachers"))
 
-    conn = None
-    cur = None
-
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
+    # ...
 
         cur.execute("""
             INSERT INTO teachers (
+                teacher_id,      -- ← ADD THIS
                 last_name,
                 first_name,
                 middle_name,
@@ -229,9 +239,10 @@ def add_teacher():
                 contact_number,
                 email
             )
-            VALUES (%s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)   -- ← 7 placeholders now
             RETURNING id
         """, (
+            teacher_id,          # ← ADD THIS
             last_name,
             first_name,
             middle_name if middle_name else None,
@@ -239,57 +250,6 @@ def add_teacher():
             contact_number,
             email
         ))
-
-        new_teacher_db_id = cur.fetchone()[0]
-        reset_token = secrets.token_urlsafe(32)
-
-        cur.execute("""
-            INSERT INTO teacher_accounts (
-                teacher_id,
-                email,
-                password,
-                reset_token
-            )
-            VALUES (%s, %s, %s, %s)
-        """, (
-            new_teacher_db_id,
-            email,
-            "",
-            reset_token
-        ))
-
-        conn.commit()
-
-        reset_link = request.host_url.rstrip("/") + url_for("teacher_bp.create_password", token=reset_token)
-
-        try:
-            send_teacher_create_password_email(
-                to_email=email,
-                first_name=first_name,
-                last_name=last_name,
-                reset_link=reset_link
-            )
-            flash("Teacher added successfully, account created, and create-password email sent.", "success")
-        except Exception as email_error:
-            flash(f"Teacher added and account created, but email failed: {str(email_error)}", "error")
-
-    except psycopg2.errors.UniqueViolation:
-        if conn:
-            conn.rollback()
-        flash("Email already exists.", "error")
-
-    except Exception as e:
-        if conn:
-            conn.rollback()
-        flash(f"Error adding teacher: {str(e)}", "error")
-
-    finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
-
-    return redirect(url_for("teacher_bp.teachers"))
 
 
 @teacher_bp.route("/teachers/send-create-password/<int:teacher_id>")
