@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}My System{% endblock %}</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- HEADER -->
+    <header class="bg-white shadow-md px-6 py-4 flex justify-between items-center">
+
+        <!-- LEFT: LOGO + TITLE -->
+        <div class="flex items-center gap-3">
+            <img src="{{ url_for('static', filename='logo.png') }}" 
+                 alt="Logo" 
+                 class="w-10 h-10 object-contain">
+
+            <h1 class="text-xl font-bold text-gray-800">
+                RFID Attendance System
+            </h1>
+        </div>
+
+        <!-- RIGHT: CLOCK -->
+        <div class="text-right">
+            <p id="time" class="text-lg font-semibold text-gray-700"></p>
+            <p id="date" class="text-sm text-gray-500"></p>
+        </div>
+
+    </header>
+
+    <!-- CONTENT -->
+    <main class="p-6">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- REAL-TIME CLOCK SCRIPT -->
+    <script>
+        function updateClock() {
+            const now = new Date();
+
+            const time = now.toLocaleTimeString('en-PH', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+
+            const date = now.toLocaleDateString('en-PH', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+
+            document.getElementById('time').textContent = time;
+            document.getElementById('date').textContent = date;
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
+
+</body>
+</html>

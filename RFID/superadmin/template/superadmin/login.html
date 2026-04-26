@@ -2,81 +2,348 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Superadmin Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <title>Superadmin Portal | Don Manuel Rivera School</title>
+    <!-- Google Fonts + Tailwind + Font Awesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        /* custom smooth focus & card enhancements */
+        .login-card {
+            transition: transform 0.2s ease, box-shadow 0.3s ease;
+        }
+        .login-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 25px 40px -12px rgba(0, 0, 0, 0.35);
+        }
+        .input-focus-effect:focus {
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2), 0 1px 2px 0 rgba(0,0,0,0.05);
+            border-color: #3b82f6;
+            outline: none;
+        }
+        /* floating label subtle style - additional polish */
+        .bg-overlay-modern {
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.65) 100%);
+        }
+        .footer-glass {
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+        }
+        @media (max-width: 768px) {
+            .responsive-container {
+                justify-content: center !important;
+                padding-left: 1.5rem !important;
+                padding-right: 1.5rem !important;
+            }
+            .login-card-container {
+                margin-right: 0 !important;
+                max-width: 90% !important;
+            }
+        }
+        /* animated subtle background accent */
+        .bg-blur-glow {
+            position: relative;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-in-up': 'fadeInUp 0.6s ease-out',
+                    },
+                    keyframes: {
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(15px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-200 flex items-center justify-center px-4">
+<body class="min-h-screen flex flex-col relative bg-cover bg-center bg-no-repeat" 
+      style="background-image: url('https://images.pexels.com/photos/207692/pexels-photo-207692.jpeg?auto=compress&cs=tinysrgb&w=1600'); background-size: cover; background-position: center 30%;">
 
-    <div class="w-full max-w-md">
-        <div class="bg-white shadow-2xl rounded-3xl overflow-hidden border border-gray-100">
+    <!-- Enhanced overlay with gradient + vignette effect -->
+    <div class="absolute inset-0 bg-gradient-to-br from-black/60 via-black/50 to-black/70"></div>
+    
+    <!-- Top Navigation with modern glassmorphism -->
+    <nav class="relative w-full px-6 md:px-10 py-5 flex items-center justify-between text-white z-10 backdrop-blur-sm bg-black/20 border-b border-white/10">
+        <div class="flex items-center gap-3">
+            </div>
+        </div>
+        <div class="hidden md:flex items-center space-x-3 text-sm font-medium">
+        </div>
+    </nav>
+
+    <!-- Main Flex Container: Desktop right aligned, mobile centered -->
+    <div class="relative flex flex-1 items-center justify-end px-5 md:px-20 py-10 responsive-container z-10">
+        
+        <!-- Login Card: Wider, modern glassmorphic panel with animation -->
+        <div class="w-full max-w-xl bg-white/90 md:bg-white/85 backdrop-blur-xl rounded-2xl shadow-2xl p-8 md:p-12 border border-white/50 login-card animate-fade-in-up mr-0 md:mr-8 lg:mr-12 login-card-container transition-all duration-300">
             
-            <!-- Header -->
-            <div class="bg-gradient-to-r from-blue-700 to-blue-500 px-8 py-8 text-center">
-                <div class="w-20 h-20 mx-auto bg-white/20 rounded-full flex items-center justify-center mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A9 9 0 1118.88 17.8M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
+            <!-- Header with Branding Integration -->
+            <div class="text-center mb-8">
+                <div class="flex justify-center mb-3">
+                    <div class="h-16 w-16 rounded-full bg-gradient-to-tr from-blue-700 to-indigo-600 flex items-center justify-center shadow-lg">
+                        <i class="fas fa-crown text-white text-3xl"></i>
+                    </div>
                 </div>
-                <h1 class="text-3xl font-bold text-white">Superadmin</h1>
-                <p class="text-blue-100 text-sm mt-2">Login to manage the system</p>
+                <h2 class="text-3xl font-bold text-gray-800 tracking-tight">Admin Access</h2>
+                <div class="w-16 h-0.5 bg-blue-500 mx-auto mt-3 rounded-full"></div>
             </div>
 
-            <!-- Form -->
-            <form action="/superadmin/login" method="POST" class="px-8 py-8 space-y-6">
-                
-                <div>
-                    <label for="username" class="block text-sm font-semibold text-gray-700 mb-2">
-                        Username
+            <!-- School Credentials mini ribbon -->
+            <div class="bg-blue-50/70 rounded-xl p-3 mb-7 text-center border border-blue-100/60">
+                <p class="text-xs text-blue-800 font-medium uppercase tracking-wide flex items-center justify-center gap-2">
+                    <i class="fas fa-school"></i> 
+                    <span>Don Manuel Rivera Memorial Integrated NHS</span>
+                    <i class="fas fa-flag-checkered text-blue-600"></i>
+                </p>
+                <p class="text-[11px] text-gray-500 mt-1">Pila, Laguna — Official Superadmin Environment</p>
+            </div>
+
+            <!-- Login Form Action (POST to /superadmin/login) -->
+            <form action="/superadmin/login" method="POST" class="space-y-6">
+                <!-- Username Field with icon -->
+                <div class="relative group">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-user-graduate text-gray-400 group-focus-within:text-blue-600 transition-colors text-md"></i>
+                    </div>
+                    <input type="text" name="username" id="username" placeholder=" " required
+                        class="peer w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-300 bg-white/80 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-800 placeholder-transparent"
+                        autocomplete="username">
+                    <label for="username" class="absolute left-10 -top-2.5 text-xs text-gray-500 bg-white px-1 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-3.5 peer-placeholder-shown:left-10 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-blue-600 peer-focus:bg-white">
+                        Admin Username
                     </label>
-                    <input
-                        type="text"
-                        id="username"
-                        name="username"
-                        placeholder="Enter your username"
-                        required
-                        class="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                    >
+                    <span class="absolute left-10 top-3.5 text-gray-400 text-sm pointer-events-none peer-focus:opacity-0 peer-placeholder-shown:opacity-0 transition-all">Enter your username</span>
                 </div>
 
-                <div>
-                    <label for="password" class="block text-sm font-semibold text-gray-700 mb-2">
-                        Password
+                <!-- Password Field with icon -->
+                <div class="relative group">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-key text-gray-400 group-focus-within:text-blue-600 transition-colors"></i>
+                    </div>
+                    <input type="password" name="password" id="password" placeholder=" " required
+                        class="peer w-full pl-10 pr-12 py-3.5 rounded-xl border border-gray-300 bg-white/80 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-800 placeholder-transparent"
+                        autocomplete="current-password">
+                    <label for="password" class="absolute left-10 -top-2.5 text-xs text-gray-500 bg-white px-1 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-3.5 peer-placeholder-shown:left-10 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-blue-600 peer-focus:bg-white">
+                        Secure Password
                     </label>
-                    <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        placeholder="Enter your password"
-                        required
-                        class="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                    >
+                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer" id="togglePassword">
+                        <i class="fas fa-eye-slash text-gray-400 hover:text-blue-600 transition text-sm"></i>
+                    </div>
                 </div>
 
+                <!-- Forgot Password + Remember me style row-->
                 <div class="flex items-center justify-between text-sm">
-                    <label class="flex items-center gap-2 text-gray-600">
-                    </label>
-                    <a href="#" class="text-blue-600 hover:text-blue-800 font-medium">
-                        Forgot password?
-                    </a>
+                    <div class="flex items-center gap-2">
+                        <label for="remember" class="text-gray-600 font-medium"></label>
+                    </div>
+                    <a href="#" class="text-blue-700 hover:text-indigo-800 font-semibold transition-all flex items-center gap-1"><i class="fas fa-question-circle text-xs"></i> Forgot password?</a>
                 </div>
 
-                <button
-                    type="submit"
-                    class="w-full bg-gradient-to-r from-blue-700 to-blue-500 text-white font-semibold py-3 rounded-2xl shadow-md hover:scale-[1.01] hover:shadow-lg transition duration-200"
-                >
-                    Login
+                <!-- Login Button with shine effect -->
+                <button type="submit" 
+                    class="w-full relative bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 text-white font-bold py-3.5 rounded-xl text-md uppercase tracking-wider shadow-lg shadow-blue-500/30 transition-all duration-300 transform hover:scale-[1.01] flex items-center justify-center gap-2 group">
+                    <i class="fas fa-arrow-right-to-bracket group-hover:translate-x-0.5 transition"></i>
+                    Access Dashboard
+                    <span class="absolute right-5 opacity-0 group-hover:opacity-100 transition-all"><i class="fas fa-lock-open"></i></span>
                 </button>
             </form>
 
-            <!-- Footer -->
-            <div class="px-8 pb-6 text-center">
-                <p class="text-xs text-gray-500">
-                    Superadmin Access Only
+            <!-- Additional Access Badge + Security note -->
+            <div class="mt-8 text-center space-y-3">
+                <div class="inline-flex items-center gap-2 bg-gray-100/70 rounded-full px-4 py-1.5 shadow-sm">
+                    <i class="fas fa-fingerprint text-blue-600 text-xs"></i>
+                    <span class="text-[11px] font-mono font-semibold text-gray-700">Superadmin Access Only</span>
+                    <i class="fas fa-shield-haltered text-gray-500 text-xs"></i>
+                </div>
+                <p class="text-xs text-gray-500 flex items-center justify-center gap-1">
                 </p>
             </div>
         </div>
     </div>
 
+    <!-- Footer with full school name & rights - glass layer -->
+    <footer class="relative w-full text-center text-white/90 text-xs py-5 footer-glass border-t border-white/20 z-10 mt-auto">
+        <div class="flex flex-col md:flex-row justify-center items-center gap-2 md:gap-4">
+            <span>© 2025 Superadmin System — Don Manuel Rivera Memorial Integrated National High School</span>
+            <span class="hidden md:inline text-white/30">|</span>
+            <span><i class="fas fa-map-marker-alt mr-1"></i> Pila, Laguna, Philippines</span>
+            <span><i class="fas fa-shield-alt ml-1"></i> v3.0 Enterprise</span>
+        </div>
+        <div class="text-[10px] mt-1 opacity-50">All administrative operations are monitored. Restricted area.</div>
+    </footer>
+
+    <!-- simple javascript for password toggle + smooth micro interaction -->
+    <script>
+        (function() {
+            const togglePassword = document.getElementById('togglePassword');
+            const passwordInput = document.getElementById('password');
+            if (togglePassword && passwordInput) {
+                togglePassword.addEventListener('click', function() {
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+                    const icon = togglePassword.querySelector('i');
+                    if (icon) {
+                        icon.classList.toggle('fa-eye-slash');
+                        icon.classList.toggle('fa-eye');
+                    }
+                });
+            }
+
+            // Optional: add ripple or placeholder cleaner: but modern floating labels are fine
+            // Prefill simulation: not required but placeholder effect handled by css.
+            // Adjust the background image fallback in case external fails -> keeps dark overlay nice
+            const bgElement = document.body;
+            const img = new Image();
+            img.src = "https://images.pexels.com/photos/207692/pexels-photo-207692.jpeg?auto=compress&cs=tinysrgb&w=1600";
+            img.onerror = function() {
+                // fallback to a solid color with gradient overlay to keep style intact
+                bgElement.style.backgroundImage = "linear-gradient(120deg, #1e293b, #0f172a)";
+                bgElement.style.backgroundSize = "cover";
+            }
+        })();
+    </script>
+
+    <!-- additional style for floating label optimization and responsive touch -->
+    <style>
+        /* micro adjust for floating label with peer and placeholder-shown */
+        .peer:not(:placeholder-shown) ~ label,
+        .peer:focus ~ label {
+            font-size: 0.7rem;
+            top: -0.6rem;
+            left: 0.9rem;
+            color: #2563eb;
+            font-weight: 500;
+        }
+        .peer:-webkit-autofill ~ label,
+        .peer:autofill ~ label {
+            top: -0.6rem;
+            font-size: 0.7rem;
+            left: 0.9rem;
+        }
+        /* set label's initial style for absolute */
+        .peer ~ label {
+            position: absolute;
+            transition: all 0.2s ease;
+            background-color: white;
+            padding-left: 0.25rem;
+            padding-right: 0.25rem;
+            pointer-events: none;
+            font-weight: normal;
+            left: 0.9rem;
+            top: 0.9rem;
+            font-size: 1rem;
+            color: #6b7280;
+        }
+        /* Adjust for left icon: extra space */
+        .peer {
+            padding-left: 2.5rem;
+        }
+        /* correction for absolute label left position when icon present */
+        .peer ~ label {
+            left: 2.3rem;
+        }
+        /* special for password and username field because icon occupies left area */
+        input[name="username"].peer ~ label,
+        input[name="password"].peer ~ label {
+            left: 2.5rem;
+        }
+        /* clean autofill background */
+        input:-webkit-autofill,
+        input:-webkit-autofill:focus {
+            transition: background-color 600000s 0s, color 600000s 0s;
+        }
+        /* card entrance animation */
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s cubic-bezier(0.15, 0.85, 0.35, 1.02) forwards;
+        }
+        @keyframes fadeInUp {
+            0% {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        /* Scrollbar and additional accessibility */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        /* Buttons micro interaction */
+        button:active {
+            transform: scale(0.98);
+        }
+        /* checkbox style */
+        input[type="checkbox"] {
+            accent-color: #2563eb;
+        }
+        /* footer responsive */
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 1.75rem;
+            }
+            h2.text-3xl {
+                font-size: 1.7rem;
+            }
+        }
+        /* remove label shift issue when using placeholder as blank */
+        .peer:placeholder-shown ~ label {
+            font-size: 1rem;
+            top: 0.85rem;
+            background: transparent;
+            color: #9ca3af;
+            font-weight: 400;
+        }
+        .peer:focus ~ label {
+            background: white;
+            padding-left: 0.25rem;
+            padding-right: 0.25rem;
+            top: -0.6rem;
+            font-size: 0.7rem;
+            color: #1e40af;
+        }
+        /* consistent bg for label background to overlay on input */
+        .peer:not(:placeholder-shown) ~ label {
+            background: white;
+            top: -0.6rem;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #1e3a8a;
+        }
+        /* adjust first input and second */
+        input {
+            background-color: #ffffffcc;
+            backdrop-filter: blur(2px);
+        }
+        input:focus {
+            background-color: white;
+        }
+        .peer:focus {
+            background-color: white;
+        }
+        /* icon inside control */
+        .peer:focus + .absolute svg, 
+        .peer:focus ~ div i {
+            color: #2563eb;
+        }
+    </style>
 </body>
 </html>
