@@ -116,7 +116,7 @@
         font-size: 0.85rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        padding: 1rem 1.5rem;
+        padding: 1rem 1rem;
     }
     
     .table-row {
@@ -129,8 +129,9 @@
     }
     
     .table-row td {
-        padding: 1rem 1.5rem;
+        padding: 1rem 0.75rem;
         color: #1e293b;
+        vertical-align: middle;
     }
     
     .uid-badge {
@@ -138,11 +139,11 @@
         color: #92400e;
         font-family: monospace;
         font-weight: 700;
-        padding: 0.5rem 1rem;
-        border-radius: 0.75rem;
+        padding: 0.4rem 0.75rem;
+        border-radius: 0.5rem;
         display: inline-block;
         border: 1px solid #fbbf24;
-        font-size: 0.85rem;
+        font-size: 0.75rem;
     }
     
     .present-badge {
@@ -150,7 +151,7 @@
         color: #166534;
         padding: 0.25rem 0.75rem;
         border-radius: 0.5rem;
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         font-weight: 600;
         display: inline-block;
     }
@@ -160,7 +161,7 @@
         color: #991b1b;
         padding: 0.25rem 0.75rem;
         border-radius: 0.5rem;
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         font-weight: 600;
         display: inline-block;
     }
@@ -186,6 +187,99 @@
         text-align: center;
     }
     
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .modal.show {
+        display: flex;
+    }
+    
+    .modal-content {
+        background: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        max-width: 550px;
+        width: 90%;
+        max-height: 85vh;
+        overflow-y: auto;
+    }
+    
+    .form-input {
+        width: 100%;
+        padding: 0.6rem 0.75rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+    }
+    
+    .btn-primary {
+        background: #f59e0b;
+        color: white;
+        font-weight: 600;
+        padding: 0.6rem 1.25rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s;
+        cursor: pointer;
+        border: none;
+        font-size: 0.9rem;
+    }
+    
+    .btn-primary:hover {
+        background: #d97706;
+    }
+    
+    .btn-secondary {
+        background: #e2e8f0;
+        color: #1e293b;
+        font-weight: 600;
+        padding: 0.6rem 1.25rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s;
+        cursor: pointer;
+        border: none;
+        font-size: 0.9rem;
+    }
+    
+    .btn-secondary:hover {
+        background: #cbd5e1;
+    }
+    
+    .btn-edit {
+        background: #3b82f6;
+        color: white;
+        padding: 0.35rem 0.9rem;
+        border-radius: 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+    
+    .btn-edit:hover {
+        background: #2563eb;
+        transform: scale(1.02);
+    }
+    
     @keyframes scanPulse {
         0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
         70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
@@ -197,11 +291,13 @@
     }
     
     @media (max-width: 768px) {
-        .table-header th, .table-row td { padding: 0.75rem 1rem; }
+        .table-header th, .table-row td { padding: 0.5rem; font-size: 0.7rem; }
         .header-gradient { padding: 1rem 1.25rem; }
-        .status-card { padding: 1rem; }
-        .stat-card { padding: 1rem; }
+        .status-card { padding: 0.75rem; }
+        .stat-card { padding: 0.75rem; }
         .success-banner { padding: 1rem; }
+        .uid-badge { font-size: 0.65rem; padding: 0.2rem 0.5rem; }
+        .btn-edit { padding: 0.25rem 0.6rem; font-size: 0.65rem; }
     }
 </style>
 
@@ -233,7 +329,7 @@
 
         <div class="p-6">
             <!-- RFID Scan Status Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <div class="status-card">
                     <p><i class="fa-solid fa-circle-info mr-1 text-accent"></i> Current Status</p>
                     <p id="message"><i class="fa-regular fa-clock mr-2"></i>Waiting for scan...</p>
@@ -271,15 +367,15 @@
             </div>
 
             <!-- Statistics Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6 mb-6">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 mb-6">
                 <div class="stat-card">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm text-gray-500 font-medium">Total Students</p>
-                            <p class="text-2xl font-bold text-gray-800" id="totalStudents">{{ section_info.total_students }}</p>
+                            <p class="text-xs text-gray-500 font-medium">Total Students</p>
+                            <p class="text-xl font-bold text-gray-800" id="totalStudents">{{ section_info.total_students }}</p>
                         </div>
-                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <i class="fa-solid fa-users text-blue-600"></i>
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <i class="fa-solid fa-users text-blue-600 text-sm"></i>
                         </div>
                     </div>
                 </div>
@@ -287,23 +383,11 @@
                 <div class="stat-card">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm text-gray-500 font-medium">Present Today</p>
-                            <p class="text-2xl font-bold text-green-600" id="presentCount">{{ section_info.present_today }}</p>
+                            <p class="text-xs text-gray-500 font-medium">Present Today</p>
+                            <p class="text-xl font-bold text-green-600" id="presentCount">{{ section_info.present_today }}</p>
                         </div>
-                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                            <i class="fa-solid fa-check-circle text-green-600"></i>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm text-gray-500 font-medium">Absent Today</p>
-                            <p class="text-2xl font-bold text-red-600" id="absentCount">{{ section_info.total_students - section_info.present_today }}</p>
-                        </div>
-                        <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                            <i class="fa-solid fa-times-circle text-red-600"></i>
+                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <i class="fa-solid fa-check-circle text-green-600 text-sm"></i>
                         </div>
                     </div>
                 </div>
@@ -311,33 +395,47 @@
                 <div class="stat-card">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm text-gray-500 font-medium">Attendance Rate</p>
-                            <p class="text-2xl font-bold text-accent" id="attendanceRate">{{ "%.1f"|format(section_info.present_today / section_info.total_students * 100 if section_info.total_students > 0 else 0) }}%</p>
+                            <p class="text-xs text-gray-500 font-medium">Absent Today</p>
+                            <p class="text-xl font-bold text-red-600" id="absentCount">{{ section_info.total_students - section_info.present_today }}</p>
                         </div>
-                        <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
-                            <i class="fa-solid fa-chart-line text-accent"></i>
+                        <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                            <i class="fa-solid fa-times-circle text-red-600 text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-gray-500 font-medium">Attendance Rate</p>
+                            <p class="text-xl font-bold text-accent" id="attendanceRate">{{ "%.1f"|format(section_info.present_today / section_info.total_students * 100 if section_info.total_students > 0 else 0) }}%</p>
+                        </div>
+                        <div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                            <i class="fa-solid fa-chart-line text-accent text-sm"></i>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Students Table -->
+            <!-- Students Table with Edit Buttons -->
             <div class="mt-6">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <h2 class="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                     <i class="fa-solid fa-user-graduate text-accent"></i>
                     Student List
+                    <span class="text-xs text-gray-500 ml-2">(Click Edit to modify student details)</span>
                 </h2>
                 
                 <div class="overflow-x-auto">
-                    <table class="w-full">
+                    <table class="w-full min-w-[800px]">
                         <thead>
                             <tr class="table-header">
-                                <th class="text-left w-16">#</th>
+                                <th class="text-left w-12">#</th>
                                 <th class="text-left">Student Name</th>
                                 <th class="text-left">UID</th>
                                 <th class="text-left">Status</th>
                                 <th class="text-left">Scan Time</th>
-                                <th class="text-left">Contact Number</th>
+                                <th class="text-left">Contact No.</th>
+                                <th class="text-left w-24">Action</th>
                             </tr>
                         </thead>
                         <tbody id="studentsTableBody">
@@ -346,6 +444,50 @@
                     </table>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Student Modal -->
+<div id="editStudentModal" class="modal">
+    <div class="modal-content">
+        <h2 class="text-xl font-bold mb-4"><i class="fa-solid fa-user-edit text-accent mr-2"></i>Edit Student</h2>
+        <input type="hidden" id="editStudentId">
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                <input type="text" id="editFirstName" class="form-input" placeholder="First Name">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
+                <input type="text" id="editMiddleName" class="form-input" placeholder="Middle Name">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                <input type="text" id="editLastName" class="form-input" placeholder="Last Name">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Extension</label>
+                <input type="text" id="editExtension" class="form-input" placeholder="Jr., Sr., III">
+            </div>
+        </div>
+        
+        <label class="block text-sm font-medium text-gray-700 mb-1">UID (RFID Card)</label>
+        <input type="text" id="editUid" class="form-input" placeholder="RFID UID">
+        
+        <label class="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
+        <input type="tel" id="editContactNumber" class="form-input" placeholder="09123456789">
+        
+        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+        <input type="email" id="editEmail" class="form-input" placeholder="student@example.com">
+        
+        <label class="block text-sm font-medium text-gray-700 mb-1">Schedule</label>
+        <textarea id="editSchedule" rows="3" class="form-input" placeholder="Class schedule (e.g., IT 3217&#10;M. Dullamano&#10;AV 3206)"></textarea>
+        
+        <div class="flex gap-3 justify-end mt-4">
+            <button onclick="closeEditModal()" class="btn-secondary">Cancel</button>
+            <button onclick="saveStudentEdit()" class="btn-primary">Save Changes</button>
         </div>
     </div>
 </div>
@@ -375,32 +517,106 @@
         console.log("Rendering students table...");
         const tbody = document.getElementById('studentsTableBody');
         if (!studentsData || studentsData.length === 0) {
-            console.log("No students data available");
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8"><div class="empty-state"><i class="fa-regular fa-user text-4xl text-gray-400 mb-3"></i><p class="text-gray-500">No students in this class</p></div></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8"><div class="empty-state"><i class="fa-regular fa-user text-4xl text-gray-400 mb-3"></i><p class="text-gray-500">No students in this class</p></div></td></tr>`;
             return;
         }
         
-        console.log(`Rendering ${studentsData.length} students`);
         tbody.innerHTML = studentsData.map((student, index) => `
             <tr class="table-row">
-                <td class="font-medium">${index + 1}</td>
+                <td class="font-medium text-center">${index + 1}</td>
                 <td class="font-medium">
                     <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-                            <i class="fa-solid fa-user text-amber-600 text-sm"></i>
+                        <div class="w-7 h-7 bg-amber-100 rounded-full flex items-center justify-center">
+                            <i class="fa-solid fa-user text-amber-600 text-xs"></i>
                         </div>
-                        ${student.full_name}
+                        <span>${escapeHtml(student.full_name)}</span>
                     </div>
                 </td>
-                <td><span class="uid-badge"><i class="fa-solid fa-id-card mr-1 text-xs"></i>${student.uid}</span></td>
+                <td><span class="uid-badge"><i class="fa-solid fa-id-card mr-1 text-xs"></i>${escapeHtml(student.uid)}</span></td>
                 <td id="status-${student.id}">
                     ${student.present_today ? '<span class="present-badge"><i class="fa-solid fa-check-circle text-xs mr-1"></i> Present</span>' : '<span class="absent-badge"><i class="fa-solid fa-times-circle text-xs mr-1"></i> Absent</span>'}
                 </td>
-                <td id="time-${student.id}">${student.present_today ? student.scan_time : '—'}</td>
-                <td><i class="fa-solid fa-phone mr-1 text-gray-400 text-xs"></i>${student.contact_number}</td>
-              </tr>
+                <td id="time-${student.id}" class="text-sm">${student.present_today ? student.scan_time : '—'}</td>
+                <td class="text-sm"><i class="fa-solid fa-phone mr-1 text-gray-400 text-xs"></i>${escapeHtml(student.contact_number) || '—'}</td>
+                <td class="text-center">
+                    <button onclick="openEditModal(${student.id})" class="btn-edit">
+                        <i class="fa-solid fa-pencil"></i> Edit
+                    </button>
+                </td>
+            </tr>
         `).join('');
-        console.log("Table rendered successfully");
+    }
+    
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    function openEditModal(studentId) {
+        const student = studentsData.find(s => s.id === studentId);
+        if (!student) return;
+        
+        document.getElementById('editStudentId').value = student.id;
+        document.getElementById('editFirstName').value = student.first_name || '';
+        document.getElementById('editMiddleName').value = student.middle_name || '';
+        document.getElementById('editLastName').value = student.last_name || '';
+        document.getElementById('editExtension').value = student.extension || '';
+        document.getElementById('editUid').value = student.uid || '';
+        document.getElementById('editContactNumber').value = student.contact_number || '';
+        document.getElementById('editEmail').value = student.email || '';
+        document.getElementById('editSchedule').value = student.schedule || '';
+        
+        document.getElementById('editStudentModal').classList.add('show');
+    }
+    
+    function closeEditModal() {
+        document.getElementById('editStudentModal').classList.remove('show');
+    }
+    
+    async function saveStudentEdit() {
+        const studentId = document.getElementById('editStudentId').value;
+        const formData = {
+            first_name: document.getElementById('editFirstName').value.trim(),
+            middle_name: document.getElementById('editMiddleName').value.trim(),
+            last_name: document.getElementById('editLastName').value.trim(),
+            extension: document.getElementById('editExtension').value.trim(),
+            uid: document.getElementById('editUid').value.trim(),
+            contact_number: document.getElementById('editContactNumber').value.trim(),
+            email: document.getElementById('editEmail').value.trim(),
+            schedule: document.getElementById('editSchedule').value.trim()
+        };
+        
+        if (!formData.first_name) {
+            showToast('First name is required', 'error', 'Missing Field');
+            return;
+        }
+        
+        if (!formData.last_name) {
+            showToast('Last name is required', 'error', 'Missing Field');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/admin/update_student/${studentId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast('Student updated successfully!', 'success', 'Updated');
+                closeEditModal();
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showToast(data.message || 'Failed to update student', 'error', 'Error');
+            }
+        } catch (error) {
+            console.error('Error updating student:', error);
+            showToast('Network error. Please try again.', 'error', 'Connection Error');
+        }
     }
     
     function updateStats() {
@@ -408,8 +624,6 @@
         const present = studentsData.filter(s => s.present_today).length;
         const absent = total - present;
         const rate = total > 0 ? (present / total * 100).toFixed(1) : 0;
-        
-        console.log("Stats updated - Total:", total, "Present:", present, "Absent:", absent, "Rate:", rate);
         
         document.getElementById('totalStudents').textContent = total;
         document.getElementById('presentCount').textContent = present;
@@ -423,54 +637,37 @@
             const response = await fetch('/admin/get_latest');
             const data = await response.json();
             
-            console.log("Latest scan received:", data);
-            
             const uidEl = document.getElementById('uid');
             const nameEl = document.getElementById('name');
             const timeEl = document.getElementById('time');
             const messageEl = document.getElementById('message');
             
             if (data.uid && data.uid !== lastUID) {
-                console.log("New UID detected:", data.uid);
-                console.log("Checking if student belongs to section:", sectionId);
-                
                 const scannedStudent = studentsData.find(s => s.uid === data.uid);
                 
                 if (scannedStudent) {
-                    console.log("Student found in this class:", scannedStudent.full_name);
-                    console.log("Current present status:", scannedStudent.present_today);
-                    
                     uidEl.classList.add('scanning');
                     setTimeout(() => uidEl.classList.remove('scanning'), 500);
-                    
                     lastUID = data.uid;
                     
-                    // Update student's attendance status
                     if (!scannedStudent.present_today) {
-                        console.log("Updating student attendance to Present");
                         scannedStudent.present_today = true;
                         scannedStudent.scan_time = data.time || new Date().toLocaleTimeString();
                         
-                        // Update the table row
                         const statusCell = document.getElementById(`status-${scannedStudent.id}`);
                         const timeCell = document.getElementById(`time-${scannedStudent.id}`);
                         if (statusCell) {
                             statusCell.innerHTML = '<span class="present-badge"><i class="fa-solid fa-check-circle text-xs mr-1"></i> Present</span>';
-                            console.log("Status cell updated");
                         }
                         if (timeCell) {
                             timeCell.innerHTML = data.time || new Date().toLocaleTimeString();
-                            console.log("Time cell updated");
                         }
                         
                         updateStats();
                         showNameBanner(scannedStudent.full_name, data.time);
                         showToast(`${scannedStudent.full_name} has been detected`, 'success', 'New Scan');
-                    } else {
-                        console.log("Student already marked as present today");
                     }
                 } else {
-                    console.log("Student not enrolled in this class - UID:", data.uid);
                     messageEl.innerHTML = '<i class="fa-solid fa-exclamation-triangle mr-2"></i>Student not enrolled in this class';
                     setTimeout(() => {
                         messageEl.innerHTML = '<i class="fa-regular fa-clock mr-2"></i>Waiting for scan...';
@@ -491,7 +688,6 @@
     }
     
     function showNameBanner(name, time) {
-        console.log("Showing name banner for:", name);
         const banner = document.getElementById('nameBanner');
         document.getElementById('bannerName').textContent = name || 'No linked student';
         document.getElementById('bannerTime').innerHTML = `<i class="fa-regular fa-clock mr-1"></i>${time || 'Just now'}`;
@@ -502,11 +698,9 @@
     }
     
     // Initialize
-    console.log("Initializing class dashboard...");
     renderStudentsTable();
     updateStats();
     fetchLatestScan();
     setInterval(fetchLatestScan, 1000);
-    console.log("Auto-refresh interval set to 1 second");
 </script>
 {% endblock %}

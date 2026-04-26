@@ -907,9 +907,8 @@ def send_reset_email(to_email, reset_token):
             print("❌ Email credentials not configured")
             return False
         
-        # FIX: Add /admin prefix to the reset link
         base_url = os.getenv("BASE_URL", "http://127.0.0.1:5000")
-        reset_link = f"{base_url}/admin/reset_password/{reset_token}"  # Added /admin/
+        reset_link = f"{base_url}/admin/reset_password/{reset_token}"
         
         subject = "Password Reset Request - Tap & Know System"
         
@@ -973,6 +972,7 @@ def send_reset_email(to_email, reset_token):
     except Exception as e:
         print(f"❌ Email error: {e}")
         return False
+
 # =========================
 # TEACHER LOGIN & PROFILE
 # =========================
@@ -1041,7 +1041,7 @@ def update_teacher_profile():
         return jsonify({"success": False, "message": str(e)}), 500
 
 # =========================
-# FORGOT PASSWORD ROUTES (ONLY ONCE!)
+# FORGOT PASSWORD ROUTES
 # =========================
 @admin_bp.route('/forgot_password_ajax', methods=['POST'])
 def forgot_password_ajax():
@@ -1067,10 +1067,10 @@ def forgot_password_ajax():
 
 @admin_bp.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
-    print(f"Reset password route called with token: {token}")  # Debug print
+    print(f"Reset password route called with token: {token}")
     email = verify_reset_token(token)
     
-    print(f"Email from token: {email}")  # Debug print
+    print(f"Email from token: {email}")
     
     if not email:
         flash('Invalid or expired reset link. Please request a new one.', 'error')
@@ -1143,3 +1143,355 @@ def test_email_send():
             return jsonify({"success": False, "message": "Failed to send email. Check console for details."})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
+
+# =========================
+# TEACHER MY SCHEDULES ROUTES (Logged-in teacher only)
+# =========================
+@admin_bp.route('/teacher_schedules')
+@login_required
+def teacher_schedules():
+    """Display sections for the logged-in teacher"""
+    teacher_id = session.get('teacher_id')
+    if not teacher_id:
+        flash('Teacher not found', 'error')
+        return redirect(url_for('admin_bp.teacher_login'))
+    
+    conn = get_db_connection()
+    if conn is None:
+        return render_template('my_schedules.html', sections=[])
+    
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+        # Get all sections assigned to the logged-in teacher
+        cur.execute("""
+            SELECT 
+                s.id as section_id,
+                s.section_name,
+                s.year_level,
+                COUNT(DISTINCT st.id) as student_count
+            FROM sections s
+            LEFT JOIN students st ON st.section_id = s.id
+            WHERE s.teacher_id = %s
+            GROUP BY s.id, s.section_name, s.year_level
+            ORDER BY s.section_name
+        """, (teacher_id,))
+        
+        sections = cur.fetchall()
+        
+        sections_data = []
+        for section in sections:
+            # Get schedule count for this section from schedules table
+            cur2 = conn.cursor()
+            cur2.execute("""
+                SELECT COUNT(*) as schedule_count
+                FROM schedules
+                WHERE section_id = %s
+            """, (section['section_id'],))
+            schedule_count = cur2.fetchone()[0]
+            cur2.close()
+            
+            sections_data.append({
+                'section_id': section['section_id'],
+                'section_name': section['section_name'],
+                'year_level': section['year_level'],
+                'student_count': section['student_count'] or 0,
+                'schedule_count': schedule_count
+            })
+        
+        conn.close()
+        return render_template('my_schedules.html', sections=sections_data)
+        
+    except Exception as e:
+        print(f"Teacher schedules error: {e}")
+        if conn:
+            conn.close()
+        return render_template('my_schedules.html', sections=[])
+
+@admin_bp.route('/section_weekly_schedule_data/<int:section_id>')
+@login_required
+def section_weekly_schedule_data(section_id):
+    """API endpoint to get weekly schedule data for a section from schedules table"""
+    teacher_id = session.get('teacher_id')
+    if not teacher_id:
+        return jsonify({"success": False, "error": "Not logged in"})
+    
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"success": False, "error": "Database connection failed"})
+    
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+        # Verify the section belongs to the logged-in teacher
+        cur.execute("""
+            SELECT id, section_name, year_level
+            FROM sections
+            WHERE id = %s AND teacher_id = %s
+        """, (section_id, teacher_id))
+        
+        section = cur.fetchone()
+        if not section:
+            conn.close()
+            return jsonify({"success": False, "error": "Section not found or unauthorized"})
+        
+        # Get all schedules for this section with teacher and room info
+        cur.execute("""
+            SELECT 
+                s.id,
+                s.day,
+                s.time,
+                s.subject,
+                t.first_name as teacher_first,
+                t.last_name as teacher_last,
+                r.room_name
+            FROM schedules s
+            LEFT JOIN teachers t ON s.teacher_id = t.id
+            LEFT JOIN rooms r ON s.room_id = r.id
+            WHERE s.section_id = %s
+            ORDER BY 
+                CASE s.day
+                    WHEN 'Monday' THEN 1
+                    WHEN 'Tuesday' THEN 2
+                    WHEN 'Wednesday' THEN 3
+                    WHEN 'Thursday' THEN 4
+                    WHEN 'Friday' THEN 5
+                    WHEN 'Saturday' THEN 6
+                    WHEN 'Sunday' THEN 7
+                END,
+                s.time
+        """, (section_id,))
+        
+        schedules = cur.fetchall()
+        conn.close()
+        
+        # Format schedule data for calendar view with hourly slots
+        schedule_data = []
+        for s in schedules:
+            teacher_name = ""
+            if s['teacher_first'] and s['teacher_last']:
+                teacher_name = f"{s['teacher_first']} {s['teacher_last']}"
+            
+            time_str = str(s['time'])
+            # Get hour from time
+            hour = int(time_str.split(':')[0])
+            
+            # Create hourly time slot (e.g., "7:00-8:00")
+            next_hour = hour + 1
+            time_slot = f"{hour}:00-{next_hour}:00"
+            
+            schedule_data.append({
+                'id': s['id'],
+                'day': s['day'],
+                'time': time_str,
+                'hour': hour,
+                'time_slot': time_slot,
+                'formatted_time': f"{hour}:00 - {next_hour}:00",
+                'subject': s['subject'] or 'No Subject',
+                'teacher': teacher_name,
+                'room': s['room_name'] or 'TBD'
+            })
+        
+        section_data = {
+            'section_id': section['id'],
+            'section_name': section['section_name'],
+            'year_level': section['year_level'],
+            'schedules': schedule_data
+        }
+        
+        return jsonify({"success": True, "section": section_data})
+        
+    except Exception as e:
+        print(f"Section weekly schedule data error: {e}")
+        if conn:
+            conn.close()
+        return jsonify({"success": False, "error": str(e)})
+# =========================
+# ROOMS API
+# =========================
+@admin_bp.route('/api/rooms')
+@login_required
+def get_rooms():
+    """Get list of all rooms"""
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"success": False, "rooms": []})
+    
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("SELECT id, room_name FROM rooms ORDER BY room_name")
+        rooms = cur.fetchall()
+        conn.close()
+        
+        rooms_list = []
+        for r in rooms:
+            rooms_list.append({
+                'id': r['id'],
+                'name': r['room_name']
+            })
+        
+        return jsonify({"success": True, "rooms": rooms_list})
+        
+    except Exception as e:
+        print(f"Get rooms error: {e}")
+        if conn:
+            conn.close()
+        return jsonify({"success": False, "rooms": []})
+
+# =========================
+# STUDENT UPDATE ROUTE
+# =========================
+@admin_bp.route('/update_student/<int:student_id>', methods=['PUT'])
+@login_required
+def update_student(student_id):
+    """Update student information"""
+    teacher_id = session.get('teacher_id')
+    if not teacher_id:
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+    
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"success": False, "message": "Database connection failed"}), 500
+    
+    try:
+        data = request.get_json()
+        cur = conn.cursor()
+        
+        # Verify teacher has access to this student
+        cur.execute("""
+            SELECT s.id FROM students s
+            JOIN sections sec ON s.section_id = sec.id
+            WHERE s.id = %s AND sec.teacher_id = %s
+        """, (student_id, teacher_id))
+        
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return jsonify({"success": False, "message": "Unauthorized to edit this student"}), 403
+        
+        # Update student
+        cur.execute("""
+            UPDATE students SET 
+                first_name = %s,
+                middle_name = %s,
+                last_name = %s,
+                extension = %s,
+                uid = %s,
+                contact_number = %s,
+                email = %s,
+                schedule = %s
+            WHERE id = %s
+        """, (
+            data.get('first_name', ''),
+            data.get('middle_name', ''),
+            data.get('last_name', ''),
+            data.get('extension', ''),
+            data.get('uid', ''),
+            data.get('contact_number', ''),
+            data.get('email', ''),
+            data.get('schedule', ''),
+            student_id
+        ))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({"success": True, "message": "Student updated successfully"})
+        
+    except Exception as e:
+        print(f"Update student error: {e}")
+        if conn:
+            conn.close()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@admin_bp.route('/student_info/<int:student_id>')
+@login_required
+def student_info(student_id):
+    """Display detailed information about a student"""
+    teacher_id = session.get('teacher_id')
+    if not teacher_id:
+        flash('Please login first', 'error')
+        return redirect(url_for('admin_bp.teacher_login'))
+    
+    conn = get_db_connection()
+    if conn is None:
+        flash('Database connection error', 'error')
+        return redirect(url_for('admin_bp.teacher_schedules'))
+    
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+        # Get student details and verify teacher has access to this student's section
+        cur.execute("""
+            SELECT 
+                st.id,
+                st.uid,
+                st.first_name,
+                st.middle_name,
+                st.last_name,
+                st.extension,
+                st.contact_number,
+                st.email,
+                st.schedule,
+                st.created_at,
+                s.id as section_id,
+                s.section_name,
+                s.year_level,
+                t.id as teacher_id,
+                t.first_name as teacher_first,
+                t.last_name as teacher_last
+            FROM students st
+            LEFT JOIN sections s ON st.section_id = s.id
+            LEFT JOIN teachers t ON s.teacher_id = t.id
+            WHERE st.id = %s
+        """, (student_id,))
+        
+        student = cur.fetchone()
+        
+        if not student:
+            flash('Student not found', 'error')
+            return redirect(url_for('admin_bp.teacher_schedules'))
+        
+        # Check if teacher has access to this student's section
+        if student['teacher_id'] != teacher_id:
+            flash('You do not have permission to view this student', 'error')
+            return redirect(url_for('admin_bp.teacher_schedules'))
+        
+        # Get attendance history for this student
+        cur.execute("""
+            SELECT 
+                DATE(created_at) as scan_date,
+                MIN(created_at) as first_scan,
+                COUNT(*) as scan_count
+            FROM rfid_cards
+            WHERE UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(uid, '')), ' ', ''), '-', ''), ':', '')) 
+                = UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(%s, '')), ' ', ''), '-', ''), ':', ''))
+            GROUP BY DATE(created_at)
+            ORDER BY scan_date DESC
+            LIMIT 30
+        """, (student['uid'],))
+        
+        attendance_history = cur.fetchall()
+        conn.close()
+        
+        # Build full name
+        full_name_parts = [
+            student['first_name'] or '',
+            student['middle_name'] or '',
+            student['last_name'] or '',
+            student['extension'] or ''
+        ]
+        full_name = ' '.join([p for p in full_name_parts if p]).strip()
+        
+        return render_template('student_info.html', 
+                             student=student, 
+                             full_name=full_name,
+                             attendance_history=attendance_history)
+        
+    except Exception as e:
+        print(f"Student info error: {e}")
+        if conn:
+            conn.close()
+        flash('Error loading student information', 'error')
+        return redirect(url_for('admin_bp.teacher_schedules'))

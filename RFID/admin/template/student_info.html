@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}{{ full_name }} - Student Details{% endblock %}
+
+{% block content %}
+<style>
+    .white-card {
+        background: white;
+        border-radius: 1.5rem;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    
+    .header-gradient {
+        background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);
+        padding: 1.5rem 2rem;
+    }
+    
+    .text-accent {
+        color: #f59e0b;
+    }
+    
+    .back-btn {
+        background: rgba(255,255,255,0.2);
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        color: white;
+        text-decoration: none;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .back-btn:hover {
+        background: rgba(255,255,255,0.3);
+    }
+    
+    .info-card {
+        background: #f8fafc;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-row {
+        display: flex;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .info-label {
+        width: 150px;
+        font-weight: 600;
+        color: #475569;
+    }
+    
+    .info-value {
+        flex: 1;
+        color: #1e293b;
+    }
+    
+    .schedule-display {
+        background: #fef3c7;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        font-family: monospace;
+        white-space: pre-wrap;
+    }
+    
+    .attendance-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .attendance-table th {
+        background: #f1f5f9;
+        padding: 0.75rem;
+        text-align: left;
+        font-weight: 600;
+        color: #475569;
+    }
+    
+    .attendance-table td {
+        padding: 0.75rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .badge-present {
+        background: #10b981;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.75rem;
+        display: inline-block;
+    }
+    
+    @media (max-width: 768px) {
+        .info-row {
+            flex-direction: column;
+        }
+        .info-label {
+            width: 100%;
+            margin-bottom: 0.25rem;
+        }
+        .header-gradient {
+            padding: 1rem;
+        }
+    }
+</style>
+
+<div class="max-w-4xl mx-auto px-4">
+    <div class="white-card">
+        <div class="header-gradient text-white">
+            <div>
+                <a href="javascript:history.back()" class="back-btn">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Schedule
+                </a>
+                <h1 class="text-2xl font-semibold flex items-center gap-3 mt-3">
+                    <i class="fa-solid fa-user-graduate text-accent"></i>
+                    Student Information
+                </h1>
+            </div>
+        </div>
+
+        <div class="p-6">
+            <!-- Student Details -->
+            <div class="info-card">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">
+                    <i class="fa-solid fa-id-card text-accent mr-2"></i>
+                    Personal Information
+                </h2>
+                
+                <div class="info-row">
+                    <div class="info-label">Full Name:</div>
+                    <div class="info-value">{{ full_name }}</div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-label">UID:</div>
+                    <div class="info-value">
+                        <code class="bg-gray-200 px-2 py-1 rounded">{{ student.uid }}</code>
+                    </div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-label">Contact Number:</div>
+                    <div class="info-value">{{ student.contact_number or '—' }}</div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-label">Email:</div>
+                    <div class="info-value">
+                        {% if student.email %}
+                        <a href="mailto:{{ student.email }}" class="text-blue-500 hover:underline">{{ student.email }}</a>
+                        {% else %}—{% endif %}
+                    </div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-label">Section:</div>
+                    <div class="info-value">
+                        <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">{{ student.section_name }}</span>
+                        (Year {{ student.year_level }})
+                    </div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-label">Adviser:</div>
+                    <div class="info-value">{{ student.teacher_first }} {{ student.teacher_last }}</div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-label">Registered On:</div>
+                    <div class="info-value">{{ student.created_at.strftime('%B %d, %Y at %I:%M %p') if student.created_at else '—' }}</div>
+                </div>
+            </div>
+            
+            <!-- Class Schedule -->
+            <div class="info-card">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">
+                    <i class="fa-regular fa-calendar-alt text-accent mr-2"></i>
+                    Class Schedule
+                </h2>
+                
+                {% if student.schedule %}
+                <div class="schedule-display">
+                    {{ student.schedule|replace('\n', '<br>')|safe }}
+                </div>
+                {% else %}
+                <p class="text-gray-500 italic">No schedule assigned</p>
+                {% endif %}
+            </div>
+            
+            <!-- Attendance History -->
+            <div class="info-card">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">
+                    <i class="fa-solid fa-clock text-accent mr-2"></i>
+                    Recent Attendance
+                </h2>
+                
+                {% if attendance_history and attendance_history|length > 0 %}
+                <table class="attendance-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>First Scan Time</th>
+                            <th>Scans</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in attendance_history %}
+                        <tr>
+                            <td>{{ record.scan_date.strftime('%B %d, %Y') }}</td>
+                            <td>{{ record.first_scan.strftime('%I:%M %p') }}</td>
+                            <td>{{ record.scan_count }}</td>
+                            <td><span class="badge-present">Present</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-gray-500 italic">No attendance records found</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
