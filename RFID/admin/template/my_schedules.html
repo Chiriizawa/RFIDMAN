@@ -1,0 +1,391 @@
+{% extends "base.html" %}
+
+{% block title %}My Schedule{% endblock %}
+
+{% block content %}
+<style>
+    .white-card {
+        background: white;
+        border-radius: 1.5rem;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    
+    .header-gradient {
+        background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);
+        padding: 1.5rem 2rem;
+    }
+    
+    .text-accent {
+        color: #f59e0b;
+    }
+    
+    .section-selector {
+        background: #f8fafc;
+        padding: 1rem;
+        border-radius: 0.75rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .section-selector select {
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid #e2e8f0;
+        background: white;
+        font-size: 0.9rem;
+        min-width: 250px;
+        cursor: pointer;
+    }
+    
+    .schedule-table-container {
+        overflow-x: auto;
+        background: white;
+        border-radius: 1rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .weekly-schedule {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.8rem;
+        min-width: 700px;
+    }
+    
+    .weekly-schedule th {
+        background: #1e293b;
+        color: white;
+        padding: 0.85rem 0.5rem;
+        text-align: center;
+        font-weight: 600;
+        border: 1px solid #334155;
+    }
+    
+    .weekly-schedule td {
+        border: 1px solid #e2e8f0;
+        padding: 0.75rem;
+        vertical-align: top;
+        background: white;
+        min-height: 80px;
+    }
+    
+    .weekly-schedule .time-cell {
+        background: #f1f5f9;
+        font-weight: 700;
+        color: #1e293b;
+        text-align: center;
+        min-width: 80px;
+        position: sticky;
+        left: 0;
+        font-size: 0.8rem;
+    }
+    
+    .schedule-block {
+        margin-bottom: 0.5rem;
+        padding: 0.6rem;
+        border-radius: 0.5rem;
+        background: #fef3c7;
+        border-left: 3px solid #f59e0b;
+        transition: all 0.2s ease;
+    }
+    
+    .schedule-block:hover {
+        background: #fde68a;
+        transform: translateX(3px);
+    }
+    
+    .subject-name {
+        font-weight: 800;
+        color: #d97706;
+        font-size: 0.85rem;
+        margin-bottom: 0.2rem;
+    }
+    
+    .teacher-name {
+        font-size: 0.7rem;
+        color: #475569;
+        margin-bottom: 0.15rem;
+    }
+    
+    .room {
+        font-size: 0.65rem;
+        color: #6b7280;
+        font-family: monospace;
+    }
+    
+    .schedule-time {
+        font-size: 0.65rem;
+        color: #059669;
+        margin-top: 0.2rem;
+    }
+    
+    .day-header {
+        background: #1e293b;
+        color: white;
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+    
+    .export-btn {
+        background: #f59e0b;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.8rem;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .export-btn:hover {
+        background: #d97706;
+    }
+    
+    .loading-spinner {
+        text-align: center;
+        padding: 2rem;
+    }
+    
+    .fa-spinner {
+        font-size: 2rem;
+        color: #f59e0b;
+    }
+    
+    .schedule-badge {
+        display: inline-block;
+        background: #e0e7ff;
+        color: #3730a3;
+        padding: 0.2rem 0.5rem;
+        border-radius: 0.5rem;
+        font-size: 0.7rem;
+        margin-left: 0.5rem;
+    }
+    
+    @media (max-width: 768px) {
+        .header-gradient { padding: 1rem; }
+        .weekly-schedule { font-size: 0.7rem; }
+        .weekly-schedule th, .weekly-schedule td { padding: 0.5rem; }
+        .schedule-block { padding: 0.4rem; }
+        .subject-name { font-size: 0.75rem; }
+        .teacher-name, .room, .schedule-time { font-size: 0.6rem; }
+        .time-cell { font-size: 0.7rem; min-width: 65px; }
+    }
+</style>
+
+<div class="max-w-7xl mx-auto px-4">
+    <div class="white-card">
+        <div class="header-gradient text-white">
+            <div class="flex justify-between items-center flex-wrap gap-4">
+                <div>
+                    <h1 class="text-2xl font-semibold flex items-center gap-3">
+                        <i class="fa-solid fa-calendar-alt text-accent"></i>
+                        My Class Schedules
+                    </h1>
+                    <p class="text-white/80 mt-1 text-sm">Weekly calendar view of your class schedules</p>
+                </div>
+                <button onclick="exportToCSV()" class="export-btn">
+                    <i class="fa-solid fa-download mr-2"></i> Export Schedule
+                </button>
+            </div>
+        </div>
+
+        <div class="p-6">
+            {% if sections and sections|length > 0 %}
+            
+            <div class="section-selector">
+                <label><i class="fa-solid fa-chalkboard text-accent mr-2"></i>Select Section:</label>
+                <select id="sectionSelect" onchange="loadSectionSchedule(this.value)">
+                    {% for section in sections %}
+                    <option value="{{ section.section_id }}" {% if loop.first %}selected{% endif %}>
+                        {{ section.section_name }} (Year {{ section.year_level }}) - {{ section.student_count }} students
+                        {% if section.schedule_count > 0 %}
+                        <span class="schedule-badge"><i class="fa-regular fa-clock"></i> {{ section.schedule_count }} classes</span>
+                        {% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="scheduleContainer">
+                <div class="loading-spinner">
+                    <i class="fa-solid fa-spinner fa-spin text-accent text-3xl"></i>
+                    <p class="text-gray-500 mt-2">Loading schedule...</p>
+                </div>
+            </div>
+
+            {% else %}
+            <div class="empty-state text-center p-5">
+                <div class="text-6xl mb-4">📅</div>
+                <h3 class="text-xl font-semibold text-gray-700 mb-2">No Sections Assigned</h3>
+                <p class="text-gray-500">You haven't been assigned to any sections yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+const sectionsData = {
+    {% for section in sections %}
+    "{{ section.section_id }}": {
+        "section_id": {{ section.section_id }},
+        "section_name": "{{ section.section_name }}",
+        "year_level": "{{ section.year_level }}"
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+};
+
+// HOURLY TIME SLOTS from 7:00 AM to 5:00 PM
+const timeSlots = [
+    '7:00-8:00', '8:00-9:00', '9:00-10:00', '10:00-11:00',
+    '11:00-12:00', '12:00-13:00', '13:00-14:00', '14:00-15:00',
+    '15:00-16:00', '16:00-17:00'
+];
+
+const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+async function loadSectionSchedule(sectionId) {
+    const container = document.getElementById('scheduleContainer');
+    container.innerHTML = `<div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin text-accent text-3xl"></i><p class="text-gray-500 mt-2">Loading schedule...</p></div>`;
+    
+    try {
+        const response = await fetch(`/admin/section_weekly_schedule_data/${sectionId}`);
+        const data = await response.json();
+        
+        if (data.success && data.section) {
+            renderCalendarTable(data.section);
+        } else {
+            container.innerHTML = `<div class="text-center py-5"><div class="text-6xl mb-4">📅</div><h3 class="text-xl font-semibold text-gray-700">No schedule data</h3><p class="text-gray-500 mt-2">This section doesn't have a schedule set yet.</p></div>`;
+        }
+    } catch (error) {
+        console.error('Error loading schedule:', error);
+        container.innerHTML = `<div class="text-center py-5"><div class="text-6xl mb-4">⚠️</div><h3 class="text-xl font-semibold text-gray-700">Error loading schedule</h3><p class="text-gray-500 mt-2">Please try again later.</p></div>`;
+    }
+}
+
+function renderCalendarTable(section) {
+    const schedules = section.schedules || [];
+    
+    // Build schedule map using time_slot
+    const scheduleMap = {};
+    for (const s of schedules) {
+        const dayKey = s.day.substring(0, 3).toUpperCase();
+        const timeSlot = s.time_slot;
+        
+        if (!scheduleMap[timeSlot]) scheduleMap[timeSlot] = {};
+        scheduleMap[timeSlot][dayKey] = s;
+    }
+    
+    let tableHtml = `
+        <div class="mb-4 p-3 bg-blue-50 rounded-lg">
+            <h3 class="font-semibold text-gray-800">📚 ${escapeHtml(section.section_name)} - Year ${section.year_level}</h3>
+            <p class="text-xs text-gray-500 mt-1">${schedules.length} class schedule(s) configured</p>
+        </div>
+        <div class="schedule-table-container">
+            <table class="weekly-schedule">
+                <thead><tr><th class="day-header">TIME</th>${days.map(d => `<th class="day-header">${d.substring(0, 3)}</th>`).join('')}</tr></thead>
+                <tbody>`;
+    
+    for (const timeSlot of timeSlots) {
+        tableHtml += `<tr><td class="time-cell">${escapeHtml(timeSlot)}</td>`;
+        for (const day of days) {
+            const dayKey = day.substring(0, 3).toUpperCase();
+            const schedule = scheduleMap[timeSlot]?.[dayKey] || null;
+            
+            tableHtml += `<td class="schedule-cell" style="vertical-align: middle;">`;
+            if (schedule) {
+                tableHtml += `
+                    <div class="schedule-block">
+                        <div class="subject-name">📖 ${escapeHtml(schedule.subject)}</div>
+                        <div class="teacher-name"><i class="fa-solid fa-user-graduate mr-1"></i>${escapeHtml(schedule.teacher || '—')}</div>
+                        <div class="room"><i class="fa-solid fa-location-dot mr-1"></i>${escapeHtml(schedule.room || 'TBD')}</div>
+                        <div class="schedule-time"><i class="fa-regular fa-clock mr-1"></i>${escapeHtml(schedule.formatted_time)}</div>
+                    </div>`;
+            }
+            tableHtml += `</td>`;
+        }
+        tableHtml += `</tr>`;
+    }
+    
+    tableHtml += `</tbody></table></div>`;
+    
+    if (schedules.length > 0) {
+        tableHtml += `
+            <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+                <h4 class="font-medium text-gray-700 mb-2"><i class="fa-solid fa-list-check text-accent mr-2"></i>Schedule List:</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    ${schedules.map(s => `
+                        <div class="text-sm p-2 bg-white rounded border">
+                            <span class="font-semibold text-accent">${escapeHtml(s.day)}</span>
+                            <span class="text-gray-600"> at ${escapeHtml(s.formatted_time)}</span>
+                            <div class="font-medium mt-1">${escapeHtml(s.subject)}</div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                👨‍🏫 ${escapeHtml(s.teacher || '—')} | 📍 ${escapeHtml(s.room || 'TBD')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>`;
+    } else {
+        tableHtml += `<div class="text-center py-5"><p class="text-gray-500">No class schedules configured yet.</p></div>`;
+    }
+    
+    document.getElementById('scheduleContainer').innerHTML = tableHtml;
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function exportToCSV() {
+    let csvContent = "TIME,MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY,SUNDAY\n";
+    const rows = document.querySelectorAll('.weekly-schedule tbody tr');
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const rowData = [];
+        cells.forEach((cell, index) => {
+            if (index === 0) {
+                rowData.push(`"${cell.innerText.trim()}"`);
+            } else {
+                const blocks = cell.querySelectorAll('.schedule-block');
+                let cellText = '';
+                blocks.forEach(block => {
+                    const subject = block.querySelector('.subject-name')?.innerText.replace('📖', '').trim() || '';
+                    if (subject) cellText += `${subject}\n`;
+                });
+                rowData.push(`"${cellText.replace(/"/g, '""').trim()}"`);
+            }
+        });
+        csvContent += rowData.join(',') + '\n';
+    });
+    
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `class_schedule_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    alert('Schedule exported successfully!');
+}
+
+document.getElementById('sectionSelect')?.addEventListener('change', function() {
+    loadSectionSchedule(this.value);
+});
+
+// Load first section on page load
+if (document.getElementById('sectionSelect')?.value) {
+    loadSectionSchedule(document.getElementById('sectionSelect').value);
+}
+</script>
+{% endblock %}
