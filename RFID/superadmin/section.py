@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from functools import wraps
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
@@ -8,6 +9,24 @@ load_dotenv()
 
 section_bp = Blueprint("section_bp", __name__, template_folder="template")
 
+
+# ─────────────────────────────────────────────
+# AUTH DECORATOR
+# ─────────────────────────────────────────────
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("sadmin_logged_in"):
+            flash("Please log in to access the admin portal.", "warning")
+            return redirect(url_for("sadmin.login"))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+# ─────────────────────────────────────────────
+# DB CONNECTION
+# ─────────────────────────────────────────────
 
 def get_db_connection():
     """
@@ -30,7 +49,9 @@ def get_db_connection():
         sslmode="require"
     )
 
+
 @section_bp.route("/Section", methods=["GET", "POST"])
+@login_required
 def section():
     conn = None
     cur = None
@@ -209,3 +230,5 @@ def section():
             cur.close()
         if conn:
             conn.close()
+            
+            

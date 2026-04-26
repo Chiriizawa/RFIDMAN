@@ -117,6 +117,12 @@
                     <i class="fa-solid fa-table-cells-large w-5 text-center"></i>
                     <span>Section</span>
                 </a>
+                
+                <a href="{{ url_for('schedule.schedule') }}"
+                   class="nav-tab {% if request.endpoint == 'schedule.schedule' %}active{% endif %} flex items-center gap-x-3 px-4 py-3 rounded-2xl text-sm font-semibold">
+                    <i class="fa-solid fa-calendar-days w-5 text-center"></i>
+                    <span>Schedule</span>
+                </a>
 
                 <a href="{{ url_for('sregister.student') }}"
                    class="nav-tab {% if request.endpoint == 'sregister.student' %}active{% endif %} flex items-center gap-x-3 px-4 py-3 rounded-2xl text-sm font-semibold">

@@ -4,346 +4,415 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
     <title>Superadmin Portal | Don Manuel Rivera School</title>
-    <!-- Google Fonts + Tailwind + Font Awesome -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        * {
-            font-family: 'Inter', sans-serif;
+        * { font-family: 'Inter', sans-serif; }
+
+        body {
+            background-image: url("{{ url_for('static', filename='images/bg.png') }}");
+            background-size: cover;
+            background-position: center 30%;
+            background-repeat: no-repeat;
+            background-color: #1e293b;
         }
-        /* custom smooth focus & card enhancements */
+
         .login-card {
             transition: transform 0.2s ease, box-shadow 0.3s ease;
         }
         .login-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 25px 40px -12px rgba(0, 0, 0, 0.35);
+            box-shadow: 0 25px 40px -12px rgba(0,0,0,0.35);
         }
-        .input-focus-effect:focus {
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2), 0 1px 2px 0 rgba(0,0,0,0.05);
-            border-color: #3b82f6;
-            outline: none;
+
+        .input-wrapper { position: relative; width: 100%; }
+
+        .input-icon-left {
+            position: absolute; left: 1rem; top: 50%;
+            transform: translateY(-50%); z-index: 10;
+            color: #9ca3af; font-size: 1rem;
+            pointer-events: none; transition: color 0.2s;
         }
-        /* floating label subtle style - additional polish */
-        .bg-overlay-modern {
-            background: linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.65) 100%);
+        .input-wrapper:focus-within .input-icon-left { color: #3b82f6; }
+
+        .custom-input {
+            width: 100%;
+            padding: 0.875rem 1rem 0.875rem 2.75rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            font-size: 0.875rem;
+            background-color: rgba(255,255,255,0.9);
+            transition: all 0.2s;
+            color: #1f2937;
         }
+        .custom-input.password-input { padding-right: 2.75rem; }
+        .custom-input::placeholder { color: #9ca3af; font-weight: 400; }
+        .custom-input:focus {
+            outline: none; border-color: #3b82f6;
+            background-color: white;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+        }
+
+        .eye-toggle {
+            position: absolute; right: 1rem; top: 50%;
+            transform: translateY(-50%); cursor: pointer;
+            z-index: 10; color: #9ca3af; transition: color 0.2s;
+        }
+        .eye-toggle:hover { color: #3b82f6; }
+
         .footer-glass {
             background: rgba(0,0,0,0.4);
             backdrop-filter: blur(4px);
         }
-        @media (max-width: 768px) {
-            .responsive-container {
-                justify-content: center !important;
-                padding-left: 1.5rem !important;
-                padding-right: 1.5rem !important;
-            }
-            .login-card-container {
-                margin-right: 0 !important;
-                max-width: 90% !important;
-            }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
-        /* animated subtle background accent */
-        .bg-blur-glow {
+        .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+
+        input[type="checkbox"] { accent-color: #3b82f6; width: 1rem; height: 1rem; cursor: pointer; }
+
+        .login-btn { transition: all 0.3s; }
+        .login-btn:hover {
+            transform: scale(1.01);
+            box-shadow: 0 10px 25px -5px rgba(59,130,246,0.4);
+        }
+        .login-btn:active { transform: scale(0.98); }
+
+        /* ── Modal ── */
+        #forgotModal {
+            display: none;
+            position: fixed; inset: 0; z-index: 50;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(4px);
+            align-items: center; justify-content: center;
+        }
+        #forgotModal.open { display: flex; }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.92) translateY(16px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .modal-box { animation: popIn 0.25s ease-out forwards; }
+
+        /* ── Toast notifications ── */
+        #toast-container {
+            position: fixed;
+            top: 1.25rem;
+            right: 1.25rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            pointer-events: none;
+        }
+
+        .toast {
+            pointer-events: all;
+            min-width: 280px;
+            max-width: 360px;
+            border-radius: 0.75rem;
+            padding: 0.85rem 1rem 0.85rem 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.28), 0 2px 8px rgba(0,0,0,0.18);
+            animation: toastIn 0.35s cubic-bezier(.22,1,.36,1) forwards;
             position: relative;
+            overflow: hidden;
+        }
+
+        .toast::before {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0;
+            height: 3px;
+            border-radius: 0 0 0.75rem 0.75rem;
+            animation: toastTimer 4s linear forwards;
+        }
+
+        .toast.toast-danger  { background: #dc2626; color: #fff; }
+        .toast.toast-danger::before  { background: rgba(255,255,255,0.45); }
+
+        .toast.toast-success { background: #16a34a; color: #fff; }
+        .toast.toast-success::before { background: rgba(255,255,255,0.45); }
+
+        .toast.toast-warning { background: #d97706; color: #fff; }
+        .toast.toast-warning::before { background: rgba(255,255,255,0.45); }
+
+        .toast.toast-info    { background: #0369a1; color: #fff; }
+        .toast.toast-info::before    { background: rgba(255,255,255,0.45); }
+
+        .toast-icon {
+            font-size: 1.15rem;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .toast-body { flex: 1; }
+
+        .toast-title {
+            font-weight: 700;
+            font-size: 0.875rem;
+            line-height: 1.2;
+            margin-bottom: 2px;
+        }
+
+        .toast-msg {
+            font-size: 0.78rem;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.75);
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 0;
+            flex-shrink: 0;
+            line-height: 1;
+            transition: color 0.15s;
+            margin-top: 1px;
+        }
+        .toast-close:hover { color: #fff; }
+
+        .toast.toast-hide {
+            animation: toastOut 0.3s ease forwards;
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(60px) scale(0.95); }
+            to   { opacity: 1; transform: translateX(0)    scale(1); }
+        }
+        @keyframes toastOut {
+            from { opacity: 1; transform: translateX(0)    scale(1); max-height: 120px; margin-bottom: 0; }
+            to   { opacity: 0; transform: translateX(60px) scale(0.95); max-height: 0;   margin-bottom: -0.65rem; }
+        }
+        @keyframes toastTimer {
+            from { width: 100%; }
+            to   { width: 0%; }
         }
     </style>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    animation: {
-                        'fade-in-up': 'fadeInUp 0.6s ease-out',
-                    },
-                    keyframes: {
-                        fadeInUp: {
-                            '0%': { opacity: '0', transform: 'translateY(15px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' },
-                        }
-                    }
-                }
-            }
-        }
-    </script>
 </head>
-<body class="min-h-screen flex flex-col relative bg-cover bg-center bg-no-repeat" 
-      style="background-image: url('https://images.pexels.com/photos/207692/pexels-photo-207692.jpeg?auto=compress&cs=tinysrgb&w=1600'); background-size: cover; background-position: center 30%;">
+<body class="min-h-screen flex flex-col relative">
 
-    <!-- Enhanced overlay with gradient + vignette effect -->
+    <!-- Dark Overlay -->
     <div class="absolute inset-0 bg-gradient-to-br from-black/60 via-black/50 to-black/70"></div>
-    
-    <!-- Top Navigation with modern glassmorphism -->
+
+    <!-- Nav -->
     <nav class="relative w-full px-6 md:px-10 py-5 flex items-center justify-between text-white z-10 backdrop-blur-sm bg-black/20 border-b border-white/10">
-        <div class="flex items-center gap-3">
-            </div>
-        </div>
-        <div class="hidden md:flex items-center space-x-3 text-sm font-medium">
-        </div>
+        <div class="flex items-center gap-3"></div>
+        <div class="hidden md:flex items-center space-x-3 text-sm font-medium"></div>
     </nav>
 
-    <!-- Main Flex Container: Desktop right aligned, mobile centered -->
-    <div class="relative flex flex-1 items-center justify-end px-5 md:px-20 py-10 responsive-container z-10">
-        
-        <!-- Login Card: Wider, modern glassmorphic panel with animation -->
-        <div class="w-full max-w-xl bg-white/90 md:bg-white/85 backdrop-blur-xl rounded-2xl shadow-2xl p-8 md:p-12 border border-white/50 login-card animate-fade-in-up mr-0 md:mr-8 lg:mr-12 login-card-container transition-all duration-300">
-            
-            <!-- Header with Branding Integration -->
-            <div class="text-center mb-8">
-                <div class="flex justify-center mb-3">
-                    <div class="h-16 w-16 rounded-full bg-gradient-to-tr from-blue-700 to-indigo-600 flex items-center justify-center shadow-lg">
-                        <i class="fas fa-crown text-white text-3xl"></i>
-                    </div>
-                </div>
-                <h2 class="text-3xl font-bold text-gray-800 tracking-tight">Admin Access</h2>
-                <div class="w-16 h-0.5 bg-blue-500 mx-auto mt-3 rounded-full"></div>
+    <!-- Main -->
+    <div class="relative flex flex-1 items-center justify-end px-5 md:px-20 py-10 z-10">
+        <div class="w-full max-w-xl bg-white/90 md:bg-white/85 backdrop-blur-xl rounded-2xl shadow-2xl p-8 md:p-10 border border-white/50 login-card animate-fade-in-up mr-0 md:mr-8 lg:mr-12">
+
+            <!-- Flash messages are rendered as toasts (see #toast-container below) -->
+
+            <!-- Header -->
+            <div class="text-center mb-7">
+                <h2 class="text-5xl font-bold text-gray-800 tracking-tight">DMRMINHS</h2>
+                <p class="text-base mt-1">Superadmin Access</p>
             </div>
 
-            <!-- School Credentials mini ribbon -->
-            <div class="bg-blue-50/70 rounded-xl p-3 mb-7 text-center border border-blue-100/60">
+            <!-- Ribbon -->
+            <div class="bg-blue-50/80 rounded-xl p-3 mb-7 text-center border border-blue-100/60">
                 <p class="text-xs text-blue-800 font-medium uppercase tracking-wide flex items-center justify-center gap-2">
-                    <i class="fas fa-school"></i> 
+                    <i class="fas fa-school"></i>
                     <span>Don Manuel Rivera Memorial Integrated NHS</span>
-                    <i class="fas fa-flag-checkered text-blue-600"></i>
+                    <i class="fas fa-school text-blue-600"></i>
                 </p>
-                <p class="text-[11px] text-gray-500 mt-1">Pila, Laguna — Official Superadmin Environment</p>
             </div>
 
-            <!-- Login Form Action (POST to /superadmin/login) -->
-            <form action="/superadmin/login" method="POST" class="space-y-6">
-                <!-- Username Field with icon -->
-                <div class="relative group">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-user-graduate text-gray-400 group-focus-within:text-blue-600 transition-colors text-md"></i>
-                    </div>
-                    <input type="text" name="username" id="username" placeholder=" " required
-                        class="peer w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-300 bg-white/80 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-800 placeholder-transparent"
-                        autocomplete="username">
-                    <label for="username" class="absolute left-10 -top-2.5 text-xs text-gray-500 bg-white px-1 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-3.5 peer-placeholder-shown:left-10 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-blue-600 peer-focus:bg-white">
-                        Admin Username
-                    </label>
-                    <span class="absolute left-10 top-3.5 text-gray-400 text-sm pointer-events-none peer-focus:opacity-0 peer-placeholder-shown:opacity-0 transition-all">Enter your username</span>
+            <!-- Form -->
+            <form action="/superadmin/Login" method="POST" class="space-y-5">
+
+                <div class="input-wrapper">
+                    <i class="fas fa-user-shield input-icon-left"></i>
+                    <input type="text" name="username" id="username" required
+                           placeholder="Enter your username"
+                           class="custom-input" autocomplete="username">
                 </div>
 
-                <!-- Password Field with icon -->
-                <div class="relative group">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-key text-gray-400 group-focus-within:text-blue-600 transition-colors"></i>
-                    </div>
-                    <input type="password" name="password" id="password" placeholder=" " required
-                        class="peer w-full pl-10 pr-12 py-3.5 rounded-xl border border-gray-300 bg-white/80 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-800 placeholder-transparent"
-                        autocomplete="current-password">
-                    <label for="password" class="absolute left-10 -top-2.5 text-xs text-gray-500 bg-white px-1 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-3.5 peer-placeholder-shown:left-10 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-blue-600 peer-focus:bg-white">
-                        Secure Password
-                    </label>
-                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer" id="togglePassword">
-                        <i class="fas fa-eye-slash text-gray-400 hover:text-blue-600 transition text-sm"></i>
+                <div class="input-wrapper">
+                    <i class="fas fa-key input-icon-left"></i>
+                    <input type="password" name="password" id="password" required
+                           placeholder="Enter your password"
+                           class="custom-input password-input" autocomplete="current-password">
+                    <div class="eye-toggle" id="togglePassword">
+                        <i class="fas fa-eye-slash"></i>
                     </div>
                 </div>
 
-                <!-- Forgot Password + Remember me style row-->
-                <div class="flex items-center justify-between text-sm">
-                    <div class="flex items-center gap-2">
-                        <label for="remember" class="text-gray-600 font-medium"></label>
-                    </div>
-                    <a href="#" class="text-blue-700 hover:text-indigo-800 font-semibold transition-all flex items-center gap-1"><i class="fas fa-question-circle text-xs"></i> Forgot password?</a>
+                <div class="flex items-center justify-between text-sm pt-2">
+                    <span></span>
+                    <!-- Triggers forgot-password modal -->
+                    <button type="button" id="openForgotModal"
+                            class="text-blue-700 hover:text-indigo-800 font-semibold transition-all flex items-center gap-1 bg-transparent border-0 p-0 cursor-pointer">
+                        Forgot password?
+                    </button>
                 </div>
 
-                <!-- Login Button with shine effect -->
-                <button type="submit" 
-                    class="w-full relative bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 text-white font-bold py-3.5 rounded-xl text-md uppercase tracking-wider shadow-lg shadow-blue-500/30 transition-all duration-300 transform hover:scale-[1.01] flex items-center justify-center gap-2 group">
-                    <i class="fas fa-arrow-right-to-bracket group-hover:translate-x-0.5 transition"></i>
-                    Access Dashboard
-                    <span class="absolute right-5 opacity-0 group-hover:opacity-100 transition-all"><i class="fas fa-lock-open"></i></span>
+                <button type="submit" class="login-btn w-full bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 text-white font-bold py-3.5 rounded-xl text-sm uppercase tracking-wider shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2">
+                    <i class="fas fa-arrow-right-to-bracket"></i>
+                    Log In
                 </button>
             </form>
 
-            <!-- Additional Access Badge + Security note -->
-            <div class="mt-8 text-center space-y-3">
-                <div class="inline-flex items-center gap-2 bg-gray-100/70 rounded-full px-4 py-1.5 shadow-sm">
-                    <i class="fas fa-fingerprint text-blue-600 text-xs"></i>
-                    <span class="text-[11px] font-mono font-semibold text-gray-700">Superadmin Access Only</span>
-                    <i class="fas fa-shield-haltered text-gray-500 text-xs"></i>
-                </div>
-                <p class="text-xs text-gray-500 flex items-center justify-center gap-1">
-                </p>
-            </div>
+            <div class="mt-8 text-center space-y-3"></div>
         </div>
     </div>
 
-    <!-- Footer with full school name & rights - glass layer -->
+    <!-- Footer -->
     <footer class="relative w-full text-center text-white/90 text-xs py-5 footer-glass border-t border-white/20 z-10 mt-auto">
         <div class="flex flex-col md:flex-row justify-center items-center gap-2 md:gap-4">
-            <span>© 2025 Superadmin System — Don Manuel Rivera Memorial Integrated National High School</span>
-            <span class="hidden md:inline text-white/30">|</span>
+            <span>Don Manuel Rivera Memorial Integrated National High School</span>
             <span><i class="fas fa-map-marker-alt mr-1"></i> Pila, Laguna, Philippines</span>
-            <span><i class="fas fa-shield-alt ml-1"></i> v3.0 Enterprise</span>
         </div>
-        <div class="text-[10px] mt-1 opacity-50">All administrative operations are monitored. Restricted area.</div>
     </footer>
 
-    <!-- simple javascript for password toggle + smooth micro interaction -->
+
+    <!-- ══════════════════════════════════════
+         FORGOT PASSWORD MODAL
+    ══════════════════════════════════════ -->
+    <div id="forgotModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-box w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 mx-4 border border-gray-100">
+
+            <!-- Icon -->
+            <div class="flex justify-center mb-4">
+                <div class="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
+                    <i class="fas fa-lock-open text-blue-600 text-2xl"></i>
+                </div>
+            </div>
+
+            <h3 id="modalTitle" class="text-xl font-bold text-gray-800 text-center mb-1">Forgot Password?</h3>
+            <p class="text-sm text-gray-500 text-center mb-6">
+                A password reset link will be sent to the registered admin email address.
+            </p>
+
+            <!-- Send button — posts to /superadmin/forgot-password/send -->
+            <form action="/superadmin/forgot-password/send" method="POST">
+                <button type="submit"
+                        class="login-btn w-full bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 text-white font-bold py-3 rounded-xl text-sm uppercase tracking-wider shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 mb-3">
+                    <i class="fas fa-paper-plane"></i>
+                    Send Reset Link
+                </button>
+            </form>
+
+            <button id="closeForgotModal"
+                    class="w-full py-3 rounded-xl text-sm font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-all">
+                Cancel
+            </button>
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════
+         TOAST CONTAINER  (top-right, like the screenshot)
+    ══════════════════════════════════════ -->
+    <div id="toast-container"></div>
+
+    <!-- Flash data injected by Jinja → picked up by JS below -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <script>
+          window.__flashes__ = [
+            {% for category, message in messages %}
+              { category: "{{ category }}", message: {{ message | tojson }} }{% if not loop.last %},{% endif %}
+            {% endfor %}
+          ];
+        </script>
+      {% endif %}
+    {% endwith %}
+
     <script>
-        (function() {
-            const togglePassword = document.getElementById('togglePassword');
-            const passwordInput = document.getElementById('password');
-            if (togglePassword && passwordInput) {
-                togglePassword.addEventListener('click', function() {
-                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                    passwordInput.setAttribute('type', type);
-                    const icon = togglePassword.querySelector('i');
-                    if (icon) {
-                        icon.classList.toggle('fa-eye-slash');
-                        icon.classList.toggle('fa-eye');
-                    }
-                });
-            }
+        // ── Password toggle ──────────────────────────────────
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput  = document.getElementById('password');
+        if (togglePassword && passwordInput) {
+            togglePassword.addEventListener('click', function () {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                const icon = togglePassword.querySelector('i');
+                if (icon) {
+                    icon.classList.toggle('fa-eye-slash');
+                    icon.classList.toggle('fa-eye');
+                }
+            });
+        }
 
-            // Optional: add ripple or placeholder cleaner: but modern floating labels are fine
-            // Prefill simulation: not required but placeholder effect handled by css.
-            // Adjust the background image fallback in case external fails -> keeps dark overlay nice
-            const bgElement = document.body;
-            const img = new Image();
-            img.src = "https://images.pexels.com/photos/207692/pexels-photo-207692.jpeg?auto=compress&cs=tinysrgb&w=1600";
-            img.onerror = function() {
-                // fallback to a solid color with gradient overlay to keep style intact
-                bgElement.style.backgroundImage = "linear-gradient(120deg, #1e293b, #0f172a)";
-                bgElement.style.backgroundSize = "cover";
-            }
-        })();
+        // ── Forgot password modal ────────────────────────────
+        const modal      = document.getElementById('forgotModal');
+        const openBtn    = document.getElementById('openForgotModal');
+        const closeBtn   = document.getElementById('closeForgotModal');
+
+        openBtn.addEventListener('click', () => modal.classList.add('open'));
+        closeBtn.addEventListener('click', () => modal.classList.remove('open'));
+
+        // Close when clicking backdrop
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.classList.remove('open');
+        });
+
+        // Close on Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') modal.classList.remove('open');
+        });
+        // ── Toast system ─────────────────────────────────────
+        const TOAST_TITLES = {
+            danger:  'Login Failed',
+            success: 'Success',
+            warning: 'Warning',
+            info:    'Info'
+        };
+        const TOAST_ICONS = {
+            danger:  'fa-circle-xmark',
+            success: 'fa-circle-check',
+            warning: 'fa-triangle-exclamation',
+            info:    'fa-circle-info'
+        };
+
+        function showToast(category, message, duration = 4000) {
+            const container = document.getElementById('toast-container');
+            const toast     = document.createElement('div');
+            toast.className = `toast toast-${category}`;
+
+            toast.innerHTML = `
+                <i class="fas ${TOAST_ICONS[category] || 'fa-circle-info'} toast-icon"></i>
+                <div class="toast-body">
+                    <div class="toast-title">${TOAST_TITLES[category] || 'Notice'}</div>
+                    <div class="toast-msg">${message}</div>
+                </div>
+                <button class="toast-close" aria-label="Dismiss">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            `;
+
+            // Close button
+            toast.querySelector('.toast-close').addEventListener('click', () => dismissToast(toast));
+
+            container.appendChild(toast);
+
+            // Auto-dismiss
+            setTimeout(() => dismissToast(toast), duration);
+        }
+
+        function dismissToast(toast) {
+            if (toast.classList.contains('toast-hide')) return;
+            toast.classList.add('toast-hide');
+            toast.addEventListener('animationend', () => toast.remove(), { once: true });
+        }
+
+        // Render server-side flashes
+        if (window.__flashes__) {
+            window.__flashes__.forEach(f => showToast(f.category, f.message));
+        }
     </script>
-
-    <!-- additional style for floating label optimization and responsive touch -->
-    <style>
-        /* micro adjust for floating label with peer and placeholder-shown */
-        .peer:not(:placeholder-shown) ~ label,
-        .peer:focus ~ label {
-            font-size: 0.7rem;
-            top: -0.6rem;
-            left: 0.9rem;
-            color: #2563eb;
-            font-weight: 500;
-        }
-        .peer:-webkit-autofill ~ label,
-        .peer:autofill ~ label {
-            top: -0.6rem;
-            font-size: 0.7rem;
-            left: 0.9rem;
-        }
-        /* set label's initial style for absolute */
-        .peer ~ label {
-            position: absolute;
-            transition: all 0.2s ease;
-            background-color: white;
-            padding-left: 0.25rem;
-            padding-right: 0.25rem;
-            pointer-events: none;
-            font-weight: normal;
-            left: 0.9rem;
-            top: 0.9rem;
-            font-size: 1rem;
-            color: #6b7280;
-        }
-        /* Adjust for left icon: extra space */
-        .peer {
-            padding-left: 2.5rem;
-        }
-        /* correction for absolute label left position when icon present */
-        .peer ~ label {
-            left: 2.3rem;
-        }
-        /* special for password and username field because icon occupies left area */
-        input[name="username"].peer ~ label,
-        input[name="password"].peer ~ label {
-            left: 2.5rem;
-        }
-        /* clean autofill background */
-        input:-webkit-autofill,
-        input:-webkit-autofill:focus {
-            transition: background-color 600000s 0s, color 600000s 0s;
-        }
-        /* card entrance animation */
-        .animate-fade-in-up {
-            animation: fadeInUp 0.5s cubic-bezier(0.15, 0.85, 0.35, 1.02) forwards;
-        }
-        @keyframes fadeInUp {
-            0% {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        /* Scrollbar and additional accessibility */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
-        }
-        /* Buttons micro interaction */
-        button:active {
-            transform: scale(0.98);
-        }
-        /* checkbox style */
-        input[type="checkbox"] {
-            accent-color: #2563eb;
-        }
-        /* footer responsive */
-        @media (max-width: 480px) {
-            .login-card {
-                padding: 1.75rem;
-            }
-            h2.text-3xl {
-                font-size: 1.7rem;
-            }
-        }
-        /* remove label shift issue when using placeholder as blank */
-        .peer:placeholder-shown ~ label {
-            font-size: 1rem;
-            top: 0.85rem;
-            background: transparent;
-            color: #9ca3af;
-            font-weight: 400;
-        }
-        .peer:focus ~ label {
-            background: white;
-            padding-left: 0.25rem;
-            padding-right: 0.25rem;
-            top: -0.6rem;
-            font-size: 0.7rem;
-            color: #1e40af;
-        }
-        /* consistent bg for label background to overlay on input */
-        .peer:not(:placeholder-shown) ~ label {
-            background: white;
-            top: -0.6rem;
-            font-size: 0.7rem;
-            font-weight: 500;
-            color: #1e3a8a;
-        }
-        /* adjust first input and second */
-        input {
-            background-color: #ffffffcc;
-            backdrop-filter: blur(2px);
-        }
-        input:focus {
-            background-color: white;
-        }
-        .peer:focus {
-            background-color: white;
-        }
-        /* icon inside control */
-        .peer:focus + .absolute svg, 
-        .peer:focus ~ div i {
-            color: #2563eb;
-        }
-    </style>
 </body>
 </html>

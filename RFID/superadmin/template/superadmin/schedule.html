@@ -1,0 +1,778 @@
+{% extends "superadmin/base.html" %}
+
+{% block title %}Schedule Module{% endblock %}
+
+{% block content %}
+<div class="min-h-screen px-4 py-8 md:px-8">
+
+  <!-- ── Top Action Bar ── -->
+  <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+
+    <!-- LEFT: actions -->
+    <div class="flex items-center gap-3 flex-wrap">
+
+      <!-- Add New Schedule -->
+      <button type="button" onclick="openModal('addScheduleModal')"
+              class="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg text-white font-medium px-6 py-3 rounded-3xl">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/>
+        </svg>
+        Add New Schedule
+      </button>
+
+      <!-- Import Excel -->
+      <button type="button" onclick="openModal('importModal')"
+              class="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 transition-all shadow-md hover:shadow-lg text-white font-medium px-6 py-3 rounded-3xl">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+        </svg>
+        Import Excel
+      </button>
+
+      <!-- Manage Rooms -->
+      <button type="button" onclick="openModal('roomsModal')"
+              class="flex items-center gap-2 bg-white hover:bg-blue-50 border-2 border-blue-200 hover:border-blue-300 text-blue-700 font-medium px-5 py-3 rounded-3xl transition-all shadow-sm hover:shadow-md">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+        </svg>
+        Manage Rooms
+      </button>
+
+    </div>
+
+    <!-- RIGHT: search -->
+    <div class="relative">
+      <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 01-14 0 7 7 0 0114 0z"/>
+        </svg>
+      </div>
+      <input id="searchInput" type="text" onkeyup="filterTable()"
+             placeholder="Search day, subject, section, room..."
+             class="w-80 pl-11 pr-4 py-3 bg-white border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-3xl text-sm outline-none transition-all shadow-sm">
+    </div>
+
+  </div>
+
+  <!-- ── Main Table Card ── -->
+  <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border border-blue-100">
+
+    <!-- Blue Gradient Header -->
+    <div class="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 px-8 py-6 flex items-center justify-between text-white">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-lg font-semibold">Schedule Management</h2>
+          <p class="text-blue-100 text-xs">View and manage all class schedules</p>
+        </div>
+      </div>
+      <div class="bg-white/20 backdrop-blur px-4 py-2 rounded-2xl flex items-center gap-2 text-blue-100">
+        <span class="text-lg font-bold">{{ schedules | length }}</span>
+        <span class="text-sm">records</span>
+      </div>
+    </div>
+
+    <div class="p-2">
+      {% if schedules %}
+      <div class="overflow-x-auto">
+        <table id="schedulesTable" class="w-full min-w-full">
+          <thead>
+            <tr class="border-b-2 border-blue-100 text-xs font-semibold text-blue-900 uppercase tracking-widest bg-blue-50">
+              <th class="text-left py-5 px-4">Day</th>
+              <th class="text-left py-5 px-4">Time</th>
+              <th class="text-left py-5 px-4">Subject</th>
+              <th class="text-left py-5 px-4">Section</th>
+              <th class="text-left py-5 px-4">Teacher</th>
+              <th class="text-left py-5 px-4">Room</th>
+              <th class="text-left py-5 px-4 w-44">Action</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-blue-50 text-sm">
+            {% for s in schedules %}
+            <tr class="hover:bg-blue-50/60 transition-colors duration-150">
+              <td class="py-5 px-4 align-top">
+                <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-2xl text-xs font-semibold">{{ s.day }}</span>
+              </td>
+              {# Support both time (combined) and time_in/time_out (split) #}
+              <td class="py-5 px-4 text-gray-700 font-medium align-top tabular-nums">
+                {% if s.time %}
+                  {{ s.time }}
+                {% elif s.time_in and s.time_out %}
+                  {{ s.time_in }} – {{ s.time_out }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td class="py-5 px-4 font-semibold text-gray-900 align-top">{{ s.subject }}</td>
+              <td class="py-5 px-4 text-gray-600 align-top font-medium">{{ s.section_name or '—' }}</td>
+              <td class="py-5 px-4 text-gray-600 align-top">{{ s.teacher or '—' }}</td>
+              {# FIX: DB column is room_name, not name #}
+              <td class="py-5 px-4 text-gray-600 align-top">{{ s.room_name or '—' }}</td>
+              <td class="py-5 px-4 align-top">
+                <div class="flex flex-wrap items-center gap-2">
+
+                  <!-- View -->
+                  <button type="button"
+                    onclick='openViewScheduleModal({
+                      day:     {{ (s.day          or "—") | tojson }},
+                      time:    {{ ((s.time or ((s.time_in ~ " – " ~ s.time_out) if s.time_in else "—")) or "—") | tojson }},
+                      subject: {{ (s.subject       or "—") | tojson }},
+                      section: {{ (s.section_name  or "—") | tojson }},
+                      teacher: {{ (s.teacher        or "—") | tojson }},
+                      room:    {{ (s.room_name      or "—") | tojson }}
+                    })'
+                    class="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-2xl shadow-sm hover:shadow-md transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    View
+                  </button>
+
+                  <!-- Edit -->
+                  <button type="button"
+                    onclick='openEditScheduleModal({
+                      id:         {{ s.id                  | tojson }},
+                      day:        {{ (s.day        or "") | tojson }},
+                      time:       {{ (s.time        or "") | tojson }},
+                      subject:    {{ (s.subject    or "") | tojson }},
+                      section_id: {{ (s.section_id or 0)  | tojson }},
+                      teacher_id: {{ (s.teacher_id or 0)  | tojson }},
+                      room_id:    {{ (s.room_id    or 0)  | tojson }}
+                    })'
+                    class="inline-flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 text-white text-sm font-medium px-4 py-2 rounded-2xl shadow-sm transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M16.586 3.586a2 2 0 112.828 2.828L12 13.828l-4 1 1-4 7.586-7.242z"/>
+                    </svg>
+                    Edit
+                  </button>
+
+                  <!-- Delete -->
+                  <form method="POST" action="{{ url_for('schedule.delete_schedule', schedule_id=s.id) }}"
+                        onsubmit="return confirm('Delete this schedule?')"
+                        class="inline">
+                    <button type="submit"
+                            class="inline-flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-xs font-semibold px-3 py-2 rounded-2xl transition-all shadow-sm hover:shadow-md">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                      </svg>
+                      Delete
+                    </button>
+                  </form>
+
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="py-20 text-center">
+        <div class="mx-auto w-24 h-24 bg-blue-50 rounded-3xl flex items-center justify-center text-6xl mb-6">📅</div>
+        <h3 class="text-2xl font-semibold text-gray-900 mb-2">No schedules yet</h3>
+        <p class="text-gray-500 max-w-xs mx-auto">Add a new schedule or import from Excel to get started.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     FLASH TOAST CONTAINER
+     Fixed top-right, stacks downward — matches the login page style
+══════════════════════════════════ -->
+<div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+      <div class="toast-item pointer-events-auto flex items-start gap-3 min-w-[280px] max-w-sm
+                  px-4 py-3 rounded-2xl shadow-lg border text-sm font-medium
+                  {% if category == 'success' %}bg-white border-green-100 text-gray-800
+                  {% elif category == 'error' %}bg-white border-red-200 text-gray-800
+                  {% else %}bg-white border-blue-100 text-gray-800{% endif %}">
+
+        <!-- Icon -->
+        {% if category == 'success' %}
+        <div class="flex-shrink-0 w-8 h-8 rounded-xl bg-green-500 flex items-center justify-center">
+          <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        {% elif category == 'error' %}
+        <div class="flex-shrink-0 w-8 h-8 rounded-xl bg-red-500 flex items-center justify-center">
+          <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </div>
+        {% else %}
+        <div class="flex-shrink-0 w-8 h-8 rounded-xl bg-blue-500 flex items-center justify-center">
+          <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        {% endif %}
+
+        <!-- Text -->
+        <div class="flex-1 pt-0.5">
+          <p class="font-semibold text-gray-900 text-xs uppercase tracking-wide mb-0.5">
+            {% if category == 'success' %}Success
+            {% elif category == 'error' %}Error
+            {% else %}Notice{% endif %}
+          </p>
+          <p class="text-gray-600 text-xs leading-relaxed">{{ message }}</p>
+        </div>
+
+        <!-- Close -->
+        <button onclick="dismissToast(this.closest('.toast-item'))"
+                class="flex-shrink-0 w-6 h-6 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+</div>
+
+
+<!-- ══════════════════════════════════
+     ADD SCHEDULE MODAL
+══════════════════════════════════ -->
+<div id="addScheduleModal" class="modal-overlay hidden">
+  <div class="modal-panel modal-panel-lg animate-fadeIn">
+    <div class="modal-header bg-gradient-to-r from-blue-600 to-blue-700">
+      <div>
+        <h2 class="text-white text-xl font-semibold">Add New Schedule</h2>
+        <p class="text-blue-200 text-sm mt-0.5">Fill in the schedule details below</p>
+      </div>
+      <button type="button" onclick="closeModal('addScheduleModal')" class="modal-close-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="addScheduleForm" method="POST" action="{{ url_for('schedule.add_schedule') }}" class="p-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+          <div>
+            <label class="form-label">Day <span class="text-red-400">*</span></label>
+            <select name="day" required class="form-select">
+              <option value="">Select day</option>
+              <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+              <option>Thursday</option><option>Friday</option><option>Saturday</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="form-label">Time <span class="text-red-400">*</span></label>
+            <input type="text" name="time" required class="form-input" placeholder="e.g. 7:00-8:30 AM">
+          </div>
+
+          <div>
+            <label class="form-label">Subject <span class="text-red-400">*</span></label>
+            <input type="text" name="subject" required class="form-input" placeholder="e.g. IT3217">
+          </div>
+
+          <div>
+            <label class="form-label">Section <span class="text-red-400">*</span></label>
+            <select name="section_id" required class="form-select">
+              <option value="">Select section</option>
+              {% for sec in sections %}
+              <option value="{{ sec.id }}">
+                {{ sec.section_name }}{% if sec.year_level %} — {{ sec.year_level }}{% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label class="form-label">Teacher</label>
+            <select name="teacher_id" class="form-select">
+              <option value="">Select teacher (optional)</option>
+              {% for t in teachers %}
+              <option value="{{ t.id }}">{{ t.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label class="form-label">Room <span class="text-red-400">*</span></label>
+            <select name="room_id" required class="form-select">
+              <option value="">Select room</option>
+              {% for r in rooms %}
+              {# FIX: use r.room_name (DB column), not r.name #}
+              <option value="{{ r.id }}">{{ r.room_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" onclick="closeModal('addScheduleModal')"
+              class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-800 font-medium text-sm transition-colors">Cancel</button>
+      <button type="submit" form="addScheduleForm"
+              class="px-7 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors">Save Schedule</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     VIEW SCHEDULE MODAL
+══════════════════════════════════ -->
+<div id="viewScheduleModal" class="modal-overlay hidden">
+  <div class="modal-panel modal-panel-md animate-fadeIn">
+    <div class="modal-header bg-gradient-to-r from-blue-600 to-blue-700">
+      <div>
+        <h2 class="text-white text-xl font-semibold">Schedule Details</h2>
+        <p class="text-blue-200 text-sm mt-0.5">View-only information</p>
+      </div>
+      <button type="button" onclick="closeModal('viewScheduleModal')" class="modal-close-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body flex-1 p-8">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div><label class="view-label">Day</label><div id="view_day" class="view-field"></div></div>
+        <div><label class="view-label">Time</label><div id="view_time" class="view-field"></div></div>
+        <div><label class="view-label">Subject</label><div id="view_subject" class="view-field"></div></div>
+        <div><label class="view-label">Section</label><div id="view_section" class="view-field"></div></div>
+        <div><label class="view-label">Teacher</label><div id="view_teacher" class="view-field"></div></div>
+        <div><label class="view-label">Room</label><div id="view_room" class="view-field"></div></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" onclick="closeModal('viewScheduleModal')"
+              class="px-7 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors">Close</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     EDIT SCHEDULE MODAL
+══════════════════════════════════ -->
+<div id="editScheduleModal" class="modal-overlay hidden">
+  <div class="modal-panel modal-panel-lg animate-fadeIn">
+    <div class="modal-header bg-gradient-to-r from-amber-400 to-amber-500">
+      <div>
+        <h2 class="text-white text-xl font-semibold">Edit Schedule</h2>
+        <p class="text-amber-50 text-sm mt-0.5">Update the schedule details below</p>
+      </div>
+      <button type="button" onclick="closeModal('editScheduleModal')" class="modal-close-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="editScheduleForm" method="POST" class="p-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+          <div>
+            <label class="form-label">Day <span class="text-red-400">*</span></label>
+            <select id="edit_day" name="day" required class="form-select">
+              <option value="">Select day</option>
+              <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+              <option>Thursday</option><option>Friday</option><option>Saturday</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="form-label">Time <span class="text-red-400">*</span></label>
+            <input type="text" id="edit_time" name="time" required class="form-input" placeholder="e.g. 7:00-8:30 AM">
+          </div>
+
+          <div>
+            <label class="form-label">Subject <span class="text-red-400">*</span></label>
+            <input type="text" id="edit_subject" name="subject" required class="form-input" placeholder="e.g. IT3217">
+          </div>
+
+          <div>
+            <label class="form-label">Section <span class="text-red-400">*</span></label>
+            <select id="edit_section_id" name="section_id" required class="form-select">
+              <option value="">Select section</option>
+              {% for sec in sections %}
+              <option value="{{ sec.id }}">
+                {{ sec.section_name }}{% if sec.year_level %} — {{ sec.year_level }}{% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label class="form-label">Teacher</label>
+            <select id="edit_teacher_id" name="teacher_id" class="form-select">
+              <option value="">Select teacher (optional)</option>
+              {% for t in teachers %}
+              <option value="{{ t.id }}">{{ t.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="sm:col-span-2">
+            <label class="form-label">Room <span class="text-red-400">*</span></label>
+            <select id="edit_room_id" name="room_id" required class="form-select">
+              <option value="">Select room</option>
+              {% for r in rooms %}
+              {# FIX: use r.room_name (DB column), not r.name #}
+              <option value="{{ r.id }}">{{ r.room_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" onclick="closeModal('editScheduleModal')"
+              class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-800 font-medium text-sm transition-colors">Cancel</button>
+      <button type="submit" form="editScheduleForm"
+              class="px-7 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-500 text-white font-medium text-sm shadow-sm transition-colors">Update Schedule</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     IMPORT MODAL
+══════════════════════════════════ -->
+<div id="importModal" class="modal-overlay hidden">
+  <div class="modal-panel modal-panel-md animate-fadeIn">
+    <div class="modal-header bg-gradient-to-r from-emerald-500 to-emerald-600">
+      <div>
+        <h2 class="text-white text-xl font-semibold">Import from Excel</h2>
+        <p class="text-emerald-100 text-sm mt-0.5">Bulk upload schedules via .xlsx file</p>
+      </div>
+      <button type="button" onclick="closeModal('importModal')" class="modal-close-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body p-8">
+      <form id="importForm" method="POST" action="{{ url_for('schedule.import_schedule') }}" enctype="multipart/form-data">
+        <div class="mb-5">
+          <label class="form-label">Choose Excel File <span class="text-red-400">*</span></label>
+          <input type="file" name="file" accept=".xlsx" required
+                 class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm bg-gray-50
+                        file:mr-4 file:py-1.5 file:px-4 file:rounded-xl file:border-0
+                        file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+        </div>
+        <div class="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 flex items-start gap-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <div>
+            Required columns: <strong>day, time_in, time_out, subject, section_name, room_name</strong><br>
+            <span class="text-gray-400 mt-1 block">section_name must match an existing section. Rooms are auto-created if missing.</span>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" onclick="closeModal('importModal')"
+              class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors">Cancel</button>
+      <button type="submit" form="importForm"
+              class="px-7 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm shadow-sm transition-colors">Import</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     MANAGE ROOMS MODAL
+══════════════════════════════════ -->
+<div id="roomsModal" class="modal-overlay hidden">
+  <div class="modal-panel modal-panel-md animate-fadeIn">
+    <div class="modal-header bg-gradient-to-r from-slate-600 to-slate-700">
+      <div>
+        <h2 class="text-white text-xl font-semibold">Manage Rooms</h2>
+        <p class="text-slate-300 text-sm mt-0.5">Add or remove available rooms</p>
+      </div>
+      <button type="button" onclick="closeModal('roomsModal')" class="modal-close-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body p-8">
+
+      <!-- Add Room Form -->
+      <form method="POST" action="{{ url_for('schedule.add_room') }}" class="flex gap-3 mb-6">
+        <input type="text" name="room_name" required placeholder="e.g. Room 301"
+               class="flex-1 form-input">
+        <button type="submit"
+                class="px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors whitespace-nowrap">
+          + Add Room
+        </button>
+      </form>
+
+      <!-- Rooms List -->
+      <div class="space-y-2">
+        {% for r in rooms %}
+        <div class="flex items-center justify-between bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+              </svg>
+            </div>
+            {# FIX: use r.room_name (DB column), not r.name #}
+            <span class="text-sm font-medium text-gray-800">{{ r.room_name }}</span>
+          </div>
+          <form method="POST" action="{{ url_for('schedule.delete_room', room_id=r.id) }}"
+                onsubmit="return confirm('Delete room {{ r.room_name }}? This cannot be undone.')">
+            <button type="submit"
+                    class="text-red-400 hover:text-red-600 text-xs font-medium flex items-center gap-1 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+              Remove
+            </button>
+          </form>
+        </div>
+        {% else %}
+        <div class="text-center py-8 text-gray-400 text-sm">
+          No rooms added yet.
+        </div>
+        {% endfor %}
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button type="button" onclick="closeModal('roomsModal')"
+              class="px-7 py-2.5 rounded-2xl bg-slate-600 hover:bg-slate-700 text-white font-medium text-sm shadow-sm transition-colors">Close</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     SCRIPTS
+══════════════════════════════════ -->
+<script>
+const MODAL_IDS = ['addScheduleModal','viewScheduleModal','editScheduleModal','importModal','roomsModal']
+
+/* ── Search filter ── */
+function filterTable() {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim()
+  document.querySelectorAll('#schedulesTable tbody tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none'
+  })
+}
+
+/* ── Modal helpers ── */
+function moveModalsToBody() {
+  MODAL_IDS.forEach(id => {
+    const el = document.getElementById(id)
+    if (el && el.parentElement !== document.body) document.body.appendChild(el)
+  })
+}
+
+function lockScroll()   { document.documentElement.classList.add('modal-open'); document.body.classList.add('modal-open') }
+function unlockScroll() {
+  const anyOpen = MODAL_IDS.some(id => document.getElementById(id)?.classList.contains('is-open'))
+  if (!anyOpen) { document.documentElement.classList.remove('modal-open'); document.body.classList.remove('modal-open') }
+}
+
+function openModal(id) {
+  const el = document.getElementById(id)
+  if (!el) return
+  el.classList.remove('hidden')
+  requestAnimationFrame(() => el.classList.add('is-open'))
+  lockScroll()
+}
+
+function closeModal(id) {
+  const el = document.getElementById(id)
+  if (!el) return
+  el.classList.remove('is-open')
+  setTimeout(() => { if (!el.classList.contains('is-open')) { el.classList.add('hidden'); unlockScroll() } }, 180)
+}
+
+function openViewScheduleModal(s) {
+  document.getElementById('view_day').textContent     = s.day     || '—'
+  document.getElementById('view_time').textContent    = s.time    || '—'
+  document.getElementById('view_subject').textContent = s.subject || '—'
+  document.getElementById('view_section').textContent = s.section || '—'
+  document.getElementById('view_teacher').textContent = s.teacher || '—'
+  document.getElementById('view_room').textContent    = s.room    || '—'
+  openModal('viewScheduleModal')
+}
+
+function openEditScheduleModal(s) {
+  const form = document.getElementById('editScheduleForm')
+  form.action = `/schedule/update/${s.id}`
+  document.getElementById('edit_day').value        = s.day        || ''
+  document.getElementById('edit_time').value       = s.time       || ''
+  document.getElementById('edit_subject').value    = s.subject    || ''
+  document.getElementById('edit_section_id').value = s.section_id || ''
+  document.getElementById('edit_teacher_id').value = s.teacher_id || ''
+  document.getElementById('edit_room_id').value    = s.room_id    || ''
+  openModal('editScheduleModal')
+}
+
+MODAL_IDS.forEach(id => {
+  document.getElementById(id)?.addEventListener('click', function(e) {
+    if (e.target === this) closeModal(id)
+  })
+})
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') MODAL_IDS.forEach(closeModal)
+})
+
+document.addEventListener('DOMContentLoaded', moveModalsToBody)
+
+/* ── Toast notifications ── */
+function dismissToast(el) {
+  el.style.transition = 'opacity .25s, transform .25s'
+  el.style.opacity = '0'
+  el.style.transform = 'translateX(20px)'
+  setTimeout(() => el.remove(), 260)
+}
+
+/* Auto-dismiss toasts after 5 seconds */
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.toast-item').forEach((toast, i) => {
+    setTimeout(() => dismissToast(toast), 5000 + i * 300)
+  })
+})
+</script>
+
+
+<!-- ══════════════════════════════════
+     STYLES
+══════════════════════════════════ -->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+  body { font-family: 'Inter', system-ui, sans-serif; }
+
+  html.modal-open, body.modal-open { overflow: hidden !important; }
+
+  /* ── Toast slide-in ── */
+  #toastContainer { min-width: 0; }
+  .toast-item {
+    animation: toastSlideIn .3s cubic-bezier(.22,1,.36,1) both;
+  }
+  @keyframes toastSlideIn {
+    from { opacity: 0; transform: translateX(40px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  /* ── Form controls ── */
+  .form-label {
+    display: block; font-size: .8125rem; font-weight: 600;
+    color: #1f2937; margin-bottom: .6rem;
+    letter-spacing: .02em;
+  }
+  .form-input {
+    display: block; width: 100%; padding: .875rem 1rem;
+    font-size: .875rem; color: #111827; background: #fff;
+    border: 1.5px solid #e0e7ff; border-radius: 1rem;
+    outline: none; transition: border-color .2s, box-shadow .2s, background .2s;
+  }
+  .form-input:focus { 
+    border-color: #3b82f6; 
+    box-shadow: 0 0 0 3px rgba(59,130,246,.12); 
+    background: #f0f9ff;
+  }
+  .form-input::placeholder { color: #9ca3af; }
+
+  .form-select {
+    display: block; width: 100%;
+    padding: .875rem 2.5rem .875rem 1rem; font-size: .875rem; color: #111827;
+    background: #fff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") no-repeat right .75rem center / 1.25rem;
+    border: 1.5px solid #e0e7ff; border-radius: 1rem;
+    outline: none; appearance: none; -webkit-appearance: none;
+    transition: border-color .2s, box-shadow .2s, background .2s;
+  }
+  .form-select:focus { 
+    border-color: #3b82f6; 
+    box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+    background-color: #f0f9ff;
+  }
+
+  /* ── View modal fields ── */
+  .view-label {
+    display: block; font-size: .7rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .06em;
+    color: #9ca3af; margin-bottom: .4rem;
+  }
+  .view-field {
+    background: #f9fafb; border: 1.5px solid #e5e7eb;
+    border-radius: .875rem; padding: .75rem 1rem;
+    font-size: .875rem; color: #1f2937; min-height: 2.75rem;
+  }
+
+  /* ── Modal overlay ── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 2147483000;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 24px 16px; overflow-y: auto; overflow-x: hidden;
+    background: rgba(17,24,39,.58);
+    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+    isolation: isolate; opacity: 0; pointer-events: none;
+    transition: opacity .18s ease;
+  }
+  .modal-overlay.is-open { opacity: 1; pointer-events: auto; }
+
+  .modal-panel {
+    position: relative; z-index: 2147483001; width: 100%;
+    background: #fff; border-radius: 1.5rem;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.12);
+    overflow: hidden; display: flex; flex-direction: column;
+    margin: auto 0; max-height: calc(100vh - 48px);
+    transform: translateY(10px) scale(.985);
+    transition: transform .18s ease;
+  }
+  .modal-overlay.is-open .modal-panel { transform: translateY(0) scale(1); }
+  .modal-panel-lg { max-width: 700px; }
+  .modal-panel-md { max-width: 560px; }
+
+  .modal-header {
+    position: sticky; top: 0; z-index: 30; padding: 1.25rem 2rem;
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+  }
+  .modal-body { overflow-y: auto; overflow-x: hidden; flex: 1 1 auto; }
+  .modal-footer {
+    position: sticky; bottom: 0; z-index: 30; padding: 1.25rem 2rem;
+    border-top: 1px solid #f3f4f6; background: rgba(249,250,251,.96);
+    backdrop-filter: blur(6px); display: flex; align-items: center;
+    justify-content: flex-end; gap: .75rem; flex-shrink: 0;
+  }
+  .modal-close-btn {
+    width: 2.25rem; height: 2.25rem; border-radius: 9999px;
+    background: rgba(255,255,255,.2); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    transition: background-color .15s;
+  }
+  .modal-close-btn:hover { background: rgba(255,255,255,.3); }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(.97) translateY(8px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .animate-fadeIn { animation: fadeIn .2s ease-out; }
+
+  @media (max-width: 640px) {
+    .modal-overlay { padding: 12px; align-items: stretch; }
+    .modal-panel   { max-height: calc(100vh - 24px); border-radius: 1.25rem; }
+    .modal-header, .modal-footer { padding-left: 1rem; padding-right: 1rem; }
+  }
+</style>
+
+{% endblock %}

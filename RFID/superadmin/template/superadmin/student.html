@@ -5,48 +5,48 @@
 {% block content %}
 <div class="min-h-screen px-4 py-8 md:px-8">
 
+  <!-- ── Top Action Bar ── -->
   <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
-    <div></div>
+    <!-- LEFT: actions -->
     <div class="flex items-center gap-3 flex-wrap">
-
-      <button type="button"
-              onclick="openAddStudentModal()"
+      <!-- Add New Student -->
+      <button type="button" onclick="openAddStudentModal()"
               class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 transition-colors text-white font-medium px-6 py-3 rounded-3xl shadow-sm">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/>
         </svg>
         Add New Student
       </button>
-
-      <div class="relative">
-        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 01-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
-        <input
-          id="searchInput"
-          type="text"
-          onkeyup="filterTable()"
-          placeholder="Search name, UID, email, section..."
-          class="w-80 pl-11 pr-4 py-3 bg-white border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-3xl text-sm outline-none transition-all">
-      </div>
-
-      <button onclick="exportToCSV()"
-              class="flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-medium px-5 py-3 rounded-3xl transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v-4m0 0l4 4m-4-4l4-4m12 0v4m0 0l-4-4m4 4l-4 4" />
-        </svg>
-        Export CSV
-      </button>
-
-      <button onclick="triggerImportFile()"
+      <!-- Import CSV / Excel -->
+      <button type="button" onclick="openModal('importStudentModal')"
               class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 transition-colors text-white font-medium px-6 py-3 rounded-3xl shadow-sm">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v-4m0 0l4 4m-4-4l4-4m12 0v4m0 0l-4-4m4 4l-4 4M4 4h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
         </svg>
         Import CSV / Excel
       </button>
+      <!-- Export CSV -->
+      <button onclick="exportToCSV()"
+              class="flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-medium px-5 py-3 rounded-3xl transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        Export CSV
+      </button>
+    </div>
+    <!-- RIGHT: search -->
+    <div class="relative">
+      <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 01-14 0 7 7 0 0114 0z"/>
+        </svg>
+      </div>
+      <input
+        id="searchInput"
+        type="text"
+        onkeyup="filterTable()"
+        placeholder="Search name, UID, email, section..."
+        class="w-80 pl-11 pr-4 py-3 bg-white border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-3xl text-sm outline-none transition-all">
     </div>
   </div>
 
@@ -141,8 +141,8 @@
                     })'
                     class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-2xl shadow-sm transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                     </svg>
                     View
                   </button>
@@ -164,7 +164,7 @@
                     })'
                     class="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-500 text-white text-sm font-medium px-4 py-2 rounded-2xl shadow-sm transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M16.586 3.586a2 2 0 112.828 2.828L12 13.828l-4 1 1-4 7.586-7.242z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M16.586 3.586a2 2 0 112.828 2.828L12 13.828l-4 1 1-4 7.586-7.242z"/>
                     </svg>
                     Edit
                   </button>
@@ -194,8 +194,7 @@
         <h2 class="text-white text-xl font-semibold">Add New Student</h2>
         <p class="text-blue-200 text-sm mt-0.5">Fill in the student's information below</p>
       </div>
-      <button type="button" onclick="closeAddStudentModal()"
-              class="modal-close-btn">
+      <button type="button" onclick="closeAddStudentModal()" class="modal-close-btn">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
@@ -214,57 +213,6 @@
             {% endfor %}
           </select>
         </div>
-
-        <hr class="border-gray-100 my-6">
-
-        <div class="rounded-2xl border border-dashed border-blue-300 bg-blue-50/50 p-6 mb-6">
-          <div class="mb-5">
-            <p class="text-sm font-semibold text-blue-700">Section <span class="font-normal text-blue-500">(Optional)</span></p>
-            <p class="text-xs text-gray-500 mt-1">Pumili ng existing section o gumawa ng bagong section sa baba.</p>
-          </div>
-
-          <div class="mb-4">
-            <label class="form-label">Existing Section</label>
-            <select name="section_id" class="form-select">
-              <option value="">Select existing section</option>
-              {% for section in sections %}
-                <option value="{{ section.id }}">
-                  {{ section.section_name }}{% if section.year_level %} — {{ section.year_level }}{% endif %}
-                </option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <div class="flex items-center gap-3 mb-4">
-            <div class="flex-1 h-px bg-blue-200"></div>
-            <span class="text-xs text-blue-400 font-medium">OR create a new section below</span>
-            <div class="flex-1 h-px bg-blue-200"></div>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label class="form-label">New Section Name</label>
-              <input type="text" name="new_section_name" placeholder="e.g. BSIT-1A" class="form-input">
-            </div>
-            <div>
-              <label class="form-label">Year Level</label>
-              <input type="text" name="new_year_level" placeholder="e.g. 1st Year" class="form-input">
-            </div>
-            <div>
-              <label class="form-label">Teacher Adviser</label>
-              <select name="new_teacher_id" class="form-select">
-                <option value="">Select teacher (Optional)</option>
-                {% for teacher in teachers %}
-                  <option value="{{ teacher.id }}">
-                    {{ teacher.full_name }}{% if teacher.teacher_id %} ({{ teacher.teacher_id }}){% endif %}
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <hr class="border-gray-100 my-6">
 
         <div class="mb-2">
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Personal Information</p>
@@ -330,6 +278,67 @@
   </div>
 </div>
 
+<!-- ===== IMPORT STUDENT MODAL ===== -->
+<div id="importStudentModal" class="modal-overlay hidden">
+  <div class="modal-panel modal-panel-md animate-fadeIn">
+    <div class="modal-header bg-gradient-to-r from-emerald-500 to-emerald-600">
+      <div>
+        <h2 class="text-white text-xl font-semibold">Import Students</h2>
+        <p class="text-emerald-100 text-sm mt-0.5">Bulk upload students via .csv or .xlsx file</p>
+      </div>
+      <button type="button" onclick="closeModal('importStudentModal')" class="modal-close-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body p-8">
+      <div class="mb-5">
+        <label class="form-label">Choose File <span class="text-red-400">*</span></label>
+        <label class="flex items-center gap-3 w-full border-2 border-dashed border-gray-200 hover:border-emerald-400 rounded-2xl px-5 py-4 cursor-pointer bg-gray-50 hover:bg-emerald-50 transition-all group">
+          <div class="w-10 h-10 bg-emerald-100 group-hover:bg-emerald-200 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p id="importFileName" class="text-sm font-medium text-gray-500 truncate">No file chosen</p>
+            <p class="text-xs text-gray-400 mt-0.5">CSV or Excel (.xlsx, .xls)</p>
+          </div>
+          <input id="importFileInput" type="file" accept=".csv,.xlsx,.xls" class="hidden"
+                 onchange="handleImportFileChange(this)">
+        </label>
+      </div>
+
+      <div class="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 flex items-start gap-3">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div>
+          Required columns:
+          <strong>last_name, first_name, birthday, contact_number, email, schedule</strong><br>
+          <span class="text-gray-400 mt-1 block">
+            Optional: middle_name, extension, section_name, year_level<br>
+            UID is <em>not</em> required — it will be auto-linked from available RFID cards.
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" onclick="closeModal('importStudentModal')"
+              class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors">
+        Cancel
+      </button>
+      <button type="button" onclick="runImportFromModal()"
+              class="px-7 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm shadow-sm transition-colors">
+        Import
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== VIEW STUDENT MODAL ===== -->
 <div id="viewStudentModal" class="modal-overlay hidden">
   <div class="modal-panel modal-panel-md animate-fadeIn">
@@ -338,8 +347,7 @@
         <h2 class="text-white text-xl font-semibold">Student Details</h2>
         <p class="text-blue-200 text-sm mt-0.5">View-only information</p>
       </div>
-      <button type="button" onclick="closeViewStudentModal()"
-              class="modal-close-btn">
+      <button type="button" onclick="closeViewStudentModal()" class="modal-close-btn">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
@@ -348,7 +356,6 @@
 
     <div class="modal-body flex-1 p-8">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-
         <div>
           <label class="view-label">UID</label>
           <div id="view_uid" class="view-field"></div>
@@ -401,7 +408,6 @@
           <label class="view-label">Schedule</label>
           <div id="view_schedule" class="view-field whitespace-pre-line leading-7 min-h-[100px]"></div>
         </div>
-
       </div>
     </div>
 
@@ -422,8 +428,7 @@
         <h2 class="text-white text-xl font-semibold">Edit Student</h2>
         <p class="text-amber-50 text-sm mt-0.5">Update the student's information below</p>
       </div>
-      <button type="button" onclick="closeEditStudentModal()"
-              class="modal-close-btn">
+      <button type="button" onclick="closeEditStudentModal()" class="modal-close-btn">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
@@ -522,11 +527,114 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
+// ── Modal helpers ──────────────────────────────────────────────
+const ALL_MODALS = ['addStudentModal','importStudentModal','viewStudentModal','editStudentModal']
+
+function lockBodyScroll()   { document.documentElement.classList.add('modal-open'); document.body.classList.add('modal-open') }
+function unlockBodyScroll() {
+  const anyOpen = ALL_MODALS.some(id => document.getElementById(id)?.classList.contains('is-open'))
+  if (!anyOpen) { document.documentElement.classList.remove('modal-open'); document.body.classList.remove('modal-open') }
+}
+
+function openModal(id) {
+  const el = document.getElementById(id)
+  if (!el) return
+  el.classList.remove('hidden')
+  requestAnimationFrame(() => el.classList.add('is-open'))
+  lockBodyScroll()
+}
+
+function closeModal(id) {
+  const el = document.getElementById(id)
+  if (!el) return
+  el.classList.remove('is-open')
+  setTimeout(() => { if (!el.classList.contains('is-open')) { el.classList.add('hidden'); unlockBodyScroll() } }, 180)
+}
+
+// ── Add Student ────────────────────────────────────────────────
+function openAddStudentModal()  { openModal('addStudentModal') }
+function closeAddStudentModal() { closeModal('addStudentModal') }
+
+// ── View Student ───────────────────────────────────────────────
+function formatSchedule(schedule) {
+  if (!schedule || schedule === '—') return '—'
+  return schedule.replace(/,\s*(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/g, '\n$1').trim()
+}
+function formatScheduleHtml(schedule) {
+  return formatSchedule(schedule).replace(/\n/g, '<br>')
+}
+
+function openViewStudentModal(student) {
+  document.getElementById('view_uid').textContent            = student.uid || '—'
+  document.getElementById('view_created_at').textContent     = student.created_at || '—'
+  document.getElementById('view_last_name').textContent      = student.last_name || '—'
+  document.getElementById('view_first_name').textContent     = student.first_name || '—'
+  document.getElementById('view_middle_name').textContent    = student.middle_name || '—'
+  document.getElementById('view_extension').textContent      = student.extension || '—'
+  document.getElementById('view_section_name').textContent   = student.section_name || '—'
+  document.getElementById('view_year_level').textContent     = student.year_level || '—'
+  document.getElementById('view_teacher_name').textContent   = student.teacher_name || '—'
+  document.getElementById('view_birthday').textContent       = student.birthday || '—'
+  document.getElementById('view_contact_number').textContent = student.contact_number || '—'
+  document.getElementById('view_email').textContent          = student.email || '—'
+  document.getElementById('view_schedule').textContent       = formatSchedule(student.schedule)
+  openModal('viewStudentModal')
+}
+function closeViewStudentModal() { closeModal('viewStudentModal') }
+
+// ── Edit Student ───────────────────────────────────────────────
+function openEditStudentModal(student) {
+  const form = document.getElementById('editStudentForm')
+  const tpl  = "{{ url_for('sregister.update_student', student_id=0) }}"
+  form.action = tpl.replace('/0', '/' + student.id)
+  document.getElementById('edit_uid').value            = student.uid || ''
+  document.getElementById('edit_last_name').value      = student.last_name || ''
+  document.getElementById('edit_first_name').value     = student.first_name || ''
+  document.getElementById('edit_middle_name').value    = student.middle_name || ''
+  document.getElementById('edit_extension').value      = student.extension || ''
+  document.getElementById('edit_birthday').value       = student.birthday || ''
+  document.getElementById('edit_contact_number').value = student.contact_number || ''
+  document.getElementById('edit_email').value          = student.email || ''
+  document.getElementById('edit_schedule').value       = student.schedule || ''
+  document.getElementById('edit_section_id').value     = student.section_id ?? ''
+  openModal('editStudentModal')
+}
+function closeEditStudentModal() { closeModal('editStudentModal') }
+
+// ── Import Modal file picker ───────────────────────────────────
+function handleImportFileChange(input) {
+  const label = document.getElementById('importFileName')
+  label.textContent = input.files[0] ? input.files[0].name : 'No file chosen'
+  label.classList.toggle('text-gray-900', !!input.files[0])
+  label.classList.toggle('text-gray-500', !input.files[0])
+}
+
+function runImportFromModal() {
+  const input = document.getElementById('importFileInput')
+  if (!input.files[0]) { alert('Please choose a file first.'); return }
+  const file = input.files[0]
+  const reader = new FileReader()
+  const isExcel = /\.(xlsx|xls)$/i.test(file.name)
+  if (isExcel) {
+    reader.onload = ev => {
+      const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' })
+      processImportedSheet(wb, file.name)
+    }
+    reader.readAsArrayBuffer(file)
+  } else {
+    reader.onload = ev => {
+      const wb = XLSX.read(ev.target.result, { type: 'string' })
+      processImportedSheet(wb, file.name)
+    }
+    reader.readAsText(file)
+  }
+}
+
+// ── Search / Export ────────────────────────────────────────────
 function filterTable() {
-  const input = document.getElementById('searchInput').value.toLowerCase().trim()
-  const rows = document.querySelectorAll('#studentsTable tbody tr')
-  rows.forEach(row => {
-    row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none'
+  const q = document.getElementById('searchInput').value.toLowerCase().trim()
+  document.querySelectorAll('#studentsTable tbody tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none'
   })
 }
 
@@ -540,143 +648,18 @@ function exportToCSV() {
     csv.push(cols.join(','))
   })
   const blob = new Blob([csv.join('\n')], { type: 'text/csv' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href     = url
   a.download = `students_${new Date().toISOString().slice(0,10)}.csv`
   a.click()
   URL.revokeObjectURL(url)
 }
 
-function moveModalsToBody() {
-  ['addStudentModal', 'viewStudentModal', 'editStudentModal'].forEach(id => {
-    const modal = document.getElementById(id)
-    if (modal && modal.parentElement !== document.body) {
-      document.body.appendChild(modal)
-    }
-  })
-}
-
-function lockBodyScroll() {
-  document.documentElement.classList.add('modal-open')
-  document.body.classList.add('modal-open')
-}
-
-function unlockBodyScroll() {
-  if (
-    !document.getElementById('addStudentModal').classList.contains('is-open') &&
-    !document.getElementById('viewStudentModal').classList.contains('is-open') &&
-    !document.getElementById('editStudentModal').classList.contains('is-open')
-  ) {
-    document.documentElement.classList.remove('modal-open')
-    document.body.classList.remove('modal-open')
-  }
-}
-
-function openModal(modalId) {
-  const modal = document.getElementById(modalId)
-  if (!modal) return
-  modal.classList.remove('hidden')
-  requestAnimationFrame(() => {
-    modal.classList.add('is-open')
-  })
-  lockBodyScroll()
-}
-
-function closeModal(modalId) {
-  const modal = document.getElementById(modalId)
-  if (!modal) return
-  modal.classList.remove('is-open')
-  setTimeout(() => {
-    if (!modal.classList.contains('is-open')) {
-      modal.classList.add('hidden')
-      unlockBodyScroll()
-    }
-  }, 180)
-}
-
-function openAddStudentModal() {
-  openModal('addStudentModal')
-}
-
-function closeAddStudentModal() {
-  closeModal('addStudentModal')
-}
-
-function formatSchedule(schedule) {
-  if (!schedule || schedule === '—') return '—'
-  return schedule.replace(/,\s*(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/g, '\n$1').trim()
-}
-
-function formatScheduleHtml(schedule) {
-  return formatSchedule(schedule).replace(/\n/g, '<br>')
-}
-
-function openViewStudentModal(student) {
-  document.getElementById('view_uid').textContent = student.uid || '—'
-  document.getElementById('view_created_at').textContent = student.created_at || '—'
-  document.getElementById('view_last_name').textContent = student.last_name || '—'
-  document.getElementById('view_first_name').textContent = student.first_name || '—'
-  document.getElementById('view_middle_name').textContent = student.middle_name || '—'
-  document.getElementById('view_extension').textContent = student.extension || '—'
-  document.getElementById('view_section_name').textContent = student.section_name || '—'
-  document.getElementById('view_year_level').textContent = student.year_level || '—'
-  document.getElementById('view_teacher_name').textContent = student.teacher_name || '—'
-  document.getElementById('view_birthday').textContent = student.birthday || '—'
-  document.getElementById('view_contact_number').textContent = student.contact_number || '—'
-  document.getElementById('view_email').textContent = student.email || '—'
-  document.getElementById('view_schedule').textContent = formatSchedule(student.schedule)
-
-  openModal('viewStudentModal')
-}
-
-function closeViewStudentModal() {
-  closeModal('viewStudentModal')
-}
-
-function openEditStudentModal(student) {
-  const form = document.getElementById('editStudentForm')
-  const updateUrlTemplate = "{{ url_for('sregister.update_student', student_id=0) }}"
-  form.action = updateUrlTemplate.replace('/0', '/' + student.id)
-
-  document.getElementById('edit_uid').value = student.uid || ''
-  document.getElementById('edit_last_name').value = student.last_name || ''
-  document.getElementById('edit_first_name').value = student.first_name || ''
-  document.getElementById('edit_middle_name').value = student.middle_name || ''
-  document.getElementById('edit_extension').value = student.extension || ''
-  document.getElementById('edit_birthday').value = student.birthday || ''
-  document.getElementById('edit_contact_number').value = student.contact_number || ''
-  document.getElementById('edit_email').value = student.email || ''
-  document.getElementById('edit_schedule').value = student.schedule || ''
-  document.getElementById('edit_section_id').value = student.section_id ?? ''
-
-  openModal('editStudentModal')
-}
-
-function closeEditStudentModal() {
-  closeModal('editStudentModal')
-}
-
-window.addEventListener('click', function(e) {
-  if (e.target === document.getElementById('addStudentModal')) closeAddStudentModal()
-  if (e.target === document.getElementById('viewStudentModal')) closeViewStudentModal()
-  if (e.target === document.getElementById('editStudentModal')) closeEditStudentModal()
-})
-
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    closeAddStudentModal()
-    closeViewStudentModal()
-    closeEditStudentModal()
-  }
-})
-
+// ── Excel / CSV import logic ───────────────────────────────────
 function excelSerialToDate(serial) {
-  const date_info = new Date(Math.floor(serial - 25569) * 86400 * 1000)
-  const y = date_info.getUTCFullYear()
-  const m = String(date_info.getUTCMonth() + 1).padStart(2, '0')
-  const d = String(date_info.getUTCDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
+  const d = new Date(Math.floor(serial - 25569) * 86400 * 1000)
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`
 }
 
 function normalizeBirthday(value) {
@@ -685,48 +668,20 @@ function normalizeBirthday(value) {
   if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw
   if (/^\d+(\.\d+)?$/.test(raw)) return excelSerialToDate(parseFloat(raw))
   const parsed = new Date(raw)
-  if (!isNaN(parsed.getTime())) {
+  if (!isNaN(parsed.getTime()))
     return `${parsed.getFullYear()}-${String(parsed.getMonth()+1).padStart(2,'0')}-${String(parsed.getDate()).padStart(2,'0')}`
-  }
   return raw
 }
 
-function triggerImportFile() {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = '.csv,.xlsx,.xls'
-  input.onchange = function(e) {
-    const file = e.target.files[0]
-    if (!file) return
-    const reader = new FileReader()
-    const isExcel = /\.(xlsx|xls)$/i.test(file.name)
-    if (isExcel) {
-      reader.onload = ev => {
-        const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' })
-        processImportedSheet(wb, file.name)
-      }
-      reader.readAsArrayBuffer(file)
-    } else {
-      reader.onload = ev => {
-        const wb = XLSX.read(ev.target.result, { type: 'string' })
-        processImportedSheet(wb, file.name)
-      }
-      reader.readAsText(file)
-    }
-  }
-  input.click()
-}
-
 function processImportedSheet(wb, filename) {
-  const ws = wb.Sheets[wb.SheetNames[0]]
+  const ws   = wb.Sheets[wb.SheetNames[0]]
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
   parseAndImport(rows, filename)
 }
 
 function parseAndImport(rows, filename) {
   if (rows.length < 2) { alert('❌ No data found in the file.'); return }
-
-  const headers = rows[0].map(h => (h || '').toString().trim().toLowerCase())
+  const headers  = rows[0].map(h => (h || '').toString().trim().toLowerCase())
   const students = []
 
   for (let row of rows.slice(1)) {
@@ -735,20 +690,19 @@ function parseAndImport(rows, filename) {
     headers.forEach((header, i) => {
       const value = (row[i] ?? '').toString().trim()
       if (!value) return
-      if (header.includes('last')) student.last_name = value
-      else if (header.includes('first')) student.first_name = value
-      else if (header.includes('middle')) student.middle_name = value
-      else if (header.includes('extension') || header.includes('ext')) student.extension = value
-      else if (header.includes('birth')) student.birthday = normalizeBirthday(value)
+      if      (header.includes('last'))                                             student.last_name      = value
+      else if (header.includes('first'))                                            student.first_name     = value
+      else if (header.includes('middle'))                                           student.middle_name    = value
+      else if (header.includes('extension') || header.includes('ext'))             student.extension      = value
+      else if (header.includes('birth'))                                            student.birthday       = normalizeBirthday(value)
       else if (header.includes('contact') || header.includes('phone') || header.includes('number')) student.contact_number = value
-      else if (header.includes('email')) student.email = value
-      else if (header.includes('schedule') || header.includes('sched')) student.schedule = value
-      else if (header.includes('section')) student.section_name = value
-      else if (header.includes('year')) student.year_level = value
+      else if (header.includes('email'))                                            student.email          = value
+      else if (header.includes('schedule') || header.includes('sched'))            student.schedule       = value
+      else if (header.includes('section'))                                          student.section_name   = value
+      else if (header.includes('year'))                                             student.year_level     = value
     })
-    if (student.last_name && student.first_name && student.birthday && student.contact_number && student.email && student.schedule) {
+    if (student.last_name && student.first_name && student.birthday && student.contact_number && student.email && student.schedule)
       students.push(student)
-    }
   }
 
   if (students.length === 0) {
@@ -757,6 +711,7 @@ function parseAndImport(rows, filename) {
   }
 
   if (confirm(`✅ Found ${students.length} students in "${filename}".\n\nImport them now?`)) {
+    closeModal('importStudentModal')
     fetch('/superadmin/import-excel', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -775,9 +730,26 @@ function parseAndImport(rows, filename) {
   }
 }
 
+// ── Close on backdrop click / Escape ──────────────────────────
+ALL_MODALS.forEach(id => {
+  document.getElementById(id)?.addEventListener('click', function(e) {
+    if (e.target === this) closeModal(id)
+  })
+})
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') ALL_MODALS.forEach(closeModal)
+})
+
+// ── Init ───────────────────────────────────────────────────────
+function moveModalsToBody() {
+  ALL_MODALS.forEach(id => {
+    const el = document.getElementById(id)
+    if (el && el.parentElement !== document.body) document.body.appendChild(el)
+  })
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   moveModalsToBody()
-
   document.querySelectorAll('.schedule-cell').forEach(el => {
     el.innerHTML = formatScheduleHtml(el.textContent)
   })
@@ -789,208 +761,88 @@ document.addEventListener('DOMContentLoaded', function() {
   body { font-family: 'Inter', system-ui, sans-serif; }
 
   html.modal-open,
-  body.modal-open {
-    overflow: hidden !important;
-  }
+  body.modal-open { overflow: hidden !important; }
 
   .form-label {
-    display: block;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: #374151;
-    margin-bottom: 0.5rem;
+    display: block; font-size: .8125rem; font-weight: 500;
+    color: #374151; margin-bottom: .5rem;
   }
-
   .form-input {
-    display: block;
-    width: 100%;
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-    color: #111827;
-    background: #fff;
-    border: 1.5px solid #e5e7eb;
-    border-radius: 0.875rem;
-    outline: none;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    display: block; width: 100%; padding: .75rem 1rem;
+    font-size: .875rem; color: #111827; background: #fff;
+    border: 1.5px solid #e5e7eb; border-radius: .875rem;
+    outline: none; transition: border-color .15s, box-shadow .15s;
   }
-
-  .form-input:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
-  }
-
-  .form-input::placeholder {
-    color: #9ca3af;
-  }
-
+  .form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+  .form-input::placeholder { color: #9ca3af; }
   .form-select {
-    display: block;
-    width: 100%;
-    padding: 0.75rem 2.5rem 0.75rem 1rem;
-    font-size: 0.875rem;
-    color: #111827;
-    background: #fff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") no-repeat right 0.75rem center / 1.25rem;
-    border: 1.5px solid #e5e7eb;
-    border-radius: 0.875rem;
-    outline: none;
-    appearance: none;
-    -webkit-appearance: none;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    display: block; width: 100%;
+    padding: .75rem 2.5rem .75rem 1rem; font-size: .875rem; color: #111827;
+    background: #fff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") no-repeat right .75rem center / 1.25rem;
+    border: 1.5px solid #e5e7eb; border-radius: .875rem;
+    outline: none; appearance: none; -webkit-appearance: none;
+    transition: border-color .15s, box-shadow .15s;
   }
-
-  .form-select:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
-  }
-
+  .form-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
   .view-label {
-    display: block;
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #9ca3af;
-    margin-bottom: 0.4rem;
+    display: block; font-size: .7rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .06em;
+    color: #9ca3af; margin-bottom: .4rem;
   }
-
   .view-field {
-    background: #f9fafb;
-    border: 1.5px solid #e5e7eb;
-    border-radius: 0.875rem;
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-    color: #1f2937;
-    min-height: 2.75rem;
+    background: #f9fafb; border: 1.5px solid #e5e7eb;
+    border-radius: .875rem; padding: .75rem 1rem;
+    font-size: .875rem; color: #1f2937; min-height: 2.75rem;
   }
-
   .modal-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 2147483000;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 24px 16px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    background: rgba(17, 24, 39, 0.58);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    isolation: isolate;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.18s ease;
+    position: fixed; inset: 0; z-index: 2147483000;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 24px 16px; overflow-y: auto; overflow-x: hidden;
+    background: rgba(17,24,39,.58);
+    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+    isolation: isolate; opacity: 0; pointer-events: none;
+    transition: opacity .18s ease;
   }
-
-  .modal-overlay.is-open {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
+  .modal-overlay.is-open { opacity: 1; pointer-events: auto; }
   .modal-panel {
-    position: relative;
-    z-index: 2147483001;
-    width: 100%;
-    background: #ffffff;
-    border-radius: 1.5rem;
-    box-shadow:
-      0 25px 50px -12px rgba(0, 0, 0, 0.35),
-      0 0 0 1px rgba(255, 255, 255, 0.12);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    margin: auto 0;
-    max-height: calc(100vh - 48px);
-    transform: translateY(10px) scale(0.985);
-    transition: transform 0.18s ease, opacity 0.18s ease;
+    position: relative; z-index: 2147483001; width: 100%;
+    background: #fff; border-radius: 1.5rem;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.12);
+    overflow: hidden; display: flex; flex-direction: column;
+    margin: auto 0; max-height: calc(100vh - 48px);
+    transform: translateY(10px) scale(.985);
+    transition: transform .18s ease, opacity .18s ease;
   }
-
-  .modal-overlay.is-open .modal-panel {
-    transform: translateY(0) scale(1);
-  }
-
-  .modal-panel-lg {
-    max-width: 960px;
-  }
-
-  .modal-panel-md {
-    max-width: 768px;
-  }
-
+  .modal-overlay.is-open .modal-panel { transform: translateY(0) scale(1); }
+  .modal-panel-lg { max-width: 960px; }
+  .modal-panel-md { max-width: 560px; }
   .modal-header {
-    position: sticky;
-    top: 0;
-    z-index: 30;
-    padding: 1.25rem 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
+    position: sticky; top: 0; z-index: 30; padding: 1.25rem 2rem;
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
   }
-
-  .modal-body {
-    overflow-y: auto;
-    overflow-x: hidden;
-    flex: 1 1 auto;
-  }
-
+  .modal-body { overflow-y: auto; overflow-x: hidden; flex: 1 1 auto; }
   .modal-footer {
-    position: sticky;
-    bottom: 0;
-    z-index: 30;
-    padding: 1.25rem 2rem;
-    border-top: 1px solid #f3f4f6;
-    background: rgba(249, 250, 251, 0.96);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    flex-shrink: 0;
+    position: sticky; bottom: 0; z-index: 30; padding: 1.25rem 2rem;
+    border-top: 1px solid #f3f4f6; background: rgba(249,250,251,.96);
+    backdrop-filter: blur(6px); display: flex; align-items: center;
+    justify-content: flex-end; gap: .75rem; flex-shrink: 0;
   }
-
   .modal-close-btn {
-    width: 2.25rem;
-    height: 2.25rem;
-    border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.15s ease;
+    width: 2.25rem; height: 2.25rem; border-radius: 9999px;
+    background: rgba(255,255,255,.2); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    transition: background-color .15s;
   }
-
-  .modal-close-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-  }
-
+  .modal-close-btn:hover { background: rgba(255,255,255,.3); }
   @keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.97) translateY(8px); }
+    from { opacity: 0; transform: scale(.97) translateY(8px); }
     to   { opacity: 1; transform: scale(1) translateY(0); }
   }
-
-  .animate-fadeIn {
-    animation: fadeIn 0.2s ease-out;
-  }
-
+  .animate-fadeIn { animation: fadeIn .2s ease-out; }
   @media (max-width: 640px) {
-    .modal-overlay {
-      padding: 12px;
-      align-items: stretch;
-    }
-
-    .modal-panel {
-      max-height: calc(100vh - 24px);
-      border-radius: 1.25rem;
-    }
-
-    .modal-header,
-    .modal-footer {
-      padding-left: 1rem;
-      padding-right: 1rem;
-    }
+    .modal-overlay { padding: 12px; align-items: stretch; }
+    .modal-panel   { max-height: calc(100vh - 24px); border-radius: 1.25rem; }
+    .modal-header, .modal-footer { padding-left: 1rem; padding-right: 1rem; }
   }
 </style>
 {% endblock %}

@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
+from functools import wraps
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
@@ -14,8 +15,25 @@ load_dotenv()
 teacher_bp = Blueprint("teacher_bp", __name__, template_folder="template")
 
 
+# ─────────────────────────────────────────────
+# AUTH DECORATOR
+# ─────────────────────────────────────────────
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("sadmin_logged_in"):
+            flash("Please log in to access the admin portal.", "warning")
+            return redirect(url_for("sadmin.login"))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+# ─────────────────────────────────────────────
+# DB CONNECTION
+# ─────────────────────────────────────────────
+
 def get_db_connection():
-    import os
     from dotenv import load_dotenv
     import psycopg2
 
@@ -28,11 +46,11 @@ def get_db_connection():
     if not database_url:
         raise Exception("❌ DATABASE_URL missing")
 
-    # 🚀 FORCE Railway connection ONLY
     return psycopg2.connect(
         database_url.strip(),
         sslmode="require"
     )
+
 
 def send_teacher_create_password_email(to_email, first_name, last_name, reset_link):
     mail_host = os.getenv("MAIL_HOST")
@@ -97,6 +115,7 @@ def send_teacher_create_password_email(to_email, first_name, last_name, reset_li
 
 
 @teacher_bp.route("/teachers", methods=["GET"])
+@login_required
 def teachers():
     teachers_list = []
     conn = None
@@ -133,6 +152,7 @@ def teachers():
 
 
 @teacher_bp.route("/teachers/<int:teacher_id>/students", methods=["GET"])
+@login_required
 def view_teacher_students(teacher_id):
     conn = None
     cur = None
@@ -210,10 +230,8 @@ def view_teacher_students(teacher_id):
             conn.close()
 
 
-# ✅ REST OF YOUR CODE (UNCHANGED)
-# (Everything below stays the same — no need to modify)
-
 @teacher_bp.route("/teachers/add", methods=["POST"])
+@login_required
 def add_teacher():
     last_name = request.form.get("last_name", "").strip()
     first_name = request.form.get("first_name", "").strip()
@@ -221,17 +239,22 @@ def add_teacher():
     extension = request.form.get("extension", "").strip()
     contact_number = request.form.get("contact_number", "").strip()
     email = request.form.get("email", "").strip()
-    teacher_id = request.form.get("teacher_id", "").strip()  # ← ADD THIS
+    teacher_id = request.form.get("teacher_id", "").strip()
 
     if not last_name or not first_name or not contact_number or not email or not teacher_id:
         flash("Last Name, First Name, Contact Number, Email, and Teacher ID are required.", "error")
         return redirect(url_for("teacher_bp.teachers"))
 
-    # ...
+    conn = None
+    cur = None
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute("""
             INSERT INTO teachers (
-                teacher_id,      -- ← ADD THIS
+                teacher_id,
                 last_name,
                 first_name,
                 middle_name,
@@ -239,10 +262,10 @@ def add_teacher():
                 contact_number,
                 email
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s)   -- ← 7 placeholders now
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         """, (
-            teacher_id,          # ← ADD THIS
+            teacher_id,
             last_name,
             first_name,
             middle_name if middle_name else None,
@@ -251,8 +274,25 @@ def add_teacher():
             email
         ))
 
+        conn.commit()
+        flash("Teacher added successfully.", "success")
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        flash(f"Error adding teacher: {str(e)}", "error")
+
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+    return redirect(url_for("teacher_bp.teachers"))
+
 
 @teacher_bp.route("/teachers/send-create-password/<int:teacher_id>")
+@login_required
 def send_create_password(teacher_id):
     conn = None
     cur = None
@@ -314,6 +354,7 @@ def send_create_password(teacher_id):
 
 @teacher_bp.route("/create-password/<token>", methods=["GET", "POST"])
 def create_password(token):
+    # NOTE: No @login_required here — teachers need this without being logged in
     conn = None
     cur = None
 
@@ -376,6 +417,7 @@ def create_password(token):
 
 
 @teacher_bp.route("/teachers/test-email")
+@login_required
 def test_email():
     test_to = request.args.get("email", "").strip()
 
