@@ -60,6 +60,7 @@ try:
     time.sleep(2)
 except Exception as e:
     print(f"Serial connection error: {e}")
+    print("Running in demo mode - RFID disabled")
 
 # =========================
 # HELPER FUNCTIONS
@@ -141,7 +142,7 @@ def get_student_name_by_uid(uid):
         cur.execute("""
             SELECT first_name, middle_name, last_name, extension
             FROM students
-            WHERE UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(uid, '')), ' ', ''), '-', ''), ':', '')) = %s
+            WHERE uid = %s
             LIMIT 1;
         """, (uid,))
         row = cur.fetchone()
@@ -163,15 +164,16 @@ def save_uid_to_db(uid):
     uid = normalize_uid(uid)
     try:
         cur = conn.cursor()
+        today = datetime.now().strftime('%Y-%m-%d')
         cur.execute("""
             SELECT id FROM rfid_cards
-            WHERE UPPER(REPLACE(REPLACE(REPLACE(TRIM(uid), ' ', ''), '-', ''), ':', '')) = %s
+            WHERE DATE(created_at) = %s AND uid = %s
             LIMIT 1;
-        """, (uid,))
+        """, (today, uid))
         if cur.fetchone():
             cur.close()
             return
-        cur.execute("INSERT INTO rfid_cards (uid) VALUES (%s);", (uid,))
+        cur.execute("INSERT INTO rfid_cards (uid, created_at) VALUES (%s, NOW());", (uid,))
         conn.commit()
         cur.close()
     except Exception as e:
@@ -253,6 +255,101 @@ def test_db():
         return jsonify({"status": "success", "message": "Connected", "server_time": str(result[0])})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
+
+# =========================
+# TOGGLE ATTENDANCE ROUTE (FIXED)
+# =========================
+@admin_bp.route('/toggle_attendance/<int:student_id>', methods=['POST'])
+@login_required
+def toggle_attendance(student_id):
+    """Toggle student attendance for today (mark present/absent)"""
+    teacher_id = session.get('teacher_id')
+    if not teacher_id:
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+    
+    try:
+        data = request.get_json()
+        present = data.get('present', False)
+        section_id = data.get('section_id')
+        
+        if not section_id:
+            return jsonify({"success": False, "message": "Section ID required"}), 400
+        
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({"success": False, "message": "Database connection failed"}), 500
+        
+        cur = conn.cursor()
+        
+        # Verify teacher has access to this student's section
+        cur.execute("""
+            SELECT st.id, st.uid, st.first_name, st.last_name
+            FROM students st
+            JOIN sections sec ON st.section_id = sec.id
+            WHERE st.id = %s AND sec.teacher_id = %s
+        """, (student_id, teacher_id))
+        
+        student = cur.fetchone()
+        if not student:
+            cur.close()
+            conn.close()
+            return jsonify({"success": False, "message": "Unauthorized or student not found"}), 403
+        
+        today = datetime.now().strftime('%Y-%m-%d')
+        student_uid = student[1] if student[1] else ""
+        
+        if present:
+            # Check if already marked present today
+            cur.execute("""
+                SELECT id FROM rfid_cards 
+                WHERE DATE(created_at) = %s 
+                AND uid = %s
+                LIMIT 1
+            """, (today, student_uid))
+            
+            existing = cur.fetchone()
+            if not existing:
+                # Insert attendance record
+                cur.execute("""
+                    INSERT INTO rfid_cards (uid, created_at) 
+                    VALUES (%s, NOW())
+                """, (student_uid,))
+                conn.commit()
+                message = "Student marked as present"
+            else:
+                message = "Student already marked as present today"
+        else:
+            # Mark as absent: Remove today's attendance record if exists
+            cur.execute("""
+                DELETE FROM rfid_cards 
+                WHERE DATE(created_at) = %s 
+                AND uid = %s
+            """, (today, student_uid))
+            conn.commit()
+            message = "Student marked as absent"
+        
+        cur.close()
+        conn.close()
+        
+        # Create a student name for response
+        student_name = ""
+        if student[2] and student[3]:
+            student_name = f"{student[2]} {student[3]}"
+        elif student[2]:
+            student_name = student[2]
+        else:
+            student_name = f"Student #{student_id}"
+        
+        return jsonify({
+            "success": True, 
+            "message": message,
+            "present": present,
+            "student_name": student_name
+        })
+        
+    except Exception as e:
+        print(f"Toggle attendance error: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
 
 # =========================
 # SECTIONS MANAGEMENT
@@ -467,8 +564,7 @@ def class_section(section_id):
             cur2.execute("""
                 SELECT created_at FROM rfid_cards 
                 WHERE DATE(created_at) = %s 
-                AND UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(uid, '')), ' ', ''), '-', ''), ':', '')) 
-                = UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(%s, '')), ' ', ''), '-', ''), ':', ''))
+                AND uid = %s
                 LIMIT 1
             """, (today, row['uid']))
             attendance = cur2.fetchone()
@@ -634,8 +730,7 @@ def history_api():
                     COALESCE(s.extension, ''))), ''), 'Unregistered Card') AS full_name,
                 r.created_at
             FROM rfid_cards r
-            LEFT JOIN students s ON UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(r.uid, '')), ' ', ''), '-', ''), ':', ''))
-                = UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(s.uid, '')), ' ', ''), '-', ''), ':', ''))
+            LEFT JOIN students s ON s.uid = r.uid
             ORDER BY r.created_at DESC LIMIT 500;
         """)
         rows = cur.fetchall()
@@ -643,10 +738,10 @@ def history_api():
         seen_keys = set()
         history_list = []
         for row in rows:
-            student_id = row[1]
+            uid = row[1]
             scan_date = row[3].date() if row[3] else None
             if scan_date:
-                key = f"{student_id}_{scan_date}"
+                key = f"{uid}_{scan_date}"
                 if key not in seen_keys:
                     seen_keys.add(key)
                     history_list.append({
@@ -680,8 +775,7 @@ def history_filter():
                     COALESCE(s.extension, ''))), ''), 'Unregistered Card') AS full_name,
                 r.created_at
             FROM rfid_cards r
-            LEFT JOIN students s ON UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(r.uid, '')), ' ', ''), '-', ''), ':', ''))
-                = UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(s.uid, '')), ' ', ''), '-', ''), ':', ''))
+            LEFT JOIN students s ON s.uid = r.uid
             WHERE DATE(r.created_at) = %s ORDER BY r.created_at DESC;
         """, (selected_date,))
         rows = cur.fetchall()
@@ -689,10 +783,10 @@ def history_filter():
         seen_keys = set()
         result = []
         for row in rows:
-            student_id = row[1]
+            uid = row[1]
             scan_date = row[3].date() if row[3] else None
             if scan_date:
-                key = f"{student_id}_{scan_date}"
+                key = f"{uid}_{scan_date}"
                 if key not in seen_keys:
                     seen_keys.add(key)
                     result.append({
@@ -1181,22 +1275,11 @@ def teacher_schedules():
         
         sections_data = []
         for section in sections:
-            # Get schedule count for this section from schedules table
-            cur2 = conn.cursor()
-            cur2.execute("""
-                SELECT COUNT(*) as schedule_count
-                FROM schedules
-                WHERE section_id = %s
-            """, (section['section_id'],))
-            schedule_count = cur2.fetchone()[0]
-            cur2.close()
-            
             sections_data.append({
                 'section_id': section['section_id'],
                 'section_name': section['section_name'],
                 'year_level': section['year_level'],
-                'student_count': section['student_count'] or 0,
-                'schedule_count': schedule_count
+                'student_count': section['student_count'] or 0
             })
         
         conn.close()
@@ -1211,7 +1294,7 @@ def teacher_schedules():
 @admin_bp.route('/section_weekly_schedule_data/<int:section_id>')
 @login_required
 def section_weekly_schedule_data(section_id):
-    """API endpoint to get weekly schedule data for a section from schedules table"""
+    """API endpoint to get weekly schedule data for a section"""
     teacher_id = session.get('teacher_id')
     if not teacher_id:
         return jsonify({"success": False, "error": "Not logged in"})
@@ -1235,68 +1318,26 @@ def section_weekly_schedule_data(section_id):
             conn.close()
             return jsonify({"success": False, "error": "Section not found or unauthorized"})
         
-        # Get all schedules for this section with teacher and room info
+        # Get schedules from students (if schedule is stored in students table)
         cur.execute("""
             SELECT 
-                s.id,
-                s.day,
-                s.time,
-                s.subject,
-                t.first_name as teacher_first,
-                t.last_name as teacher_last,
-                r.room_name
-            FROM schedules s
-            LEFT JOIN teachers t ON s.teacher_id = t.id
-            LEFT JOIN rooms r ON s.room_id = r.id
-            WHERE s.section_id = %s
-            ORDER BY 
-                CASE s.day
-                    WHEN 'Monday' THEN 1
-                    WHEN 'Tuesday' THEN 2
-                    WHEN 'Wednesday' THEN 3
-                    WHEN 'Thursday' THEN 4
-                    WHEN 'Friday' THEN 5
-                    WHEN 'Saturday' THEN 6
-                    WHEN 'Sunday' THEN 7
-                END,
-                s.time
+                st.id,
+                st.first_name,
+                st.last_name,
+                st.schedule
+            FROM students st
+            WHERE st.section_id = %s AND st.schedule IS NOT NULL AND st.schedule != ''
+            LIMIT 1
         """, (section_id,))
         
-        schedules = cur.fetchall()
+        schedule_info = cur.fetchone()
         conn.close()
-        
-        # Format schedule data for calendar view with hourly slots
-        schedule_data = []
-        for s in schedules:
-            teacher_name = ""
-            if s['teacher_first'] and s['teacher_last']:
-                teacher_name = f"{s['teacher_first']} {s['teacher_last']}"
-            
-            time_str = str(s['time'])
-            # Get hour from time
-            hour = int(time_str.split(':')[0])
-            
-            # Create hourly time slot (e.g., "7:00-8:00")
-            next_hour = hour + 1
-            time_slot = f"{hour}:00-{next_hour}:00"
-            
-            schedule_data.append({
-                'id': s['id'],
-                'day': s['day'],
-                'time': time_str,
-                'hour': hour,
-                'time_slot': time_slot,
-                'formatted_time': f"{hour}:00 - {next_hour}:00",
-                'subject': s['subject'] or 'No Subject',
-                'teacher': teacher_name,
-                'room': s['room_name'] or 'TBD'
-            })
         
         section_data = {
             'section_id': section['id'],
             'section_name': section['section_name'],
             'year_level': section['year_level'],
-            'schedules': schedule_data
+            'schedule': schedule_info['schedule'] if schedule_info else "No schedule set"
         }
         
         return jsonify({"success": True, "section": section_data})
@@ -1306,6 +1347,7 @@ def section_weekly_schedule_data(section_id):
         if conn:
             conn.close()
         return jsonify({"success": False, "error": str(e)})
+
 # =========================
 # ROOMS API
 # =========================
@@ -1339,72 +1381,8 @@ def get_rooms():
         return jsonify({"success": False, "rooms": []})
 
 # =========================
-# STUDENT UPDATE ROUTE
+# STUDENT INFO ROUTE
 # =========================
-@admin_bp.route('/update_student/<int:student_id>', methods=['PUT'])
-@login_required
-def update_student(student_id):
-    """Update student information"""
-    teacher_id = session.get('teacher_id')
-    if not teacher_id:
-        return jsonify({"success": False, "message": "Not logged in"}), 401
-    
-    conn = get_db_connection()
-    if conn is None:
-        return jsonify({"success": False, "message": "Database connection failed"}), 500
-    
-    try:
-        data = request.get_json()
-        cur = conn.cursor()
-        
-        # Verify teacher has access to this student
-        cur.execute("""
-            SELECT s.id FROM students s
-            JOIN sections sec ON s.section_id = sec.id
-            WHERE s.id = %s AND sec.teacher_id = %s
-        """, (student_id, teacher_id))
-        
-        if not cur.fetchone():
-            cur.close()
-            conn.close()
-            return jsonify({"success": False, "message": "Unauthorized to edit this student"}), 403
-        
-        # Update student
-        cur.execute("""
-            UPDATE students SET 
-                first_name = %s,
-                middle_name = %s,
-                last_name = %s,
-                extension = %s,
-                uid = %s,
-                contact_number = %s,
-                email = %s,
-                schedule = %s
-            WHERE id = %s
-        """, (
-            data.get('first_name', ''),
-            data.get('middle_name', ''),
-            data.get('last_name', ''),
-            data.get('extension', ''),
-            data.get('uid', ''),
-            data.get('contact_number', ''),
-            data.get('email', ''),
-            data.get('schedule', ''),
-            student_id
-        ))
-        
-        conn.commit()
-        cur.close()
-        conn.close()
-        
-        return jsonify({"success": True, "message": "Student updated successfully"})
-        
-    except Exception as e:
-        print(f"Update student error: {e}")
-        if conn:
-            conn.close()
-        return jsonify({"success": False, "message": str(e)}), 500
-
 @admin_bp.route('/student_info/<int:student_id>')
 @login_required
 def student_info(student_id):
@@ -1465,8 +1443,7 @@ def student_info(student_id):
                 MIN(created_at) as first_scan,
                 COUNT(*) as scan_count
             FROM rfid_cards
-            WHERE UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(uid, '')), ' ', ''), '-', ''), ':', '')) 
-                = UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(%s, '')), ' ', ''), '-', ''), ':', ''))
+            WHERE uid = %s
             GROUP BY DATE(created_at)
             ORDER BY scan_date DESC
             LIMIT 30

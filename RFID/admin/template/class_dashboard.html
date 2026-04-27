@@ -209,25 +209,10 @@
         background: white;
         border-radius: 1rem;
         padding: 2rem;
-        max-width: 550px;
+        max-width: 450px;
         width: 90%;
         max-height: 85vh;
         overflow-y: auto;
-    }
-    
-    .form-input {
-        width: 100%;
-        padding: 0.6rem 0.75rem;
-        border: 1px solid #e2e8f0;
-        border-radius: 0.5rem;
-        margin-bottom: 1rem;
-        font-size: 0.9rem;
-    }
-    
-    .form-input:focus {
-        outline: none;
-        border-color: #f59e0b;
-        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
     }
     
     .btn-primary {
@@ -246,6 +231,11 @@
         background: #d97706;
     }
     
+    .btn-primary:disabled {
+        background: #cbd5e1;
+        cursor: not-allowed;
+    }
+    
     .btn-secondary {
         background: #e2e8f0;
         color: #1e293b;
@@ -262,8 +252,8 @@
         background: #cbd5e1;
     }
     
-    .btn-edit {
-        background: #3b82f6;
+    .btn-toggle {
+        background: #8b5cf6;
         color: white;
         padding: 0.35rem 0.9rem;
         border-radius: 0.5rem;
@@ -275,9 +265,31 @@
         white-space: nowrap;
     }
     
-    .btn-edit:hover {
-        background: #2563eb;
+    .btn-toggle:hover {
+        background: #7c3aed;
         transform: scale(1.02);
+    }
+    
+    .btn-toggle.absent-toggle {
+        background: #ef4444;
+    }
+    
+    .btn-toggle.absent-toggle:hover {
+        background: #dc2626;
+    }
+    
+    .btn-toggle.present-toggle {
+        background: #10b981;
+    }
+    
+    .btn-toggle.present-toggle:hover {
+        background: #059669;
+    }
+    
+    .attendance-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
     }
     
     @keyframes scanPulse {
@@ -297,7 +309,7 @@
         .stat-card { padding: 0.75rem; }
         .success-banner { padding: 1rem; }
         .uid-badge { font-size: 0.65rem; padding: 0.2rem 0.5rem; }
-        .btn-edit { padding: 0.25rem 0.6rem; font-size: 0.65rem; }
+        .btn-toggle { padding: 0.25rem 0.6rem; font-size: 0.65rem; }
     }
 </style>
 
@@ -417,12 +429,12 @@
                 </div>
             </div>
 
-            <!-- Students Table with Edit Buttons -->
+            <!-- Students Table with Toggle Attendance Buttons -->
             <div class="mt-6">
                 <h2 class="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                     <i class="fa-solid fa-user-graduate text-accent"></i>
                     Student List
-                    <span class="text-xs text-gray-500 ml-2">(Click Edit to modify student details)</span>
+                    <span class="text-xs text-gray-500 ml-2">(Click button to toggle attendance)</span>
                 </h2>
                 
                 <div class="overflow-x-auto">
@@ -434,8 +446,7 @@
                                 <th class="text-left">UID</th>
                                 <th class="text-left">Status</th>
                                 <th class="text-left">Scan Time</th>
-                                <th class="text-left">Contact No.</th>
-                                <th class="text-left w-24">Action</th>
+                                <th class="text-left">Action</th>
                             </tr>
                         </thead>
                         <tbody id="studentsTableBody">
@@ -448,47 +459,23 @@
     </div>
 </div>
 
-<!-- Edit Student Modal -->
-<div id="editStudentModal" class="modal">
+<!-- Toggle Attendance Modal -->
+<div id="toggleAttendanceModal" class="modal">
     <div class="modal-content">
-        <h2 class="text-xl font-bold mb-4"><i class="fa-solid fa-user-edit text-accent mr-2"></i>Edit Student</h2>
-        <input type="hidden" id="editStudentId">
-        
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
-                <input type="text" id="editFirstName" class="form-input" placeholder="First Name">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
-                <input type="text" id="editMiddleName" class="form-input" placeholder="Middle Name">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
-                <input type="text" id="editLastName" class="form-input" placeholder="Last Name">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Extension</label>
-                <input type="text" id="editExtension" class="form-input" placeholder="Jr., Sr., III">
+        <h2 class="text-xl font-bold mb-4" id="modalTitle">
+            <i class="fa-solid fa-user-check text-accent mr-2"></i>Toggle Attendance
+        </h2>
+        <div class="text-center py-6">
+            <div class="text-6xl mb-4" id="modalIcon">🤔</div>
+            <p class="text-gray-700 mb-2" id="modalMessage">Are you sure you want to change attendance?</p>
+            <p class="text-sm text-gray-500 mb-4" id="studentNameDisplay">—</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeAttendanceModal()" class="btn-secondary">Cancel</button>
+                <button onclick="confirmToggleAttendance()" class="btn-primary" id="confirmBtn">Confirm</button>
             </div>
         </div>
-        
-        <label class="block text-sm font-medium text-gray-700 mb-1">UID (RFID Card)</label>
-        <input type="text" id="editUid" class="form-input" placeholder="RFID UID">
-        
-        <label class="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
-        <input type="tel" id="editContactNumber" class="form-input" placeholder="09123456789">
-        
-        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-        <input type="email" id="editEmail" class="form-input" placeholder="student@example.com">
-        
-        <label class="block text-sm font-medium text-gray-700 mb-1">Schedule</label>
-        <textarea id="editSchedule" rows="3" class="form-input" placeholder="Class schedule (e.g., IT 3217&#10;M. Dullamano&#10;AV 3206)"></textarea>
-        
-        <div class="flex gap-3 justify-end mt-4">
-            <button onclick="closeEditModal()" class="btn-secondary">Cancel</button>
-            <button onclick="saveStudentEdit()" class="btn-primary">Save Changes</button>
-        </div>
+        <input type="hidden" id="toggleStudentId">
+        <input type="hidden" id="toggleCurrentStatus">
     </div>
 </div>
 
@@ -517,7 +504,7 @@
         console.log("Rendering students table...");
         const tbody = document.getElementById('studentsTableBody');
         if (!studentsData || studentsData.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8"><div class="empty-state"><i class="fa-regular fa-user text-4xl text-gray-400 mb-3"></i><p class="text-gray-500">No students in this class</p></div></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8"><div class="empty-state"><i class="fa-regular fa-user text-4xl text-gray-400 mb-3"></i><p class="text-gray-500">No students in this class</p></div></td></tr>`;
             return;
         }
         
@@ -534,13 +521,15 @@
                 </td>
                 <td><span class="uid-badge"><i class="fa-solid fa-id-card mr-1 text-xs"></i>${escapeHtml(student.uid)}</span></td>
                 <td id="status-${student.id}">
-                    ${student.present_today ? '<span class="present-badge"><i class="fa-solid fa-check-circle text-xs mr-1"></i> Present</span>' : '<span class="absent-badge"><i class="fa-solid fa-times-circle text-xs mr-1"></i> Absent</span>'}
+                    ${student.present_today ? 
+                        '<span class="present-badge"><i class="fa-solid fa-check-circle text-xs mr-1"></i> Present</span>' : 
+                        '<span class="absent-badge"><i class="fa-solid fa-times-circle text-xs mr-1"></i> Absent</span>'}
                 </td>
-                <td id="time-${student.id}" class="text-sm">${student.present_today ? student.scan_time : '—'}</td>
-                <td class="text-sm"><i class="fa-solid fa-phone mr-1 text-gray-400 text-xs"></i>${escapeHtml(student.contact_number) || '—'}</td>
+                <td id="time-${student.id}" class="text-sm">${student.present_today ? (student.scan_time || new Date().toLocaleTimeString()) : '—'}</td>
                 <td class="text-center">
-                    <button onclick="openEditModal(${student.id})" class="btn-edit">
-                        <i class="fa-solid fa-pencil"></i> Edit
+                    <button onclick="openToggleModal(${student.id})" class="btn-toggle ${student.present_today ? 'present-toggle' : 'absent-toggle'}">
+                        <i class="fa-solid ${student.present_today ? 'fa-toggle-on' : 'fa-toggle-off'} mr-1"></i>
+                        ${student.present_today ? 'Mark Absent' : 'Mark Present'}
                     </button>
                 </td>
             </tr>
@@ -554,68 +543,110 @@
         return div.innerHTML;
     }
     
-    function openEditModal(studentId) {
+    function openToggleModal(studentId) {
         const student = studentsData.find(s => s.id === studentId);
         if (!student) return;
         
-        document.getElementById('editStudentId').value = student.id;
-        document.getElementById('editFirstName').value = student.first_name || '';
-        document.getElementById('editMiddleName').value = student.middle_name || '';
-        document.getElementById('editLastName').value = student.last_name || '';
-        document.getElementById('editExtension').value = student.extension || '';
-        document.getElementById('editUid').value = student.uid || '';
-        document.getElementById('editContactNumber').value = student.contact_number || '';
-        document.getElementById('editEmail').value = student.email || '';
-        document.getElementById('editSchedule').value = student.schedule || '';
+        document.getElementById('toggleStudentId').value = student.id;
+        document.getElementById('toggleCurrentStatus').value = student.present_today;
         
-        document.getElementById('editStudentModal').classList.add('show');
-    }
-    
-    function closeEditModal() {
-        document.getElementById('editStudentModal').classList.remove('show');
-    }
-    
-    async function saveStudentEdit() {
-        const studentId = document.getElementById('editStudentId').value;
-        const formData = {
-            first_name: document.getElementById('editFirstName').value.trim(),
-            middle_name: document.getElementById('editMiddleName').value.trim(),
-            last_name: document.getElementById('editLastName').value.trim(),
-            extension: document.getElementById('editExtension').value.trim(),
-            uid: document.getElementById('editUid').value.trim(),
-            contact_number: document.getElementById('editContactNumber').value.trim(),
-            email: document.getElementById('editEmail').value.trim(),
-            schedule: document.getElementById('editSchedule').value.trim()
-        };
+        const modalTitle = document.getElementById('modalTitle');
+        const modalIcon = document.getElementById('modalIcon');
+        const modalMessage = document.getElementById('modalMessage');
+        const studentNameDisplay = document.getElementById('studentNameDisplay');
+        const confirmBtn = document.getElementById('confirmBtn');
         
-        if (!formData.first_name) {
-            showToast('First name is required', 'error', 'Missing Field');
-            return;
+        studentNameDisplay.innerHTML = `<strong>${escapeHtml(student.full_name)}</strong>`;
+        
+        if (student.present_today) {
+            modalTitle.innerHTML = '<i class="fa-solid fa-user-slash text-red-500 mr-2"></i>Mark as Absent';
+            modalIcon.innerHTML = '❌';
+            modalMessage.innerHTML = 'Are you sure you want to mark this student as <strong class="text-red-600">ABSENT</strong>?';
+            confirmBtn.innerHTML = '<i class="fa-solid fa-times-circle mr-2"></i>Mark Absent';
+            confirmBtn.classList.remove('btn-primary');
+            confirmBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+        } else {
+            modalTitle.innerHTML = '<i class="fa-solid fa-user-check text-green-500 mr-2"></i>Mark as Present';
+            modalIcon.innerHTML = '✅';
+            modalMessage.innerHTML = 'Are you sure you want to mark this student as <strong class="text-green-600">PRESENT</strong>?';
+            confirmBtn.innerHTML = '<i class="fa-solid fa-check-circle mr-2"></i>Mark Present';
+            confirmBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
+            confirmBtn.classList.add('btn-primary');
         }
         
-        if (!formData.last_name) {
-            showToast('Last name is required', 'error', 'Missing Field');
-            return;
-        }
+        document.getElementById('toggleAttendanceModal').classList.add('show');
+    }
+    
+    function closeAttendanceModal() {
+        document.getElementById('toggleAttendanceModal').classList.remove('show');
+    }
+    
+    async function confirmToggleAttendance() {
+        const studentId = document.getElementById('toggleStudentId').value;
+        const currentStatus = document.getElementById('toggleCurrentStatus').value === 'true';
+        const newStatus = !currentStatus;
+        
+        const confirmBtn = document.getElementById('confirmBtn');
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Processing...';
         
         try {
-            const response = await fetch(`/admin/update_student/${studentId}`, {
-                method: 'PUT',
+            const response = await fetch(`/admin/toggle_attendance/${studentId}`, {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: JSON.stringify({ 
+                    present: newStatus,
+                    section_id: sectionId 
+                })
             });
             const data = await response.json();
             
             if (data.success) {
-                showToast('Student updated successfully!', 'success', 'Updated');
-                closeEditModal();
-                setTimeout(() => window.location.reload(), 1000);
+                const student = studentsData.find(s => s.id == studentId);
+                if (student) {
+                    student.present_today = newStatus;
+                    if (newStatus && !student.scan_time) {
+                        student.scan_time = new Date().toLocaleTimeString();
+                    } else if (!newStatus) {
+                        student.scan_time = null;
+                    }
+                    
+                    const statusCell = document.getElementById(`status-${studentId}`);
+                    const timeCell = document.getElementById(`time-${studentId}`);
+                    
+                    if (statusCell) {
+                        statusCell.innerHTML = newStatus ? 
+                            '<span class="present-badge"><i class="fa-solid fa-check-circle text-xs mr-1"></i> Present</span>' : 
+                            '<span class="absent-badge"><i class="fa-solid fa-times-circle text-xs mr-1"></i> Absent</span>';
+                    }
+                    
+                    if (timeCell) {
+                        timeCell.innerHTML = newStatus ? (student.scan_time || new Date().toLocaleTimeString()) : '—';
+                    }
+                    
+                    updateStats();
+                    showToast(
+                        `${student.full_name} has been marked as ${newStatus ? 'PRESENT' : 'ABSENT'}`, 
+                        newStatus ? 'success' : 'warning', 
+                        'Attendance Updated'
+                    );
+                    
+                    if (newStatus) {
+                        showNameBanner(student.full_name, new Date().toLocaleTimeString());
+                    }
+                    
+                    closeAttendanceModal();
+                    setTimeout(() => window.location.reload(), 1000);
+                }
             } else {
-                showToast(data.message || 'Failed to update student', 'error', 'Error');
+                showToast(data.message || 'Failed to update attendance', 'error', 'Error');
             }
         } catch (error) {
-            console.error('Error updating student:', error);
+            console.error('Error toggling attendance:', error);
             showToast('Network error. Please try again.', 'error', 'Connection Error');
+        } finally {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = '<i class="fa-solid fa-check-circle mr-2"></i>Confirm';
         }
     }
     
@@ -666,6 +697,8 @@
                         updateStats();
                         showNameBanner(scannedStudent.full_name, data.time);
                         showToast(`${scannedStudent.full_name} has been detected`, 'success', 'New Scan');
+                        
+                        setTimeout(() => window.location.reload(), 500);
                     }
                 } else {
                     messageEl.innerHTML = '<i class="fa-solid fa-exclamation-triangle mr-2"></i>Student not enrolled in this class';
