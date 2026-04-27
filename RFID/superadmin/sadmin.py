@@ -13,7 +13,7 @@ import subprocess
 import shutil
 import secrets
 import requests as http_requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import bcrypt
 
 load_dotenv()
@@ -40,25 +40,10 @@ def login_required(f):
 # ─────────────────────────────────────────────
 
 def get_db_connection():
-    """
-    🔥 THIS IS YOUR ONLY DB CONNECTION
-
-    ❌ NO SUPABASE
-    ❌ NO LOCALHOST
-    ❌ NO MULTIPLE CONFIGS
-
-    ✅ ONLY RAILWAY DATABASE_URL
-    """
-
     database_url = os.getenv("DATABASE_URL")
-
     if not database_url:
         raise Exception("❌ DATABASE_URL not found in .env")
-
-    return psycopg2.connect(
-        database_url.strip(),
-        sslmode="require"
-    )
+    return psycopg2.connect(database_url.strip(), sslmode="require")
 
 
 def get_pg_dump_path():
@@ -102,16 +87,57 @@ def safe_filename(name):
 
 
 # ─────────────────────────────────────────────
+# NEW: SAFE RFID REGISTRATION (prevents duplicate UIDs)
+# ─────────────────────────────────────────────
+def register_rfid_uid(uid_value: str):
+    """
+    Use this function EVERYWHERE you receive a new RFID tap/scan.
+    It automatically prevents duplicate UIDs even if the same card is tapped again.
+    """
+    if not uid_value:
+        return False
+    uid_value = str(uid_value).strip().upper()
+
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # ON CONFLICT DO NOTHING → no duplicate rows will be created
+        cur.execute("""
+            INSERT INTO rfid_cards (uid, created_at)
+            VALUES (%s, NOW())
+            ON CONFLICT (uid) DO NOTHING
+        """, (uid_value,))
+        conn.commit()
+
+        if cur.rowcount > 0:
+            print(f"✅ New UID registered: {uid_value}")
+            return True
+        else:
+            print(f"ℹ️ UID already exists (duplicate prevented): {uid_value}")
+            return False
+    except Exception as e:
+        print(f"register_rfid_uid error: {e}")
+        if conn:
+            conn.rollback()
+        return False
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+
+# ─────────────────────────────────────────────
 # PASSWORD HELPERS
 # ─────────────────────────────────────────────
 
 def hash_password(plain: str) -> str:
-    """Return a bcrypt hash string for the given plain-text password."""
     return bcrypt.hashpw(plain.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 def check_password(plain: str, hashed: str) -> bool:
-    """Return True if plain matches the stored bcrypt hash."""
     try:
         return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
     except Exception:
@@ -119,16 +145,10 @@ def check_password(plain: str, hashed: str) -> bool:
 
 
 # ─────────────────────────────────────────────
-# SUPERADMIN ACCOUNT HELPERS  (DB-backed)
+# SUPERADMIN ACCOUNT HELPERS
 # ─────────────────────────────────────────────
 
 def get_superadmin_account(username_or_email: str):
-    """
-    Fetch the superadmin row from superadmin_accounts.
-    We store the login identifier in the `email` column;
-    it can be a plain username or an e-mail address.
-    Returns a dict or None.
-    """
     conn = None
     cur  = None
     try:
@@ -150,10 +170,6 @@ def get_superadmin_account(username_or_email: str):
 
 
 def update_superadmin_password(account_id: int, new_password: str) -> bool:
-    """
-    Hash new_password with bcrypt and update the superadmin_accounts row.
-    Returns True on success.
-    """
     conn = None
     cur  = None
     try:
@@ -184,26 +200,10 @@ def update_superadmin_password(account_id: int, new_password: str) -> bool:
 # ─────────────────────────────────────────────
 
 RESET_EMAIL_RECIPIENT = "bergoniaraymund@gmail.com"
-
-# In-memory token store: { token: (expiry_datetime, account_id) }
 _reset_tokens: dict = {}
 
 
 def _send_reset_email(reset_link: str) -> bool:
-    """
-    Send the password-reset email via Resend (https://resend.com).
-
-    Required .env variable:
-        RESEND_API_KEY  –  your Resend API key  (e.g. re_xxxxxxxxxxxxxxxxx)
-
-    Optional .env variable:
-        RESEND_FROM     –  sender address verified in Resend dashboard
-                           defaults to "DMRMINHS Portal <onboarding@resend.dev>"
-                           (the Resend sandbox address — works without a custom domain)
-
-    Free tier: 3,000 emails / month, no credit card required.
-    Sign up → https://resend.com  →  API Keys → Create API Key
-    """
     api_key   = os.getenv("RESEND_API_KEY", "")
     from_addr = os.getenv("RESEND_FROM", "DMRMINHS Portal <onboarding@resend.dev>")
 
@@ -220,22 +220,15 @@ def _send_reset_email(reset_link: str) -> bool:
             <table width="520" cellpadding="0" cellspacing="0"
                    style="background:#ffffff;border-radius:16px;overflow:hidden;
                           box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-
-              <!-- Header -->
               <tr>
                 <td style="background:linear-gradient(135deg,#1d4ed8,#4338ca);
                            padding:32px 40px;text-align:center;">
-                  <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;
-                             letter-spacing:-0.3px;">
-                    DMRMINHS
-                  </h1>
+                  <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">DMRMINHS</h1>
                   <p style="margin:4px 0 0;color:rgba(255,255,255,0.75);font-size:13px;">
                     Don Manuel Rivera Memorial Integrated NHS
                   </p>
                 </td>
               </tr>
-
-              <!-- Body -->
               <tr>
                 <td style="padding:36px 40px;">
                   <p style="margin:0 0 16px;font-size:15px;color:#374151;font-weight:600;">
@@ -246,39 +239,30 @@ def _send_reset_email(reset_link: str) -> bool:
                     Click the button below to set a new password. This link is valid for
                     <strong style="color:#374151;">30 minutes</strong>.
                   </p>
-
-                  <!-- CTA Button -->
                   <table cellpadding="0" cellspacing="0" width="100%">
                     <tr>
                       <td align="center" style="padding:8px 0 28px;">
                         <a href="{reset_link}"
                            style="display:inline-block;background:linear-gradient(135deg,#1d4ed8,#4338ca);
                                   color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;
-                                  letter-spacing:0.5px;padding:14px 36px;border-radius:10px;
-                                  box-shadow:0 4px 14px rgba(29,78,216,0.35);">
+                                  padding:14px 36px;border-radius:10px;">
                           Reset My Password
                         </a>
                       </td>
                     </tr>
                   </table>
-
                   <p style="margin:0 0 8px;font-size:12px;color:#9ca3af;">
                     Or copy and paste this link into your browser:
                   </p>
                   <p style="margin:0 0 24px;font-size:12px;color:#3b82f6;word-break:break-all;">
                     {reset_link}
                   </p>
-
                   <hr style="border:none;border-top:1px solid #f3f4f6;margin:0 0 20px;">
-
                   <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.6;">
                     If you did not request a password reset, you can safely ignore this email.
-                    Your password will not be changed.
                   </p>
                 </td>
               </tr>
-
-              <!-- Footer -->
               <tr>
                 <td style="background:#f9fafb;padding:20px 40px;text-align:center;
                            border-top:1px solid #f3f4f6;">
@@ -287,7 +271,6 @@ def _send_reset_email(reset_link: str) -> bool:
                   </p>
                 </td>
               </tr>
-
             </table>
           </td>
         </tr>
@@ -321,14 +304,12 @@ def _send_reset_email(reset_link: str) -> bool:
             json=payload,
             timeout=10,
         )
-
         if response.status_code in (200, 201):
             print(f"✅ Reset email sent via Resend → {RESET_EMAIL_RECIPIENT}")
             return True
         else:
             print(f"❌ Resend error {response.status_code}: {response.text}")
             return False
-
     except Exception as e:
         print("❌ Resend request failed:", e)
         return False
@@ -347,12 +328,9 @@ def login():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "").strip()
 
-        # ── Look up account in DB ────────────────────────────────
         account = get_superadmin_account(username)
 
         if account is None:
-            # Account not found in DB → fall back to .env credentials
-            # (useful during initial setup before DB row exists)
             admin_username = os.getenv("SADMIN_USERNAME", "superadmin")
             admin_password = os.getenv("SADMIN_PASSWORD", "admin123")
 
@@ -365,21 +343,13 @@ def login():
                 flash("Invalid username or password.", "danger")
                 return redirect(url_for("sadmin.login"))
 
-        # ── Account found: verify bcrypt hash ───────────────────
         stored_hash = account.get("password", "")
 
-        # Support plain-text passwords that haven't been hashed yet
-        # (e.g. the placeholder PASTE_YOUR_HASHED_PASSWORD_HERE or
-        #  a raw password set before bcrypt was introduced).
-        # Once verified we silently upgrade to a hashed value.
         if stored_hash.startswith("$2b$") or stored_hash.startswith("$2a$"):
-            # Already hashed
             password_ok = check_password(password, stored_hash)
         else:
-            # Plain-text fallback — compare directly then upgrade
             password_ok = (password == stored_hash)
             if password_ok:
-                # Upgrade to bcrypt hash silently
                 update_superadmin_password(account["id"], password)
 
         if password_ok:
@@ -410,40 +380,21 @@ def logout():
 
 @sadmin.route('/forgot-password/send', methods=['POST'])
 def forgot_password_send():
-    """
-    Called when the admin clicks "Send Reset Link" inside the modal.
-    Looks up the superadmin account by the hardcoded recipient email,
-    generates a secure token with a 30-minute expiry, then emails the link.
-    """
-
-    # Look up the account that owns RESET_EMAIL_RECIPIENT
     account = get_superadmin_account(RESET_EMAIL_RECIPIENT)
+    account_id = account["id"] if account else None
 
-    if account is None:
-        # Graceful fallback: still send the email but token won't carry an id.
-        # The password update step will use the email to find the row.
-        account_id = None
-    else:
-        account_id = account["id"]
-
-    # Purge expired tokens
     now     = datetime.utcnow()
     expired = [t for t, (exp, _) in _reset_tokens.items() if exp < now]
     for t in expired:
         _reset_tokens.pop(t, None)
 
-    # Clear any prior reset-session flag
     session.pop("reset_done", None)
 
-    # Generate token  →  store (expiry, account_id)
     token  = secrets.token_urlsafe(48)
     expiry = now + timedelta(minutes=30)
     _reset_tokens[token] = (expiry, account_id)
 
-    # Build reset link
     reset_link = url_for("sadmin.reset_password", token=token, _external=True)
-
-    # Send email
     ok = _send_reset_email(reset_link)
 
     if ok:
@@ -453,10 +404,7 @@ def forgot_password_send():
             "success"
         )
     else:
-        flash(
-            "⚠️ Could not send the email. Check RESEND_API_KEY in .env.",
-            "warning"
-        )
+        flash("⚠️ Could not send the email. Check RESEND_API_KEY in .env.", "warning")
 
     return redirect(url_for("sadmin.login"))
 
@@ -467,30 +415,20 @@ def forgot_password_send():
 
 @sadmin.route('/forgot-password/reset/<token>', methods=['GET', 'POST'])
 def reset_password(token):
-    """
-    GET  – Show the reset-password form (validates token first).
-    POST – Hash new password, save to superadmin_accounts, consume token.
-    """
+    now        = datetime.utcnow()
+    token_data = _reset_tokens.get(token)
+    valid_token = (token_data is not None and token_data[0] > now)
 
-    now         = datetime.utcnow()
-    token_data  = _reset_tokens.get(token)          # (expiry, account_id) or None
-    valid_token = (
-        token_data is not None and token_data[0] > now
-    )
-
-    # ── GET ─────────────────────────────────────────────────────
     if request.method == 'GET':
         if session.get("reset_done"):
             flash("Password has already been reset. Please log in.", "info")
             return redirect(url_for("sadmin.login"))
-
         return render_template(
             "superadmin/forgot_password.html",
             token=token,
             valid_token=valid_token
         )
 
-    # ── POST ────────────────────────────────────────────────────
     if not valid_token:
         flash("This reset link has expired or is invalid.", "danger")
         return redirect(url_for("sadmin.login"))
@@ -498,9 +436,7 @@ def reset_password(token):
     new_password     = request.form.get("new_password", "").strip()
     confirm_password = request.form.get("confirm_password", "").strip()
 
-    # ── Server-side validation ───────────────────────────────────
     errors = []
-
     if len(new_password) < 8:
         errors.append("Password must be at least 8 characters.")
     if not any(c.isupper() for c in new_password):
@@ -519,13 +455,11 @@ def reset_password(token):
             valid_token=True
         )
 
-    # ── Persist hashed password to superadmin_accounts ──────────
     _, account_id = token_data
 
     if account_id is not None:
         success = update_superadmin_password(account_id, new_password)
     else:
-        # Fallback: find account by email
         account = get_superadmin_account(RESET_EMAIL_RECIPIENT)
         if account:
             success = update_superadmin_password(account["id"], new_password)
@@ -540,17 +474,11 @@ def reset_password(token):
             valid_token=True
         )
 
-    # ── Also update .env so the fallback still works ─────────────
     _update_env_password(new_password)
-
-    # Consume token (one-time use)
     _reset_tokens.pop(token, None)
 
-    # Mark session so browser can't revisit this link
     session["reset_done"]    = True
     session["reset_done_at"] = datetime.utcnow().isoformat()
-
-    # Invalidate any current admin session
     session.pop("sadmin_logged_in",  None)
     session.pop("sadmin_username",   None)
     session.pop("sadmin_account_id", None)
@@ -560,10 +488,6 @@ def reset_password(token):
 
 
 def _update_env_password(new_password: str):
-    """
-    Updates SADMIN_PASSWORD in the .env file on disk and in os.environ.
-    This keeps the .env fallback in sync with the DB.
-    """
     os.environ["SADMIN_PASSWORD"] = new_password
 
     env_path = os.path.abspath(
@@ -602,6 +526,8 @@ def _update_env_password(new_password: str):
 @sadmin.route('/')
 @login_required
 def index():
+    today = date.today()
+
     total_teachers = 0
     total_students = 0
     total_rfid_cards = 0
@@ -621,11 +547,11 @@ def index():
     teachers_without_section_list = []
 
     conn = None
-    cur = None
+    cur  = None
 
     try:
         conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur  = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute("SELECT COUNT(*) AS count FROM teachers")
         total_teachers = cur.fetchone()["count"] or 0
@@ -805,6 +731,7 @@ def index():
 
     return render_template(
         'superadmin/index.html',
+        today=today,
         total_teachers=total_teachers,
         total_students=total_students,
         total_rfid_cards=total_rfid_cards,
@@ -823,7 +750,7 @@ def index():
 
 
 # ─────────────────────────────────────────────
-# OTHER PROTECTED ROUTES
+# UPDATED UID ROUTE (no duplicates + shows linked student)
 # ─────────────────────────────────────────────
 
 @sadmin.route('/UID')
@@ -838,20 +765,32 @@ def uid():
         cur  = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute("""
-            SELECT
+            SELECT DISTINCT ON (r.uid)
                 r.id,
                 r.uid,
                 r.created_at,
-                CASE
-                    WHEN EXISTS (
-                        SELECT 1
-                        FROM students s
-                        WHERE s.uid = r.uid
-                    ) THEN 'Used'
-                    ELSE 'Available'
-                END AS status
+                CASE 
+                    WHEN s.id IS NOT NULL THEN 'Used' 
+                    ELSE 'Available' 
+                END AS status,
+                CONCAT(
+                    COALESCE(s.first_name, ''),
+                    CASE 
+                        WHEN s.middle_name IS NOT NULL AND TRIM(s.middle_name) <> '' 
+                        THEN ' ' || s.middle_name 
+                        ELSE '' 
+                    END,
+                    ' ',
+                    COALESCE(s.last_name, ''),
+                    CASE 
+                        WHEN s.extension IS NOT NULL AND TRIM(s.extension) <> '' 
+                        THEN ' ' || s.extension 
+                        ELSE '' 
+                    END
+                ) AS student_name
             FROM rfid_cards r
-            ORDER BY r.id DESC
+            LEFT JOIN students s ON r.uid = s.uid
+            ORDER BY r.uid, r.created_at DESC
         """)
         uids = cur.fetchall()
 
@@ -867,15 +806,19 @@ def uid():
     return render_template("superadmin/uid.html", uids=uids)
 
 
+# ─────────────────────────────────────────────
+# OTHER PROTECTED ROUTES
+# ─────────────────────────────────────────────
+
 @sadmin.route('/attendance')
 @login_required
 def attendance():
-    selected_section  = request.args.get("section", "").strip()
+    selected_section = request.args.get("section", "").strip()
 
-    conn             = None
-    cur              = None
-    sections         = []
-    attendance_rows  = []
+    conn            = None
+    cur             = None
+    sections        = []
+    attendance_rows = []
 
     try:
         conn = get_db_connection()
@@ -930,7 +873,6 @@ def attendance():
         """
 
         params = []
-
         if selected_section:
             query += " WHERE s.section_id = %s "
             params.append(selected_section)

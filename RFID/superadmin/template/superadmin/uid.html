@@ -8,26 +8,36 @@
 
         <!-- HEADER -->
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-            </div>
-
-            <!-- FILTER BUTTONS -->
-            <div class="flex items-center gap-2 mt-2 md:mt-0">
+            
+            <!-- LEFT: FILTER BUTTONS -->
+            <div class="flex items-center gap-2">
                 <button onclick="filterStatus('all', this)"
-                    class="filter-btn px-4 py-1.5 rounded-xl text-sm font-medium bg-blue-600 text-white">
+                    class="filter-btn px-4 py-2.5 rounded-2xl text-sm font-medium bg-blue-600 text-white">
                     All
                 </button>
-
                 <button onclick="filterStatus('Available', this)"
-                    class="filter-btn px-4 py-1.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 hover:bg-green-100">
+                    class="filter-btn px-4 py-2.5 rounded-2xl text-sm font-medium bg-gray-100 text-gray-700 hover:bg-green-100">
                     Available
                 </button>
-
                 <button onclick="filterStatus('Used', this)"
-                    class="filter-btn px-4 py-1.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 hover:bg-red-100">
+                    class="filter-btn px-4 py-2.5 rounded-2xl text-sm font-medium bg-gray-100 text-gray-700 hover:bg-red-100">
                     Used
                 </button>
             </div>
+
+            <!-- RIGHT: SEARCH BAR -->
+            <div class="relative w-full max-w-md">
+                <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </div>
+                <input 
+                    type="text" 
+                    id="searchInput"
+                    placeholder="Search by UID or student name..." 
+                    class="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-3xl focus:outline-none focus:border-blue-500 text-sm shadow-sm"
+                    onkeyup="applyFilters()">
+            </div>
+
         </div>
 
         <!-- TABLE CARD -->
@@ -41,7 +51,7 @@
                     </div>
                     <div class="hidden sm:flex items-center gap-2 text-white/90 text-sm">
                         <i class="fa-solid fa-id-card"></i>
-                        <span>{{ uids|length if uids else 0 }} record(s)</span>
+                        <span>{{ uids|length if uids else 0 }} unique record(s)</span>
                     </div>
                 </div>
             </div>
@@ -52,6 +62,7 @@
                     <thead>
                         <tr class="bg-gray-50 border-b text-gray-600">
                             <th class="py-4 px-5 text-left font-semibold">UID</th>
+                            <th class="py-4 px-5 text-left font-semibold">Linked Student</th>
                             <th class="py-4 px-5 text-left font-semibold">Status</th>
                         </tr>
                     </thead>
@@ -61,8 +72,7 @@
                         <tr class="hover:bg-blue-50/40 transition duration-200"
                             data-status="{{ uid.status }}">
 
-                            
-
+                            <!-- UID -->
                             <td class="py-4 px-5">
                                 <div class="flex items-center gap-3">
                                     <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs shadow-sm">
@@ -75,6 +85,21 @@
                                 </div>
                             </td>
 
+                            <!-- Linked Student -->
+                            <td class="py-4 px-5">
+                                {% if uid.student_name and uid.student_name|trim %}
+                                    <div class="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-3xl text-sm font-medium">
+                                        <i class="fa-solid fa-user-check text-xs"></i>
+                                        {{ uid.student_name }}
+                                    </div>
+                                {% else %}
+                                    <span class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-400 rounded-3xl text-sm font-medium italic">
+                                        Not assigned
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Status -->
                             <td class="py-4 px-5">
                                 {% if uid.status == 'Available' %}
                                     <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
@@ -88,9 +113,6 @@
                                     </span>
                                 {% endif %}
                             </td>
-
-                            
-
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -112,32 +134,65 @@
     </div>
 </div>
 
-<!-- FILTER SCRIPT -->
+<!-- FILTER + SEARCH SCRIPT -->
 <script>
-function filterStatus(status, btn) {
-    const rows = document.querySelectorAll("tbody tr");
-    const buttons = document.querySelectorAll(".filter-btn");
+let currentStatus = 'all';
 
-    // reset buttons
+function filterStatus(status, btn) {
+    currentStatus = status;
+    
+    // Reset all buttons
+    const buttons = document.querySelectorAll(".filter-btn");
     buttons.forEach(b => {
         b.classList.remove("bg-blue-600", "text-white");
         b.classList.add("bg-gray-100", "text-gray-700");
     });
 
-    // active button
+    // Activate clicked button
     btn.classList.remove("bg-gray-100", "text-gray-700");
     btn.classList.add("bg-blue-600", "text-white");
 
+    applyFilters();
+}
+
+function applyFilters() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+    const rows = document.querySelectorAll("tbody tr");
+
     rows.forEach(row => {
         const rowStatus = row.getAttribute("data-status");
-
-        if (status === "all" || rowStatus === status) {
-            row.style.display = "";
-        } else {
-            row.style.display = "none";
+        
+        // UID text
+        const uidElement = row.querySelector('.font-semibold.break-all');
+        const uidText = uidElement ? uidElement.textContent.toLowerCase() : '';
+        
+        // Student name text
+        const studentTd = row.querySelector('td:nth-child(2)');
+        let studentText = '';
+        if (studentTd) {
+            const studentDiv = studentTd.querySelector('.font-medium');
+            studentText = studentDiv 
+                ? studentDiv.textContent.toLowerCase() 
+                : studentTd.textContent.toLowerCase();
         }
+
+        const matchesStatus = (currentStatus === 'all' || rowStatus === currentStatus);
+        const matchesSearch = !searchTerm || 
+                             uidText.includes(searchTerm) || 
+                             studentText.includes(searchTerm);
+
+        row.style.display = (matchesStatus && matchesSearch) ? "" : "none";
     });
 }
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    // Make sure "All" button is active by default
+    const allBtn = document.querySelector('.filter-btn');
+    if (allBtn) {
+        allBtn.classList.add('bg-blue-600', 'text-white');
+    }
+});
 </script>
 
-{% endblock %}
+{% endblock %}  

@@ -4,54 +4,93 @@
 
 {% block content %}
 <style>
-    .card-shadow {
-        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    .card-shadow { box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+    .top-gradient { background: linear-gradient(90deg, #1f46c7 0%, #3d7cf0 100%); }
+    .table-head { letter-spacing: 0.08em; font-size: 12px; }
+    .modal-backdrop { background: rgba(15, 23, 42, 0.45); }
+    
+    .flash-notifications {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        max-width: 380px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .flash-message {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 20px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        font-size: 0.95rem;
+        font-weight: 500;
+        animation: slideIn 0.3s ease;
+    }
+    .flash-message.success { background: #10b981; color: white; }
+    .flash-message.error { background: #ef4444; color: white; }
+    .flash-message .icon { font-size: 1.3rem; }
+    .flash-message .close-btn {
+        margin-left: auto;
+        background: none;
+        border: none;
+        color: white;
+        font-size: 1.5rem;
+        cursor: pointer;
+        line-height: 1;
+    }
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
     }
 
-    .top-gradient {
-        background: linear-gradient(90deg, #1f46c7 0%, #3d7cf0 100%);
+    .error-message {
+        display: none;
+        color: #ef4444;
+        font-size: 0.875rem;
+        margin-top: 4px;
     }
+    .error-message.show { display: block; }
 
-    .table-head {
-        letter-spacing: 0.08em;
-        font-size: 12px;
+    .student-row {
+        transition: all 0.2s ease;
     }
-
-    .modal-backdrop {
-        background: rgba(15, 23, 42, 0.45);
+    .student-row:hover {
+        background: #f8fafc;
     }
 </style>
 
-<div class="p-7">
-
+<!-- Flash Notifications -->
+<div class="flash-notifications" id="flashContainer">
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-                <div class="mb-4 rounded-2xl px-6 py-4 border
-                    {% if category == 'error' %}
-                        bg-red-50 text-red-700 border-red-200
-                    {% else %}
-                        bg-green-50 text-green-700 border-green-200
-                    {% endif %}
-                ">
-                    {{ message }}
+                <div class="flash-message {{ category }}" id="flash-{{ loop.index }}">
+                    <span class="icon">{% if category == 'success' %}✅{% else %}⚠️{% endif %}</span>
+                    <span>{{ message }}</span>
+                    <button onclick="this.parentElement.remove()" class="close-btn">&times;</button>
                 </div>
             {% endfor %}
         {% endif %}
     {% endwith %}
+</div>
 
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-end gap-4 mb-7">
+<div class="p-7">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-7">
         <button onclick="openAddModal()"
                 class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-full font-semibold shadow flex items-center gap-3">
-            <i class="fa-solid fa-plus"></i>
-            Add New Section
+            <i class="fa-solid fa-plus"></i> Add New Section
         </button>
 
-        <form method="GET" action="{{ url_for('section_bp.section') }}" class="flex-1 max-w-md">
+        <form id="searchForm" method="GET" action="{{ url_for('section_bp.section') }}" class="flex-1 max-w-md">
             <div class="bg-white border rounded-full px-5 py-3 flex items-center gap-3 shadow-sm">
                 <i class="fa-solid fa-magnifying-glass text-blue-500"></i>
-                <input type="text"
-                       name="search"
+                <input type="text" 
+                       id="searchInput"
+                       name="search" 
                        value="{{ search }}"
                        placeholder="Search section, year level, adviser..."
                        class="w-full outline-none text-sm bg-transparent">
@@ -62,62 +101,49 @@
     <div class="bg-white rounded-[28px] overflow-hidden card-shadow">
         <div class="top-gradient px-7 py-5 flex items-center justify-between">
             <h2 class="text-white text-xl font-semibold"></h2>
-            <span class="bg-white/20 text-white px-4 py-2 rounded-full text-sm">
+            <span id="recordCount" class="bg-white/20 text-white px-4 py-2 rounded-full text-sm">
                 {{ total_sections }} record{{ '' if total_sections == 1 else 's' }}
             </span>
         </div>
 
         <div class="overflow-x-auto">
-            <table class="min-w-full">
+            <table class="min-w-full" id="sectionsTable">
                 <thead class="bg-white border-b">
                     <tr class="table-head text-slate-500 uppercase text-left">
                         <th class="px-6 py-6">Section Name</th>
                         <th class="px-6 py-6">Year Level</th>
-                        <th class="px-6 py-6">Adviser</th>
+                        <th class="px-6 py-6">Teacher</th>
                         <th class="px-6 py-6">Students</th>
                         <th class="px-6 py-6 text-center">Action</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="sectionsTbody">
                     {% if sections %}
                         {% for section in sections %}
                             <tr class="border-b last:border-b-0 hover:bg-slate-50 transition">
-                                
-
-                                <td class="px-6 py-6 font-semibold text-slate-800">
-                                    {{ section.section_name }}
-                                </td>
-
+                                <td class="px-6 py-6 font-semibold text-slate-800">{{ section.section_name }}</td>
                                 <td class="px-6 py-6 text-slate-600">
-                                    {{ section.year_level if section.year_level else '—' }}
+                                    {% if section.year_level %}Grade {{ section.year_level }}{% else %}—{% endif %}
                                 </td>
-
                                 <td class="px-6 py-6 text-slate-600">
                                     {{ section.adviser_name if section.adviser_name else '—' }}
                                 </td>
-
-                                <td class="px-6 py-6 text-slate-600">
-                                    {{ section.total_students }}
-                                </td>
-
+                                <td class="px-6 py-6 text-slate-600">{{ section.total_students }}</td>
                                 <td class="px-6 py-6">
-                                    <div class="flex items-center justify-center gap-2">
-                                        <button
-                                            type="button"
-                                            onclick='openEditModal(
-                                                "{{ section.id }}",
-                                                "{{ section.section_name|e }}",
-                                                "{{ section.year_level if section.year_level else "" }}",
-                                                "{{ section.teacher_id if section.teacher_id else "" }}"
-                                            )'
-                                            class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-full text-sm font-semibold">
+                                    <div class="flex items-center justify-center gap-2 flex-wrap">
+                                        <button type="button"
+                                                onclick='openAssignModal("{{ section.id }}", "{{ section.section_name|e }}")'
+                                                class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-1">
+                                            <i class="fa-solid fa-user-plus"></i> Assign Students
+                                        </button>
+                                        <button type="button"
+                                                onclick='openEditModal("{{ section.id }}", "{{ section.section_name|e }}", "{{ section.year_level if section.year_level else "" }}", "{{ section.teacher_id if section.teacher_id else "" }}")'
+                                                class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-full text-sm font-semibold">
                                             <i class="fa-solid fa-pen-to-square mr-1"></i> Edit
                                         </button>
-
-                                        <button
-                                            type="button"
-                                            onclick='openDeleteModal("{{ section.id }}", "{{ section.section_name|e }}")'
-                                            class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-semibold">
+                                        <button type="button"
+                                                onclick='openDeleteModal("{{ section.id }}", "{{ section.section_name|e }}")'
+                                                class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-semibold">
                                             <i class="fa-solid fa-trash mr-1"></i> Delete
                                         </button>
                                     </div>
@@ -126,9 +152,7 @@
                         {% endfor %}
                     {% else %}
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center text-slate-500">
-                                No sections found.
-                            </td>
+                            <td colspan="5" class="px-6 py-12 text-center text-slate-500">No sections found.</td>
                         </tr>
                     {% endif %}
                 </tbody>
@@ -137,7 +161,7 @@
     </div>
 </div>
 
-<!-- Add Modal -->
+<!-- ====================== ADD MODAL (FIXED IDs) ====================== -->
 <div id="addModal" class="fixed inset-0 hidden items-center justify-center modal-backdrop z-50 p-4">
     <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden">
         <div class="top-gradient px-6 py-4 flex items-center justify-between">
@@ -145,184 +169,127 @@
             <button type="button" onclick="closeAddModal()" class="text-white text-2xl">&times;</button>
         </div>
 
-        <form method="POST" class="p-6 space-y-5">
+        <form id="addForm" method="POST" class="p-6 space-y-5" onsubmit="return validateAddForm()">
             <input type="hidden" name="action" value="add_section">
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Section Name</label>
-                    <input type="text"
+                    <input type="text" 
+                           id="add_section_name"          <!-- FIXED -->
                            name="section_name"
+                           placeholder="STEM, ABM, HUMSS, GAS"
                            required
                            class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
+                    <p id="add_section_name_error" class="error-message"></p>   <!-- FIXED -->
                 </div>
 
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Year Level</label>
-
-                    <select name="year_level"
+                    <select name="year_level" id="add_year_level"
                             class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
-
                         <option value="">Select Year Level</option>
-
-                        <option value="Grade 11">
-                            Grade 11
-                        </option>
-
-                        <option value="Grade 12">
-                            Grade 12
-                        </option>
-
+                        <option value="11">Grade 11</option>
+                        <option value="12">Grade 12</option>
                     </select>
                 </div>
-
             </div>
 
             <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-2">Adviser</label>
-
-                <select name="teacher_id"
-                        class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
-
-                    <option value="">No Adviser</option>
-
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Teacher</label>
+                <select name="teacher_id" class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">No Teacher</option>
                     {% for teacher in teachers %}
                         <option value="{{ teacher.id }}">
                             {{ teacher.last_name }}, {{ teacher.first_name }}
-                            {% if teacher.middle_name %}
-                                {{ teacher.middle_name }}
-                            {% endif %}
+                            {% if teacher.middle_name %} {{ teacher.middle_name }}{% endif %}
                         </option>
                     {% endfor %}
-
                 </select>
             </div>
 
             <div class="flex justify-end gap-3 pt-2">
-
-                <button type="button"
-                        onclick="closeAddModal()"
-                        class="px-5 py-3 rounded-2xl border font-semibold text-slate-700">
-                    Cancel
-                </button>
-
+                <button type="button" onclick="closeAddModal()"
+                        class="px-5 py-3 rounded-2xl border font-semibold text-slate-700">Cancel</button>
                 <button type="submit"
                         class="px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-semibold">
                     Save Section
                 </button>
-
             </div>
         </form>
     </div>
 </div>
 
-<!-- Edit Modal -->
+<!-- ====================== EDIT MODAL (unchanged) ====================== -->
 <div id="editModal" class="fixed inset-0 hidden items-center justify-center modal-backdrop z-50 p-4">
     <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden">
-
         <div class="top-gradient px-6 py-4 flex items-center justify-between">
             <h3 class="text-white text-xl font-semibold">Edit Section</h3>
             <button type="button" onclick="closeEditModal()" class="text-white text-2xl">&times;</button>
         </div>
 
-        <form method="POST" class="p-6 space-y-5">
-
+        <form id="editForm" method="POST" class="p-6 space-y-5" onsubmit="return validateEditForm()">
             <input type="hidden" name="action" value="edit_section">
             <input type="hidden" name="section_id" id="edit_section_id">
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">
-                        Section Name
-                    </label>
-
-                    <input type="text"
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Section Name</label>
+                    <input type="text" 
+                           id="edit_section_name" 
                            name="section_name"
-                           id="edit_section_name"
+                           placeholder="e.g. STEM, ABM, HUMSS, GAS (3-20 letters only)"
                            required
                            class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
+                    <p id="edit_section_name_error" class="error-message"></p>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">
-                        Year Level
-                    </label>
-
-                    <select name="year_level"
-                            id="edit_year_level"
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Year Level</label>
+                    <select name="year_level" id="edit_year_level"
                             class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
-
                         <option value="">Select Year Level</option>
-
-                        <option value="Grade 11">
-                            Grade 11
-                        </option>
-
-                        <option value="Grade 12">
-                            Grade 12
-                        </option>
-
+                        <option value="11">Grade 11</option>
+                        <option value="12">Grade 12</option>
                     </select>
                 </div>
-
             </div>
 
             <div>
-
-                <label class="block text-sm font-semibold text-slate-700 mb-2">
-                    Adviser
-                </label>
-
-                <select name="teacher_id"
-                        id="edit_teacher_id"
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Teacher</label>
+                <select name="teacher_id" id="edit_teacher_id"
                         class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
-
-                    <option value="">No Adviser</option>
-
+                    <option value="">No Teacher</option>
                     {% for teacher in teachers %}
                         <option value="{{ teacher.id }}">
                             {{ teacher.last_name }}, {{ teacher.first_name }}
-                            {% if teacher.middle_name %}
-                                {{ teacher.middle_name }}
-                            {% endif %}
+                            {% if teacher.middle_name %} {{ teacher.middle_name }}{% endif %}
                         </option>
                     {% endfor %}
-
                 </select>
             </div>
 
             <div class="flex justify-end gap-3 pt-2">
-
-                <button type="button"
-                        onclick="closeEditModal()"
-                        class="px-5 py-3 rounded-2xl border font-semibold text-slate-700">
-                    Cancel
-                </button>
-
+                <button type="button" onclick="closeEditModal()"
+                        class="px-5 py-3 rounded-2xl border font-semibold text-slate-700">Cancel</button>
                 <button type="submit"
                         class="px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-semibold">
                     Update Section
                 </button>
-
             </div>
         </form>
     </div>
 </div>
 
-<!-- Delete Modal -->
+<!-- ====================== DELETE MODAL ====================== -->
 <div id="deleteModal" class="fixed inset-0 hidden items-center justify-center modal-backdrop z-50 p-4">
-
     <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden">
-
         <div class="top-gradient px-6 py-4 flex items-center justify-between">
             <h3 class="text-white text-xl font-semibold">Delete Section</h3>
             <button type="button" onclick="closeDeleteModal()" class="text-white text-2xl">&times;</button>
         </div>
 
         <form method="POST" class="p-6">
-
             <input type="hidden" name="action" value="delete_section">
             <input type="hidden" name="section_id" id="delete_section_id">
 
@@ -332,66 +299,314 @@
             </p>
 
             <div class="flex justify-end gap-3 pt-6">
-
-                <button type="button"
-                        onclick="closeDeleteModal()"
-                        class="px-5 py-3 rounded-2xl border font-semibold text-slate-700">
-                    Cancel
-                </button>
-
+                <button type="button" onclick="closeDeleteModal()"
+                        class="px-5 py-3 rounded-2xl border font-semibold text-slate-700">Cancel</button>
                 <button type="submit"
                         class="px-5 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-semibold">
                     Delete
                 </button>
+            </div>
+        </form>
+    </div>
+</div>
 
+<!-- ====================== ASSIGN STUDENTS MODAL ====================== -->
+<div id="assignModal" class="fixed inset-0 hidden items-center justify-center modal-backdrop z-50 p-4">
+    <div class="bg-white w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div class="top-gradient px-6 py-4 flex items-center justify-between">
+            <h3 class="text-white text-xl font-semibold">
+                Assign Students to <span id="assign_section_name" class="font-bold"></span>
+            </h3>
+            <button type="button" onclick="closeAssignModal()" class="text-white text-2xl">&times;</button>
+        </div>
+
+        <form id="assignForm" method="POST" class="flex-1 flex flex-col">
+            <input type="hidden" name="action" value="assign_students">
+            <input type="hidden" name="section_id" id="assign_section_id">
+
+            <div class="px-6 pt-6 pb-3 border-b">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass text-slate-400 absolute left-5 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" 
+                           id="modalSearchInput"
+                           placeholder="Search students by name..."
+                           class="w-full border rounded-3xl px-12 py-4 outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6 space-y-2" id="studentsListContainer">
+                <div id="studentsContainer" class="space-y-1">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <div class="border-t px-6 py-5 bg-slate-50 flex items-center justify-between">
+                <div class="flex items-center gap-3 text-sm text-slate-600">
+                    <span id="selectedCountDisplay" class="font-semibold text-emerald-600">0</span> 
+                    students selected
+                </div>
+                <div class="flex items-center gap-3">
+                    <button type="button" onclick="closeAssignModal()"
+                            class="px-6 py-3 rounded-3xl border font-semibold text-slate-700 hover:bg-slate-100">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-8 py-3 rounded-3xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center gap-2">
+                        <i class="fa-solid fa-check"></i>
+                        Save Assignments
+                    </button>
+                </div>
             </div>
         </form>
     </div>
 </div>
 
 <script>
+    function isValidSectionName(name) {
+        return /^[A-Za-z]{3,20}$/.test(name);
+    }
 
+    // ====================== ADD MODAL VALIDATION ======================
+    function validateAddForm() {
+        const input = document.getElementById('add_section_name');
+        const error = document.getElementById('add_section_name_error');
+        const value = input.value.trim();
+
+        if (!isValidSectionName(value)) {
+            error.textContent = "Section name must be 3-20 letters only (no numbers, no spaces)";
+            error.classList.add('show');
+            return false;
+        }
+        return true;
+    }
+    function setupAddValidation() {
+        const input = document.getElementById('add_section_name');
+        const error = document.getElementById('add_section_name_error');
+        input.addEventListener('input', function () {
+            const value = this.value.trim();
+            if (value === '') {
+                error.classList.remove('show');
+            } else if (!isValidSectionName(value)) {
+                error.textContent = "Section name must be 3-20 letters only (no numbers, no spaces)";
+                error.classList.add('show');
+            } else {
+                error.classList.remove('show');
+            }
+        });
+    }
+
+    // ====================== EDIT MODAL VALIDATION ======================
+    function validateEditForm() {
+        const input = document.getElementById('edit_section_name');
+        const error = document.getElementById('edit_section_name_error');
+        const value = input.value.trim();
+
+        if (!isValidSectionName(value)) {
+            error.textContent = "Section name must be 3-20 letters only (no numbers, no spaces)";
+            error.classList.add('show');
+            return false;
+        }
+        return true;
+    }
+    function setupEditValidation() {
+        const input = document.getElementById('edit_section_name');
+        const error = document.getElementById('edit_section_name_error');
+        input.addEventListener('input', function () {
+            const value = this.value.trim();
+            if (value === '') {
+                error.classList.remove('show');
+            } else if (!isValidSectionName(value)) {
+                error.textContent = "Section name must be 3-20 letters only (no numbers, no spaces)";
+                error.classList.add('show');
+            } else {
+                error.classList.remove('show');
+            }
+        });
+    }
+
+    // ====================== MODAL OPEN/CLOSE ======================
     function openAddModal() {
         document.getElementById('addModal').classList.remove('hidden');
         document.getElementById('addModal').classList.add('flex');
+        document.getElementById('add_section_name_error').classList.remove('show');
     }
-
     function closeAddModal() {
         document.getElementById('addModal').classList.add('hidden');
         document.getElementById('addModal').classList.remove('flex');
     }
 
     function openEditModal(id, sectionName, yearLevel, teacherId) {
-
         document.getElementById('edit_section_id').value = id;
         document.getElementById('edit_section_name').value = sectionName;
-        document.getElementById('edit_year_level').value = yearLevel;
-        document.getElementById('edit_teacher_id').value = teacherId;
-
+        document.getElementById('edit_year_level').value = yearLevel || "";
+        document.getElementById('edit_teacher_id').value = teacherId || "";
         document.getElementById('editModal').classList.remove('hidden');
         document.getElementById('editModal').classList.add('flex');
+        document.getElementById('edit_section_name_error').classList.remove('show');
     }
-
     function closeEditModal() {
         document.getElementById('editModal').classList.add('hidden');
         document.getElementById('editModal').classList.remove('flex');
     }
 
     function openDeleteModal(id, sectionName) {
-
         document.getElementById('delete_section_id').value = id;
         document.getElementById('delete_section_name').textContent = sectionName;
-
         document.getElementById('deleteModal').classList.remove('hidden');
         document.getElementById('deleteModal').classList.add('flex');
     }
-
     function closeDeleteModal() {
         document.getElementById('deleteModal').classList.add('hidden');
         document.getElementById('deleteModal').classList.remove('flex');
     }
 
-</script>
+    // ====================== ASSIGN STUDENTS ======================
+    let allStudents = [];
 
+    function openAssignModal(sectionId, sectionName) {
+        const modal = document.getElementById('assignModal');
+        document.getElementById('assign_section_id').value = sectionId;
+        document.getElementById('assign_section_name').textContent = sectionName;
+
+        const container = document.getElementById('studentsContainer');
+        container.innerHTML = '';
+
+        allStudents.forEach(student => {
+            const isChecked = student.sectionId === parseInt(sectionId);
+
+            let badgeHTML = '';
+            if (student.currentSection && student.currentSection !== 'None') {
+                if (student.sectionId === parseInt(sectionId)) {
+                    badgeHTML = `<span class="text-xs px-3 py-1 bg-emerald-100 text-emerald-700 rounded-3xl">Currently assigned</span>`;
+                } else {
+                    badgeHTML = `<span class="text-xs px-3 py-1 bg-amber-100 text-amber-700 rounded-3xl">In: ${student.currentSection}</span>`;
+                }
+            } else {
+                badgeHTML = `<span class="text-xs px-3 py-1 bg-slate-100 text-slate-600 rounded-3xl">Not assigned</span>`;
+            }
+
+            const rowHTML = `
+                <div class="student-row flex items-center justify-between gap-4 px-5 py-4 border border-slate-200 rounded-3xl">
+                    <label class="flex items-center gap-3 cursor-pointer flex-1">
+                        <input type="checkbox" 
+                               name="student_ids" 
+                               value="${student.id}"
+                               ${isChecked ? 'checked' : ''}
+                               class="w-5 h-5 accent-emerald-500">
+                        <div>
+                            <div class="font-medium text-slate-800">${student.name}</div>
+                        </div>
+                    </label>
+                    ${badgeHTML}
+                </div>`;
+            container.innerHTML += rowHTML;
+        });
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        document.getElementById('modalSearchInput').value = '';
+        filterAssignStudents();
+        updateSelectedCount();
+        attachCheckboxListeners();
+        attachModalSearchListener();
+    }
+
+    function closeAssignModal() {
+        const modal = document.getElementById('assignModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    function updateSelectedCount() {
+        const checked = document.querySelectorAll('#studentsContainer input[type="checkbox"]:checked').length;
+        document.getElementById('selectedCountDisplay').textContent = checked;
+    }
+
+    function attachCheckboxListeners() {
+        const container = document.getElementById('studentsContainer');
+        container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', updateSelectedCount);
+        });
+    }
+
+    function attachModalSearchListener() {
+        const searchInput = document.getElementById('modalSearchInput');
+        searchInput.addEventListener('input', filterAssignStudents);
+    }
+
+    function filterAssignStudents() {
+        const term = document.getElementById('modalSearchInput').value.toLowerCase().trim();
+        const rows = document.querySelectorAll('.student-row');
+
+        rows.forEach(row => {
+            const nameText = row.textContent.toLowerCase();
+            row.style.display = (!term || nameText.includes(term)) ? 'flex' : 'none';
+        });
+    }
+
+    // Real-time search + flash auto-hide (unchanged)
+    let searchTimeout;
+    function debounceSearch() {
+        const input = document.getElementById('searchInput');
+        const value = input.value.trim();
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            performLiveSearch(value);
+        }, 300);
+    }
+
+    async function performLiveSearch(searchTerm) {
+        const url = `{{ url_for('section_bp.section') }}?search=${encodeURIComponent(searchTerm)}`;
+        try {
+            const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            const newTbody = doc.getElementById('sectionsTbody');
+            if (newTbody) document.getElementById('sectionsTbody').innerHTML = newTbody.innerHTML;
+
+            const newCount = doc.getElementById('recordCount');
+            if (newCount) document.getElementById('recordCount').outerHTML = newCount.outerHTML;
+        } catch (error) {
+            console.error('Search failed:', error);
+        }
+    }
+
+    function autoHideFlashes() {
+        const flashes = document.querySelectorAll('.flash-message');
+        flashes.forEach(flash => {
+            setTimeout(() => {
+                if (flash) {
+                    flash.style.transition = 'opacity 0.5s';
+                    flash.style.opacity = '0';
+                    setTimeout(() => { if (flash) flash.remove(); }, 500);
+                }
+            }, 5000);
+        });
+    }
+
+    // ====================== INIT ======================
+    window.onload = function() {
+        setupAddValidation();
+        setupEditValidation();
+        autoHideFlashes();
+
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', debounceSearch);
+
+        // Load all students (this is where the students come from)
+        allStudents = [
+            {% for student in all_students %}
+            {
+                id: {{ student.id }},
+                name: "{{ student.last_name }}, {{ student.first_name }}{% if student.middle_name %} {{ student.middle_name }}{% endif %}",
+                sectionId: {% if student.section_id %}{{ student.section_id }}{% else %}null{% endif %},
+                currentSection: "{{ student.current_section_name or 'None' }}"
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+    };
+</script>
 {% endblock %}
-```

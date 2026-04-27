@@ -7,9 +7,7 @@
 
   <!-- ── Top Action Bar ── -->
   <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
-    <!-- LEFT: actions -->
     <div class="flex items-center gap-3 flex-wrap">
-      <!-- Add New Student -->
       <button type="button" onclick="openAddStudentModal()"
               class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 transition-colors text-white font-medium px-6 py-3 rounded-3xl shadow-sm">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -17,7 +15,6 @@
         </svg>
         Add New Student
       </button>
-      <!-- Import CSV / Excel -->
       <button type="button" onclick="openModal('importStudentModal')"
               class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 transition-colors text-white font-medium px-6 py-3 rounded-3xl shadow-sm">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -25,7 +22,6 @@
         </svg>
         Import CSV / Excel
       </button>
-      <!-- Export CSV -->
       <button onclick="exportToCSV()"
               class="flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-medium px-5 py-3 rounded-3xl transition-colors">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -34,18 +30,14 @@
         Export CSV
       </button>
     </div>
-    <!-- RIGHT: search -->
     <div class="relative">
       <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 01-14 0 7 7 0 0114 0z"/>
         </svg>
       </div>
-      <input
-        id="searchInput"
-        type="text"
-        onkeyup="filterTable()"
-        placeholder="Search name, UID, email, section..."
+      <input id="searchInput" type="text" onkeyup="filterTable()"
+        placeholder="Search name, UID, email..."
         class="w-80 pl-11 pr-4 py-3 bg-white border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-3xl text-sm outline-none transition-all">
     </div>
   </div>
@@ -85,11 +77,9 @@
               <th class="text-left py-5 px-4">Full Name</th>
               <th class="text-left py-5 px-4">Section</th>
               <th class="text-left py-5 px-4">Year Level</th>
-              <th class="text-left py-5 px-4 w-32">Birthday</th>
               <th class="text-left py-5 px-4 w-40">Contact</th>
               <th class="text-left py-5 px-4">Email</th>
               <th class="text-left py-5 px-4 w-72">Schedule</th>
-              <th class="text-left py-5 px-4 w-36">Registered</th>
               <th class="text-left py-5 px-4 w-44">Action</th>
             </tr>
           </thead>
@@ -108,21 +98,14 @@
               </td>
               <td class="py-5 px-4 text-gray-500 align-top">{{ s.section_name or '—' }}</td>
               <td class="py-5 px-4 text-gray-500 align-top">{{ s.year_level or '—' }}</td>
-              <td class="py-5 px-4 text-gray-500 align-top">{{ s.birthday }}</td>
               <td class="py-5 px-4 text-gray-500 align-top">{{ s.contact_number }}</td>
               <td class="py-5 px-4 text-gray-500 align-top break-all">{{ s.email }}</td>
               <td class="py-5 px-4 text-gray-500 text-sm align-top">
-                <div class="schedule-cell whitespace-pre-line leading-6 max-w-xs">
-                  {{ s.schedule or '—' }}
-                </div>
-              </td>
-              <td class="py-5 px-4 text-gray-500 text-sm align-top">
-                {{ s.created_at.strftime('%b %d, %Y') if s.created_at else '—' }}
+                <div class="schedule-cell whitespace-pre-line leading-6 max-w-xs">{{ s.schedule or '—' }}</div>
               </td>
               <td class="py-5 px-4 align-top">
                 <div class="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
+                  <button type="button"
                     onclick='openViewStudentModal({
                       id: {{ s.id | tojson }},
                       uid: {{ (s.uid or "—") | tojson }},
@@ -147,8 +130,7 @@
                     View
                   </button>
 
-                  <button
-                    type="button"
+                  <button type="button"
                     onclick='openEditStudentModal({
                       id: {{ s.id | tojson }},
                       uid: {{ (s.uid or "") | tojson }},
@@ -158,9 +140,7 @@
                       extension: {{ (s.extension or "") | tojson }},
                       birthday: {{ (s.birthday or "") | string | tojson }},
                       contact_number: {{ (s.contact_number or "") | tojson }},
-                      email: {{ (s.email or "") | tojson }},
-                      schedule: {{ (s.schedule or "") | tojson }},
-                      section_id: {{ s.section_id | tojson }}
+                      email: {{ (s.email or "") | tojson }}
                     })'
                     class="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-500 text-white text-sm font-medium px-4 py-2 rounded-2xl shadow-sm transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -202,7 +182,7 @@
     </div>
 
     <div class="modal-body">
-      <form id="addStudentForm" action="{{ url_for('sregister.add_student') }}" method="POST" class="p-8">
+      <form id="addStudentForm" action="{{ url_for('sregister.add_student') }}" method="POST" class="p-8" novalidate onsubmit="return validateAddForm(event)">
 
         <div class="mb-6">
           <label class="form-label">Available UID <span class="text-gray-400 font-normal">(Optional)</span></label>
@@ -219,19 +199,30 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label class="form-label">Last Name <span class="text-red-400">*</span></label>
-              <input type="text" name="last_name" required class="form-input" placeholder="e.g. Santos">
+              <input type="text" id="add_last_name" name="last_name" class="form-input" placeholder="e.g. Santos" minlength="3">
+              <p class="field-error hidden" id="err_add_last_name"></p>
             </div>
             <div>
               <label class="form-label">First Name <span class="text-red-400">*</span></label>
-              <input type="text" name="first_name" required class="form-input" placeholder="e.g. Maria">
+              <input type="text" id="add_first_name" name="first_name" class="form-input" placeholder="e.g. Maria" minlength="3">
+              <p class="field-error hidden" id="err_add_first_name"></p>
             </div>
             <div>
               <label class="form-label">Middle Name <span class="text-gray-400 font-normal">(Optional)</span></label>
-              <input type="text" name="middle_name" class="form-input" placeholder="e.g. Dela Cruz">
+              <input type="text" id="add_middle_name" name="middle_name" class="form-input" placeholder="e.g. Dela Cruz">
+              <p class="field-error hidden" id="err_add_middle_name"></p>
             </div>
             <div>
               <label class="form-label">Extension <span class="text-gray-400 font-normal">(Optional)</span></label>
-              <input type="text" name="extension" class="form-input" placeholder="e.g. Jr., Sr., III">
+              <select id="add_extension" name="extension" class="form-select">
+                <option value="">None</option>
+                <option value="Jr.">Jr.</option>
+                <option value="Sr.">Sr.</option>
+                <option value="II">II</option>
+                <option value="III">III</option>
+                <option value="IV">IV</option>
+                <option value="V">V</option>
+              </select>
             </div>
           </div>
         </div>
@@ -242,24 +233,19 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
           <div>
             <label class="form-label">Birthday <span class="text-red-400">*</span></label>
-            <input type="date" name="birthday" required class="form-input">
+            <input type="date" id="add_birthday" name="birthday" class="form-input" min="2006-01-01">
+            <p class="field-error hidden" id="err_add_birthday"></p>
           </div>
           <div>
             <label class="form-label">Contact Number <span class="text-red-400">*</span></label>
-            <input type="text" name="contact_number" required class="form-input" placeholder="e.g. 09XX-XXX-XXXX">
+            <input type="text" id="add_contact_number" name="contact_number" class="form-input" placeholder="e.g. 09171234567" maxlength="11">
+            <p class="field-error hidden" id="err_add_contact_number"></p>
           </div>
           <div class="sm:col-span-2">
             <label class="form-label">Email Address <span class="text-red-400">*</span></label>
-            <input type="email" name="email" required class="form-input" placeholder="e.g. student@school.edu.ph">
+            <input type="email" id="add_email" name="email" class="form-input" placeholder="e.g. student@school.edu.ph">
+            <p class="field-error hidden" id="err_add_email"></p>
           </div>
-        </div>
-
-        <hr class="border-gray-100 my-6">
-
-        <div class="mb-2">
-          <label class="form-label">Schedule <span class="text-red-400">*</span></label>
-          <textarea name="schedule" rows="4" required class="form-input resize-none"
-                    placeholder="e.g. Mon 7:30-9:30 IT3217&#10;Wed 7:30-9:30 SD3203"></textarea>
         </div>
 
       </form>
@@ -306,9 +292,17 @@
             <p id="importFileName" class="text-sm font-medium text-gray-500 truncate">No file chosen</p>
             <p class="text-xs text-gray-400 mt-0.5">CSV or Excel (.xlsx, .xls)</p>
           </div>
-          <input id="importFileInput" type="file" accept=".csv,.xlsx,.xls" class="hidden"
-                 onchange="handleImportFileChange(this)">
+          <input id="importFileInput" type="file" accept=".csv,.xlsx,.xls" class="hidden" onchange="handleImportFileChange(this)">
         </label>
+      </div>
+
+      <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-gray-600 flex items-start gap-3 mb-5">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+        </svg>
+        <div>
+          <strong>Note:</strong> Import will only include basic information. Section, Year Level, and Schedule are NOT imported.
+        </div>
       </div>
 
       <div class="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 flex items-start gap-3">
@@ -317,9 +311,9 @@
         </svg>
         <div>
           Required columns:
-          <strong>last_name, first_name, birthday, contact_number, email, schedule</strong><br>
+          <strong>last_name, first_name, birthday, contact_number, email</strong><br>
           <span class="text-gray-400 mt-1 block">
-            Optional: middle_name, extension, section_name, year_level<br>
+            Optional: middle_name, extension<br>
             UID is <em>not</em> required — it will be auto-linked from available RFID cards.
           </span>
         </div>
@@ -333,7 +327,7 @@
       </button>
       <button type="button" onclick="runImportFromModal()"
               class="px-7 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm shadow-sm transition-colors">
-        Import
+        Import Students
       </button>
     </div>
   </div>
@@ -381,18 +375,6 @@
           <div id="view_extension" class="view-field"></div>
         </div>
         <div>
-          <label class="view-label">Section</label>
-          <div id="view_section_name" class="view-field"></div>
-        </div>
-        <div>
-          <label class="view-label">Year Level</label>
-          <div id="view_year_level" class="view-field"></div>
-        </div>
-        <div class="sm:col-span-2">
-          <label class="view-label">Teacher Adviser</label>
-          <div id="view_teacher_name" class="view-field"></div>
-        </div>
-        <div>
           <label class="view-label">Birthday</label>
           <div id="view_birthday" class="view-field"></div>
         </div>
@@ -403,10 +385,6 @@
         <div class="sm:col-span-2">
           <label class="view-label">Email Address</label>
           <div id="view_email" class="view-field break-all"></div>
-        </div>
-        <div class="sm:col-span-2">
-          <label class="view-label">Schedule</label>
-          <div id="view_schedule" class="view-field whitespace-pre-line leading-7 min-h-[100px]"></div>
         </div>
       </div>
     </div>
@@ -436,26 +414,12 @@
     </div>
 
     <div class="modal-body">
-      <form id="editStudentForm" method="POST" class="p-8">
+      <form id="editStudentForm" method="POST" class="p-8" novalidate onsubmit="return validateEditForm(event)">
 
         <div class="mb-6">
           <label class="form-label">UID</label>
           <input type="text" id="edit_uid" class="form-input bg-gray-100" readonly>
-          <p class="text-xs text-gray-400 mt-2">Readonly muna ang UID para safe ang existing RFID link.</p>
-        </div>
-
-        <hr class="border-gray-100 my-6">
-
-        <div class="mb-6">
-          <label class="form-label">Section</label>
-          <select id="edit_section_id" name="section_id" class="form-select">
-            <option value="">No Section</option>
-            {% for section in sections %}
-              <option value="{{ section.id }}">
-                {{ section.section_name }}{% if section.year_level %} — {{ section.year_level }}{% endif %}
-              </option>
-            {% endfor %}
-          </select>
+          <p class="text-xs text-gray-400 mt-2">UID is readonly to preserve the existing RFID link.</p>
         </div>
 
         <hr class="border-gray-100 my-6">
@@ -465,19 +429,30 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label class="form-label">Last Name <span class="text-red-400">*</span></label>
-              <input type="text" id="edit_last_name" name="last_name" required class="form-input" placeholder="e.g. Santos">
+              <input type="text" id="edit_last_name" name="last_name" class="form-input" placeholder="e.g. Santos">
+              <p class="field-error hidden" id="err_edit_last_name"></p>
             </div>
             <div>
               <label class="form-label">First Name <span class="text-red-400">*</span></label>
-              <input type="text" id="edit_first_name" name="first_name" required class="form-input" placeholder="e.g. Maria">
+              <input type="text" id="edit_first_name" name="first_name" class="form-input" placeholder="e.g. Maria">
+              <p class="field-error hidden" id="err_edit_first_name"></p>
             </div>
             <div>
               <label class="form-label">Middle Name <span class="text-gray-400 font-normal">(Optional)</span></label>
               <input type="text" id="edit_middle_name" name="middle_name" class="form-input" placeholder="e.g. Dela Cruz">
+              <p class="field-error hidden" id="err_edit_middle_name"></p>
             </div>
             <div>
               <label class="form-label">Extension <span class="text-gray-400 font-normal">(Optional)</span></label>
-              <input type="text" id="edit_extension" name="extension" class="form-input" placeholder="e.g. Jr., Sr., III">
+              <select id="edit_extension" name="extension" class="form-select">
+                <option value="">None</option>
+                <option value="Jr.">Jr.</option>
+                <option value="Sr.">Sr.</option>
+                <option value="II">II</option>
+                <option value="III">III</option>
+                <option value="IV">IV</option>
+                <option value="V">V</option>
+              </select>
             </div>
           </div>
         </div>
@@ -488,24 +463,19 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
           <div>
             <label class="form-label">Birthday <span class="text-red-400">*</span></label>
-            <input type="date" id="edit_birthday" name="birthday" required class="form-input">
+            <input type="date" id="edit_birthday" name="birthday" class="form-input" min="2006-01-01">
+            <p class="field-error hidden" id="err_edit_birthday"></p>
           </div>
           <div>
             <label class="form-label">Contact Number <span class="text-red-400">*</span></label>
-            <input type="text" id="edit_contact_number" name="contact_number" required class="form-input" placeholder="e.g. 09XX-XXX-XXXX">
+            <input type="text" id="edit_contact_number" name="contact_number" class="form-input" placeholder="e.g. 09171234567" maxlength="11">
+            <p class="field-error hidden" id="err_edit_contact_number"></p>
           </div>
           <div class="sm:col-span-2">
             <label class="form-label">Email Address <span class="text-red-400">*</span></label>
-            <input type="email" id="edit_email" name="email" required class="form-input" placeholder="e.g. student@school.edu.ph">
+            <input type="email" id="edit_email" name="email" class="form-input" placeholder="e.g. student@school.edu.ph">
+            <p class="field-error hidden" id="err_edit_email"></p>
           </div>
-        </div>
-
-        <hr class="border-gray-100 my-6">
-
-        <div class="mb-2">
-          <label class="form-label">Schedule <span class="text-red-400">*</span></label>
-          <textarea id="edit_schedule" name="schedule" rows="4" required class="form-input resize-none"
-                    placeholder="e.g. Mon 7:30-9:30 IT3217&#10;Wed 7:30-9:30 SD3203"></textarea>
         </div>
 
       </form>
@@ -524,11 +494,298 @@
   </div>
 </div>
 
+<!-- ===== GENERIC ALERT MODAL ===== -->
+<div id="alertModal" class="modal-overlay hidden">
+  <div class="modal-panel modal-panel-sm animate-fadeIn" style="max-width:420px">
+    <div id="alertModalHeader" class="modal-header bg-gradient-to-r from-red-500 to-red-600">
+      <div class="flex items-center gap-3">
+        <div id="alertModalIcon" class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+          <!-- icon injected by JS -->
+        </div>
+        <h2 id="alertModalTitle" class="text-white text-lg font-semibold">Alert</h2>
+      </div>
+      <button type="button" onclick="closeAlertModal()" class="modal-close-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="p-6">
+      <p id="alertModalMessage" class="text-gray-700 text-sm leading-relaxed whitespace-pre-line"></p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" onclick="closeAlertModal()"
+              class="px-7 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors">
+        OK
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GENERIC CONFIRM MODAL ===== -->
+<div id="confirmModal" class="modal-overlay hidden">
+  <div class="modal-panel modal-panel-sm animate-fadeIn" style="max-width:440px">
+    <div id="confirmModalHeader" class="modal-header bg-gradient-to-r from-blue-600 to-blue-700">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <h2 id="confirmModalTitle" class="text-white text-lg font-semibold">Confirm</h2>
+      </div>
+      <button type="button" onclick="resolveConfirm(false)" class="modal-close-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="p-6">
+      <p id="confirmModalMessage" class="text-gray-700 text-sm leading-relaxed whitespace-pre-line"></p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" onclick="resolveConfirm(false)"
+              class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors">
+        Cancel
+      </button>
+      <button type="button" id="confirmModalOkBtn" onclick="resolveConfirm(true)"
+              class="px-7 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors">
+        Confirm
+      </button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
-// ── Modal helpers ──────────────────────────────────────────────
-const ALL_MODALS = ['addStudentModal','importStudentModal','viewStudentModal','editStudentModal']
+// ══════════════════════════════════════════════════
+// MODAL ALERT / CONFIRM
+// ══════════════════════════════════════════════════
+
+function showAlert(message, type = 'error', title = null) {
+  const types = {
+    error:   { gradient: 'from-red-500 to-red-600',     icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>', defaultTitle: 'Error' },
+    success: { gradient: 'from-emerald-500 to-emerald-600', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>', defaultTitle: 'Success' },
+    info:    { gradient: 'from-blue-500 to-blue-600',    icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>', defaultTitle: 'Info' },
+    warning: { gradient: 'from-amber-500 to-amber-600',  icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>', defaultTitle: 'Warning' },
+  }
+  const cfg = types[type] || types.info
+  document.getElementById('alertModalHeader').className = `modal-header bg-gradient-to-r ${cfg.gradient}`
+  document.getElementById('alertModalIcon').innerHTML   = cfg.icon
+  document.getElementById('alertModalTitle').textContent = title || cfg.defaultTitle
+  document.getElementById('alertModalMessage').textContent = message
+  openModal('alertModal')
+}
+
+function closeAlertModal() { closeModal('alertModal') }
+
+let _confirmResolve = null
+function showConfirm(message, title = 'Confirm', okLabel = 'Confirm', okClass = 'bg-blue-600 hover:bg-blue-700') {
+  return new Promise(resolve => {
+    _confirmResolve = resolve
+    document.getElementById('confirmModalTitle').textContent   = title
+    document.getElementById('confirmModalMessage').textContent = message
+    const btn = document.getElementById('confirmModalOkBtn')
+    btn.textContent = okLabel
+    btn.className   = `px-7 py-2.5 rounded-2xl ${okClass} text-white font-medium text-sm shadow-sm transition-colors`
+    openModal('confirmModal')
+  })
+}
+
+function resolveConfirm(value) {
+  closeModal('confirmModal')
+  if (_confirmResolve) { _confirmResolve(value); _confirmResolve = null }
+}
+
+// ══════════════════════════════════════════════════
+// VALIDATION HELPERS
+// ══════════════════════════════════════════════════
+
+const VALID_EXTENSIONS = ['', 'Jr.', 'Sr.', 'II', 'III', 'IV', 'V']
+
+;(function setBirthdayLimits() {
+  const today   = new Date()
+  const maxYear = today.getFullYear() - 1
+  const maxDate = maxYear + '-12-31'
+  const minDate = '2006-01-01'
+  ;['add_birthday', 'edit_birthday'].forEach(function(id) {
+    const el = document.getElementById(id)
+    if (el) { el.min = minDate; el.max = maxDate }
+  })
+})()
+
+const ALLOWED_EMAIL_DOMAINS = [
+  'gmail.com','yahoo.com','yahoo.com.ph',
+  'outlook.com','hotmail.com','live.com',
+  'icloud.com','me.com','mac.com',
+  'protonmail.com','proton.me',
+  'aol.com','zoho.com',
+  'deped.gov.ph','ched.gov.ph','edu.ph','school.edu.ph',
+  'up.edu.ph','dlsu.edu.ph','ateneo.edu.ph','ust.edu.ph',
+  'admu.edu.ph','mapua.edu.ph','pup.edu.ph','tip.edu.ph',
+  'feu.edu.ph','nu.edu.ph','ceu.edu.ph','slu.edu.ph',
+  'au.edu.ph','usc.edu.ph','usjr.edu.ph','cpu.edu.ph',
+  'wvsu.edu.ph','vsu.edu.ph',
+]
+
+function isValidEmailDomain(email) {
+  const lower  = email.toLowerCase()
+  const atIdx  = lower.lastIndexOf('@')
+  if (atIdx < 1) return false
+  const domain = lower.slice(atIdx + 1)
+  if (ALLOWED_EMAIL_DOMAINS.indexOf(domain) !== -1) return true
+  if (/^[a-z0-9-]+\.edu\.ph$/.test(domain)) return true
+  if (/^[a-z0-9-]+\.gov\.ph$/.test(domain)) return true
+  return false
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id)
+  if (!el) return
+  el.textContent = msg
+  el.classList.remove('hidden')
+  const input = document.getElementById(id.replace('err_', ''))
+  if (input) input.classList.add('input-error')
+}
+
+function clearError(id) {
+  const el = document.getElementById(id)
+  if (!el) return
+  el.textContent = ''
+  el.classList.add('hidden')
+  const input = document.getElementById(id.replace('err_', ''))
+  if (input) input.classList.remove('input-error')
+}
+
+function clearAllErrors(prefix) {
+  const suffixes = ['last_name','first_name','middle_name','birthday','contact_number','email']
+  suffixes.forEach(s => clearError(`err_${prefix}_${s}`))
+}
+
+function validateStudentFields(prefix) {
+  clearAllErrors(prefix)
+  let valid = true
+
+  const lastName = document.getElementById(`${prefix}_last_name`).value.trim()
+  if (!lastName) {
+    showError(`err_${prefix}_last_name`, 'Last name is required.')
+    valid = false
+  } else if (!/^[a-zA-ZÀ-ÿ\s'\-]+$/.test(lastName)) {
+    showError(`err_${prefix}_last_name`, 'Last name must contain letters only.')
+    valid = false
+  } else if (lastName.length < 3) {
+    showError(`err_${prefix}_last_name`, 'Last name must be at least 3 characters.')
+    valid = false
+  }
+
+  const firstName = document.getElementById(`${prefix}_first_name`).value.trim()
+  if (!firstName) {
+    showError(`err_${prefix}_first_name`, 'First name is required.')
+    valid = false
+  } else if (!/^[a-zA-ZÀ-ÿ\s'\-]+$/.test(firstName)) {
+    showError(`err_${prefix}_first_name`, 'First name must contain letters only.')
+    valid = false
+  } else if (firstName.length < 3) {
+    showError(`err_${prefix}_first_name`, 'First name must be at least 3 characters.')
+    valid = false
+  }
+
+  const middleName = document.getElementById(`${prefix}_middle_name`).value.trim()
+  if (middleName) {
+    if (!/^[a-zA-ZÀ-ÿ\s'\-]+$/.test(middleName)) {
+      showError(`err_${prefix}_middle_name`, 'Middle name must contain letters only.')
+      valid = false
+    } else if (middleName.length < 2) {
+      showError(`err_${prefix}_middle_name`, 'Middle name must be at least 2 characters.')
+      valid = false
+    }
+  }
+
+  const birthdayVal = document.getElementById(`${prefix}_birthday`).value.trim()
+  if (!birthdayVal) {
+    showError(`err_${prefix}_birthday`, 'Birthday is required.')
+    valid = false
+  } else {
+    const birthday = new Date(birthdayVal)
+    const today    = new Date()
+    today.setHours(0, 0, 0, 0)
+    const minYear = 2006
+    const maxYear = today.getFullYear() - 1
+
+    if (isNaN(birthday.getTime())) {
+      showError(`err_${prefix}_birthday`, 'Invalid date format.')
+      valid = false
+    } else if (birthday >= today) {
+      showError(`err_${prefix}_birthday`, 'Birthday cannot be today or a future date.')
+      valid = false
+    } else if (birthday.getFullYear() > maxYear) {
+      showError(`err_${prefix}_birthday`, `Birth year cannot be the current year (${today.getFullYear()}).`)
+      valid = false
+    } else if (birthday.getFullYear() < minYear) {
+      showError(`err_${prefix}_birthday`, `Birth year must be ${minYear} or later.`)
+      valid = false
+    }
+  }
+
+  const contact = document.getElementById(`${prefix}_contact_number`).value.trim()
+  if (!contact) {
+    showError(`err_${prefix}_contact_number`, 'Contact number is required.')
+    valid = false
+  } else if (!/^\d+$/.test(contact)) {
+    showError(`err_${prefix}_contact_number`, 'Contact number must contain digits only.')
+    valid = false
+  } else if (contact.length !== 11) {
+    showError(`err_${prefix}_contact_number`, `Contact number must be exactly 11 digits (currently ${contact.length}).`)
+    valid = false
+  } else if (!contact.startsWith('09')) {
+    showError(`err_${prefix}_contact_number`, 'Contact number must start with 09.')
+    valid = false
+  }
+
+  const email = document.getElementById(`${prefix}_email`).value.trim()
+  const basicEmailRegex = /^[^\s@]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/
+  if (!email) {
+    showError(`err_${prefix}_email`, 'Email address is required.')
+    valid = false
+  } else if (!basicEmailRegex.test(email)) {
+    showError(`err_${prefix}_email`, 'Please enter a valid email address.')
+    valid = false
+  } else if (!isValidEmailDomain(email)) {
+    const atPart = email.split('@')[1] || ''
+    showError(`err_${prefix}_email`, `"@${atPart}" is not an accepted email domain. Use Gmail, Yahoo, Outlook, iCloud, or a valid school/government email.`)
+    valid = false
+  }
+
+  if (!valid) {
+    const firstErr = document.querySelector(`#${prefix}StudentForm .field-error:not(.hidden)`)
+    if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+
+  return valid
+}
+
+function validateAddForm(e) {
+  if (!validateStudentFields('add')) { e.preventDefault(); return false }
+  return true
+}
+
+function validateEditForm(e) {
+  if (!validateStudentFields('edit')) { e.preventDefault(); return false }
+  return true
+}
+
+;['last_name','first_name','middle_name','birthday','contact_number','email'].forEach(field => {
+  ;['add','edit'].forEach(prefix => {
+    const el = document.getElementById(`${prefix}_${field}`)
+    if (el) el.addEventListener('input', () => clearError(`err_${prefix}_${field}`))
+  })
+})
+
+// ══════════════════════════════════════════════════
+// MODAL HELPERS
+// ══════════════════════════════════════════════════
+const ALL_MODALS = ['addStudentModal','importStudentModal','viewStudentModal','editStudentModal','alertModal','confirmModal']
 
 function lockBodyScroll()   { document.documentElement.classList.add('modal-open'); document.body.classList.add('modal-open') }
 function unlockBodyScroll() {
@@ -551,18 +808,8 @@ function closeModal(id) {
   setTimeout(() => { if (!el.classList.contains('is-open')) { el.classList.add('hidden'); unlockBodyScroll() } }, 180)
 }
 
-// ── Add Student ────────────────────────────────────────────────
-function openAddStudentModal()  { openModal('addStudentModal') }
+function openAddStudentModal()  { clearAllErrors('add'); openModal('addStudentModal') }
 function closeAddStudentModal() { closeModal('addStudentModal') }
-
-// ── View Student ───────────────────────────────────────────────
-function formatSchedule(schedule) {
-  if (!schedule || schedule === '—') return '—'
-  return schedule.replace(/,\s*(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/g, '\n$1').trim()
-}
-function formatScheduleHtml(schedule) {
-  return formatSchedule(schedule).replace(/\n/g, '<br>')
-}
 
 function openViewStudentModal(student) {
   document.getElementById('view_uid').textContent            = student.uid || '—'
@@ -571,22 +818,19 @@ function openViewStudentModal(student) {
   document.getElementById('view_first_name').textContent     = student.first_name || '—'
   document.getElementById('view_middle_name').textContent    = student.middle_name || '—'
   document.getElementById('view_extension').textContent      = student.extension || '—'
-  document.getElementById('view_section_name').textContent   = student.section_name || '—'
-  document.getElementById('view_year_level').textContent     = student.year_level || '—'
-  document.getElementById('view_teacher_name').textContent   = student.teacher_name || '—'
   document.getElementById('view_birthday').textContent       = student.birthday || '—'
   document.getElementById('view_contact_number').textContent = student.contact_number || '—'
   document.getElementById('view_email').textContent          = student.email || '—'
-  document.getElementById('view_schedule').textContent       = formatSchedule(student.schedule)
   openModal('viewStudentModal')
 }
 function closeViewStudentModal() { closeModal('viewStudentModal') }
 
-// ── Edit Student ───────────────────────────────────────────────
 function openEditStudentModal(student) {
+  clearAllErrors('edit')
   const form = document.getElementById('editStudentForm')
   const tpl  = "{{ url_for('sregister.update_student', student_id=0) }}"
   form.action = tpl.replace('/0', '/' + student.id)
+
   document.getElementById('edit_uid').value            = student.uid || ''
   document.getElementById('edit_last_name').value      = student.last_name || ''
   document.getElementById('edit_first_name').value     = student.first_name || ''
@@ -595,13 +839,10 @@ function openEditStudentModal(student) {
   document.getElementById('edit_birthday').value       = student.birthday || ''
   document.getElementById('edit_contact_number').value = student.contact_number || ''
   document.getElementById('edit_email').value          = student.email || ''
-  document.getElementById('edit_schedule').value       = student.schedule || ''
-  document.getElementById('edit_section_id').value     = student.section_id ?? ''
   openModal('editStudentModal')
 }
 function closeEditStudentModal() { closeModal('editStudentModal') }
 
-// ── Import Modal file picker ───────────────────────────────────
 function handleImportFileChange(input) {
   const label = document.getElementById('importFileName')
   label.textContent = input.files[0] ? input.files[0].name : 'No file chosen'
@@ -609,9 +850,12 @@ function handleImportFileChange(input) {
   label.classList.toggle('text-gray-500', !input.files[0])
 }
 
-function runImportFromModal() {
+async function runImportFromModal() {
   const input = document.getElementById('importFileInput')
-  if (!input.files[0]) { alert('Please choose a file first.'); return }
+  if (!input.files[0]) {
+    showAlert('Please choose a file first.', 'warning', 'No File Selected')
+    return
+  }
   const file = input.files[0]
   const reader = new FileReader()
   const isExcel = /\.(xlsx|xls)$/i.test(file.name)
@@ -630,7 +874,6 @@ function runImportFromModal() {
   }
 }
 
-// ── Search / Export ────────────────────────────────────────────
 function filterTable() {
   const q = document.getElementById('searchInput').value.toLowerCase().trim()
   document.querySelectorAll('#studentsTable tbody tr').forEach(row => {
@@ -656,7 +899,6 @@ function exportToCSV() {
   URL.revokeObjectURL(url)
 }
 
-// ── Excel / CSV import logic ───────────────────────────────────
 function excelSerialToDate(serial) {
   const d = new Date(Math.floor(serial - 25569) * 86400 * 1000)
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`
@@ -679,8 +921,11 @@ function processImportedSheet(wb, filename) {
   parseAndImport(rows, filename)
 }
 
-function parseAndImport(rows, filename) {
-  if (rows.length < 2) { alert('❌ No data found in the file.'); return }
+async function parseAndImport(rows, filename) {
+  if (rows.length < 2) {
+    showAlert('No data found in the file.', 'error', 'Empty File')
+    return
+  }
   const headers  = rows[0].map(h => (h || '').toString().trim().toLowerCase())
   const students = []
 
@@ -690,57 +935,70 @@ function parseAndImport(rows, filename) {
     headers.forEach((header, i) => {
       const value = (row[i] ?? '').toString().trim()
       if (!value) return
-      if      (header.includes('last'))                                             student.last_name      = value
-      else if (header.includes('first'))                                            student.first_name     = value
-      else if (header.includes('middle'))                                           student.middle_name    = value
-      else if (header.includes('extension') || header.includes('ext'))             student.extension      = value
-      else if (header.includes('birth'))                                            student.birthday       = normalizeBirthday(value)
+      if      (header.includes('last'))                                                          student.last_name      = value
+      else if (header.includes('first'))                                                         student.first_name     = value
+      else if (header.includes('middle'))                                                        student.middle_name    = value
+      else if (header.includes('extension') || header.includes('ext'))                          student.extension      = value
+      else if (header.includes('birth'))                                                         student.birthday       = normalizeBirthday(value)
       else if (header.includes('contact') || header.includes('phone') || header.includes('number')) student.contact_number = value
-      else if (header.includes('email'))                                            student.email          = value
-      else if (header.includes('schedule') || header.includes('sched'))            student.schedule       = value
-      else if (header.includes('section'))                                          student.section_name   = value
-      else if (header.includes('year'))                                             student.year_level     = value
+      else if (header.includes('email'))                                                         student.email          = value
     })
-    if (student.last_name && student.first_name && student.birthday && student.contact_number && student.email && student.schedule)
+    if (student.last_name && student.first_name && student.birthday && student.contact_number && student.email)
       students.push(student)
   }
 
   if (students.length === 0) {
-    alert('❌ No valid student rows found.\n\nMake sure your file has columns like:\nlast_name, first_name, middle_name, extension, birthday, contact_number, email, schedule, section_name, year_level\n\n⚠️ UID is NOT required — it will be auto-linked from available RFID cards.')
+    showAlert(
+      'No valid student rows found.\n\nMake sure your file has columns like:\nlast_name, first_name, birthday, contact_number, email\n\nOptional: middle_name, extension',
+      'error', 'No Valid Rows'
+    )
     return
   }
 
-  if (confirm(`✅ Found ${students.length} students in "${filename}".\n\nImport them now?`)) {
-    closeModal('importStudentModal')
-    fetch('/superadmin/import-excel', {
+  const confirmed = await showConfirm(
+    `Found ${students.length} student(s) in "${filename}".\n\nImport them now?`,
+    'Confirm Import',
+    'Import Now',
+    'bg-emerald-600 hover:bg-emerald-700'
+  )
+
+  if (!confirmed) return
+
+  closeModal('importStudentModal')
+
+  try {
+    const res  = await fetch('/superadmin/import-excel', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ students })
     })
-    .then(async res => {
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(data.message || 'Import failed.')
-      return data
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(data.message || 'Import failed.')
+    showAlert(data.message || `Successfully imported ${students.length} students!`, 'success', 'Import Complete')
+    document.getElementById('alertModal').addEventListener('click', function handler(e) {
+      if (e.target.closest('button')) { window.location.reload(); this.removeEventListener('click', handler) }
     })
-    .then(data => {
-      alert(data.message || `🎉 Successfully imported ${students.length} students!`)
-      window.location.reload()
-    })
-    .catch(err => alert(`❌ ${err.message || 'Import failed.'}`))
+  } catch (err) {
+    showAlert(err.message || 'Import failed.', 'error', 'Import Failed')
   }
 }
 
-// ── Close on backdrop click / Escape ──────────────────────────
+// Close on backdrop click / Escape
 ALL_MODALS.forEach(id => {
   document.getElementById(id)?.addEventListener('click', function(e) {
-    if (e.target === this) closeModal(id)
+    if (e.target === this) {
+      if (id === 'confirmModal') resolveConfirm(false)
+      else closeModal(id)
+    }
   })
 })
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') ALL_MODALS.forEach(closeModal)
+  if (e.key === 'Escape') {
+    if (document.getElementById('confirmModal')?.classList.contains('is-open')) resolveConfirm(false)
+    else ALL_MODALS.forEach(closeModal)
+  }
 })
 
-// ── Init ───────────────────────────────────────────────────────
 function moveModalsToBody() {
   ALL_MODALS.forEach(id => {
     const el = document.getElementById(id)
@@ -751,7 +1009,7 @@ function moveModalsToBody() {
 document.addEventListener('DOMContentLoaded', function() {
   moveModalsToBody()
   document.querySelectorAll('.schedule-cell').forEach(el => {
-    el.innerHTML = formatScheduleHtml(el.textContent)
+    el.innerHTML = (el.textContent || '—').replace(/,\s*(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/g, '\n$1').trim()
   })
 })
 </script>
@@ -775,6 +1033,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   .form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
   .form-input::placeholder { color: #9ca3af; }
+  .form-input.input-error { border-color: #f87171 !important; box-shadow: 0 0 0 3px rgba(248,113,113,.15) !important; }
   .form-select {
     display: block; width: 100%;
     padding: .75rem 2.5rem .75rem 1rem; font-size: .875rem; color: #111827;
@@ -784,6 +1043,11 @@ document.addEventListener('DOMContentLoaded', function() {
     transition: border-color .15s, box-shadow .15s;
   }
   .form-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+  .field-error {
+    font-size: .75rem; color: #ef4444; margin-top: .35rem;
+    display: flex; align-items: center; gap: .25rem;
+  }
+  .field-error::before { content: '⚠ '; }
   .view-label {
     display: block; font-size: .7rem; font-weight: 600;
     text-transform: uppercase; letter-spacing: .06em;
@@ -816,6 +1080,7 @@ document.addEventListener('DOMContentLoaded', function() {
   .modal-overlay.is-open .modal-panel { transform: translateY(0) scale(1); }
   .modal-panel-lg { max-width: 960px; }
   .modal-panel-md { max-width: 560px; }
+  .modal-panel-sm { max-width: 440px; }
   .modal-header {
     position: sticky; top: 0; z-index: 30; padding: 1.25rem 2rem;
     display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;

@@ -4,162 +4,248 @@
 
 {% block content %}
 
-<div class="px-3 sm:px-4 md:px-6 space-y-8">
+<div class="px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900"></h1>
+        </div>
+        <div class="text-sm text-gray-500">
+            {{ today.strftime("%B %#d, %Y") }}
+        </div>
+    </div>
 
     <!-- Summary Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 py-3">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
-        <div class="bg-gray-50 rounded-3xl shadow-sm border p-5">
-            <p class="text-sm text-gray-500">Total Teachers</p>
-            <h2 class="text-3xl font-bold text-gray-800 mt-2">{{ total_teachers or 0 }}</h2>
+        <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-300">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Total Teachers</p>
+                    <h2 class="text-4xl font-bold text-gray-900 mt-3">{{ total_teachers|default(0) }}</h2>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center">
+                    <i class="fas fa-chalkboard-teacher text-xl"></i>
+                </div>
+            </div>
         </div>
 
-        <div class="bg-gray-50 rounded-3xl shadow-sm border p-5">
-            <p class="text-sm text-gray-500">Total Students</p>
-            <h2 class="text-3xl font-bold text-gray-800 mt-2">{{ total_students or 0 }}</h2>
+        <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-300">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Total Students</p>
+                    <h2 class="text-4xl font-bold text-gray-900 mt-3">{{ total_students|default(0) }}</h2>
+                </div>
+                <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center">
+                    <i class="fas fa-user-graduate text-xl"></i>
+                </div>
+            </div>
         </div>
 
-        <div class="bg-gray-50 rounded-3xl shadow-sm border p-5">
-            <p class="text-sm text-gray-500">RFID Cards</p>
-            <h2 class="text-3xl font-bold text-gray-800 mt-2">{{ total_rfid_cards or 0 }}</h2>
+        <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-300">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">RFID Cards</p>
+                    <h2 class="text-4xl font-bold text-gray-900 mt-3">{{ total_rfid_cards|default(0) }}</h2>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center">
+                    <i class="fas fa-id-card text-xl"></i>
+                </div>
+            </div>
         </div>
 
     </div>
 
     <!-- Attendance Overview -->
-    <div class="bg-gray-50 rounded-3xl shadow-sm border p-6">
-        <h3 class="text-lg font-semibold text-gray-800 mb-5">Attendance Today</h3>
+    <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-semibold text-gray-900">Attendance Today</h3>
+            <span class="text-sm text-gray-500">{{ today.strftime("%A, %B %#d") }}</span>
+        </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
 
-            <div class="bg-green-50 border border-green-100 rounded-2xl p-4 text-center">
-                <p class="text-sm text-gray-600">Present</p>
-                <h4 class="text-2xl font-bold text-green-600 mt-1">{{ present_today or 0 }}</h4>
+            <div class="bg-gradient-to-br from-green-50 to-white border border-green-100 rounded-3xl p-6 text-center hover:scale-[1.02] transition-transform">
+                <div class="flex items-center justify-center w-12 h-12 bg-green-100 text-green-600 rounded-2xl mx-auto mb-3">
+                    <i class="fas fa-check text-xl"></i>
+                </div>
+                <p class="text-sm font-medium text-gray-600">Present</p>
+                <h4 class="text-4xl font-bold text-green-700 mt-2">{{ present_today|default(0) }}</h4>
             </div>
 
-            <div class="bg-yellow-50 border border-yellow-100 rounded-2xl p-4 text-center">
-                <p class="text-sm text-gray-600">Late</p>
-                <h4 class="text-2xl font-bold text-yellow-600 mt-1">{{ late_today or 0 }}</h4>
+            <div class="bg-gradient-to-br from-amber-50 to-white border border-amber-100 rounded-3xl p-6 text-center hover:scale-[1.02] transition-transform">
+                <div class="flex items-center justify-center w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl mx-auto mb-3">
+                    <i class="fas fa-clock text-xl"></i>
+                </div>
+                <p class="text-sm font-medium text-gray-600">Late</p>
+                <h4 class="text-4xl font-bold text-amber-700 mt-2">{{ late_today|default(0) }}</h4>
             </div>
 
-            <div class="bg-red-50 border border-red-100 rounded-2xl p-4 text-center">
-                <p class="text-sm text-gray-600">Absent</p>
-                <h4 class="text-2xl font-bold text-red-600 mt-1">{{ absent_today or 0 }}</h4>
+            <div class="bg-gradient-to-br from-red-50 to-white border border-red-100 rounded-3xl p-6 text-center hover:scale-[1.02] transition-transform">
+                <div class="flex items-center justify-center w-12 h-12 bg-red-100 text-red-600 rounded-2xl mx-auto mb-3">
+                    <i class="fas fa-times text-xl"></i>
+                </div>
+                <p class="text-sm font-medium text-gray-600">Absent</p>
+                <h4 class="text-4xl font-bold text-red-700 mt-2">{{ absent_today|default(0) }}</h4>
             </div>
 
-            <div class="bg-blue-50 border border-blue-100 rounded-2xl p-4 text-center">
-                <p class="text-sm text-gray-600">Attendance Rate</p>
-                <h4 class="text-2xl font-bold text-blue-600 mt-1">{{ attendance_rate or 0 }}%</h4>
+            <div class="bg-gradient-to-br from-blue-50 to-white border border-blue-100 rounded-3xl p-6 text-center hover:scale-[1.02] transition-transform">
+                <div class="flex items-center justify-center w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl mx-auto mb-3">
+                    <i class="fas fa-chart-bar text-xl"></i>
+                </div>
+                <p class="text-sm font-medium text-gray-600">Attendance Rate</p>
+                <h4 class="text-4xl font-bold text-blue-700 mt-2">{{ attendance_rate|default(0) }}%</h4>
             </div>
 
         </div>
     </div>
 
-    <!-- Alerts -->
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+    <!-- Quick Alerts -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
 
-        <div class="bg-gray-50 rounded-3xl shadow-sm border p-5">
-            <p class="text-sm text-gray-500">Unlinked RFID</p>
-            <h3 class="text-2xl font-bold text-red-600 mt-2">{{ unlinked_rfid or 0 }}</h3>
+        <div class="bg-white border border-red-100 hover:border-red-200 rounded-3xl p-6 transition-all">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center">
+                    <i class="fas fa-unlink text-base"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Unlinked RFID Cards</p>
+                    <h3 class="text-3xl font-bold text-red-600">{{ unlinked_rfid|default(0) }}</h3>
+                </div>
+            </div>
         </div>
 
-        <div class="bg-gray-50 rounded-3xl shadow-sm border p-5">
-            <p class="text-sm text-gray-500">Students Without Section</p>
-            <h3 class="text-2xl font-bold text-yellow-600 mt-2">{{ students_without_section or 0 }}</h3>
+        <div class="bg-white border border-yellow-100 hover:border-yellow-200 rounded-3xl p-6 transition-all">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 bg-yellow-100 text-yellow-600 rounded-2xl flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-base"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Students Without Section</p>
+                    <h3 class="text-3xl font-bold text-yellow-600">{{ students_without_section|default(0) }}</h3>
+                </div>
+            </div>
         </div>
 
-        <div class="bg-gray-50 rounded-3xl shadow-sm border p-5">
-            <p class="text-sm text-gray-500">Sections Without Teacher</p>
-            <h3 class="text-2xl font-bold text-blue-600 mt-2">{{ sections_without_teacher or 0 }}</h3>
+        <div class="bg-white border border-blue-100 hover:border-blue-200 rounded-3xl p-6 transition-all">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center">
+                    <i class="fas fa-school text-base"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Sections Without Teacher</p>
+                    <h3 class="text-3xl font-bold text-blue-600">{{ sections_without_teacher|default(0) }}</h3>
+                </div>
+            </div>
         </div>
 
-        <div class="bg-gray-50 rounded-3xl shadow-sm border p-5">
-            <p class="text-sm text-gray-500">Teachers Without Section</p>
-            <h3 class="text-2xl font-bold text-purple-600 mt-2">{{ teachers_without_section or 0 }}</h3>
+        <div class="bg-white border border-purple-100 hover:border-purple-200 rounded-3xl p-6 transition-all">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center">
+                    <i class="fas fa-chalkboard-teacher text-base"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Teachers Without Section</p>
+                    <h3 class="text-3xl font-bold text-purple-600">{{ teachers_without_section|default(0) }}</h3>
+                </div>
+            </div>
         </div>
 
     </div>
 
     <!-- Recent RFID Activity -->
-    <div class="bg-gray-50 rounded-3xl shadow-sm border p-6">
-        <h3 class="text-lg font-semibold text-gray-800 mb-5">Recent RFID Activity</h3>
+    <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+        <h3 class="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+            <i class="fas fa-wifi text-emerald-500"></i>
+            Recent RFID Activity
+        </h3>
 
         <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
+            <table class="min-w-full">
                 <thead>
-                    <tr class="bg-gray-100 border-b text-gray-600">
-                        <th class="py-3 px-4 text-left">Student</th>
-                        <th class="py-3 px-4 text-left">UID</th>
-                        <th class="py-3 px-4 text-left">Time</th>
-                        <th class="py-3 px-4 text-left">Status</th>
+                    <tr class="border-b border-gray-200">
+                        <th class="py-4 px-5 text-left text-sm font-medium text-gray-500">Student</th>
+                        <th class="py-4 px-5 text-left text-sm font-medium text-gray-500">UID</th>
+                        <th class="py-4 px-5 text-left text-sm font-medium text-gray-500">Time</th>
+                        <th class="py-4 px-5 text-left text-sm font-medium text-gray-500">Status</th>
                     </tr>
                 </thead>
-
-                <tbody class="divide-y">
+                <tbody class="divide-y divide-gray-100">
                     {% if recent_activities %}
                         {% for activity in recent_activities %}
-                        <tr class="hover:bg-gray-100">
-                            <td class="py-3 px-4">{{ activity.student_name }}</td>
-                            <td class="py-3 px-4">{{ activity.uid }}</td>
-                            <td class="py-3 px-4">{{ activity.time }}</td>
-                            <td class="py-3 px-4">
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="py-5 px-5 font-medium">{{ activity.student_name }}</td>
+                            <td class="py-5 px-5 text-gray-500 font-mono">{{ activity.uid }}</td>
+                            <td class="py-5 px-5 text-gray-500">{{ activity.time }}</td>
+                            <td class="py-5 px-5">
                                 {% if activity.status == 'Present' %}
-                                    <span class="text-green-600 font-semibold">Present</span>
+                                    <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                                        <i class="fas fa-check text-xs"></i> Present
+                                    </span>
                                 {% elif activity.status == 'Late' %}
-                                    <span class="text-yellow-600 font-semibold">Late</span>
+                                    <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+                                        <i class="fas fa-clock text-xs"></i> Late
+                                    </span>
                                 {% elif activity.status == 'Registered' %}
-                                    <span class="text-blue-600 font-semibold">Registered</span>
+                                    <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                                        <i class="fas fa-id-card text-xs"></i> Registered
+                                    </span>
                                 {% else %}
-                                    <span class="text-red-600 font-semibold">{{ activity.status }}</span>
+                                    <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                                        <i class="fas fa-times text-xs"></i> {{ activity.status }}
+                                    </span>
                                 {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
                     {% else %}
                         <tr>
-                            <td colspan="4" class="text-center py-6 text-gray-500">
-                                No activity found
+                            <td colspan="4" class="text-center py-12 text-gray-400">
+                                <i class="fas fa-inbox text-3xl mb-2 block"></i>
+                                No recent activity found
                             </td>
                         </tr>
                     {% endif %}
                 </tbody>
-
             </table>
         </div>
     </div>
 
     <!-- Teacher Overview -->
-    <div class="bg-gray-50 rounded-3xl shadow-sm border p-6">
-        <h3 class="text-lg font-semibold text-gray-800 mb-5">Teacher Overview</h3>
+    <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+        <h3 class="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+            <i class="fas fa-chalkboard-teacher text-blue-500"></i>
+            Teacher Overview
+        </h3>
 
         <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
+            <table class="min-w-full">
                 <thead>
-                    <tr class="bg-gray-100 border-b text-gray-600">
-                        <th class="py-3 px-4 text-left">Teacher</th>
-                        <th class="py-3 px-4 text-left">Email</th>
-                        <th class="py-3 px-4 text-left">Contact</th>
-                        <th class="py-3 px-4 text-left">Sections</th>
-                        <th class="py-3 px-4 text-left">Status</th>
+                    <tr class="border-b border-gray-200">
+                        <th class="py-4 px-5 text-left text-sm font-medium text-gray-500">Teacher</th>
+                        <th class="py-4 px-5 text-left text-sm font-medium text-gray-500">Email</th>
+                        <th class="py-4 px-5 text-left text-sm font-medium text-gray-500">Contact</th>
+                        <th class="py-4 px-5 text-left text-sm font-medium text-gray-500">Sections</th>
+                        <th class="py-4 px-5 text-left text-sm font-medium text-gray-500">Status</th>
                     </tr>
                 </thead>
-
-                <tbody class="divide-y">
+                <tbody class="divide-y divide-gray-100">
                     {% if teachers_overview %}
                         {% for teacher in teachers_overview %}
-                        <tr class="hover:bg-gray-100">
-                            <td class="py-3 px-4">{{ teacher.full_name }}</td>
-                            <td class="py-3 px-4">{{ teacher.email or '—' }}</td>
-                            <td class="py-3 px-4">{{ teacher.contact_number or '—' }}</td>
-                            <td class="py-3 px-4">{{ teacher.total_sections or 0 }}</td>
-                            <td class="py-3 px-4">
+                        <tr class="hover:bg-gray-50">
+                            <td class="py-5 px-5 font-medium">{{ teacher.full_name }}</td>
+                            <td class="py-5 px-5 text-gray-600">{{ teacher.email or "—" }}</td>
+                            <td class="py-5 px-5 text-gray-600">{{ teacher.contact_number or "—" }}</td>
+                            <td class="py-5 px-5 font-semibold">{{ teacher.total_sections|default(0) }}</td>
+                            <td class="py-5 px-5">
                                 {% if teacher.total_sections == 0 %}
-                                    <span class="px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-700">
-                                        No Section
+                                    <span class="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-full bg-purple-100 text-purple-700">
+                                        <i class="fas fa-times-circle text-xs"></i> No Section
                                     </span>
                                 {% else %}
-                                    <span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">
-                                        Assigned
+                                    <span class="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700">
+                                        <i class="fas fa-check-circle text-xs"></i> Assigned
                                     </span>
                                 {% endif %}
                             </td>
@@ -167,49 +253,13 @@
                         {% endfor %}
                     {% else %}
                         <tr>
-                            <td colspan="5" class="text-center py-6 text-gray-500">
-                                No teacher data
+                            <td colspan="5" class="text-center py-10 text-gray-400">
+                                <i class="fas fa-user-slash text-3xl mb-2 block"></i>
+                                No teacher data available
                             </td>
                         </tr>
                     {% endif %}
                 </tbody>
-
-            </table>
-        </div>
-    </div>
-
-    <!-- Teachers Without Section List -->
-    <div class="bg-gray-50 rounded-3xl shadow-sm border p-6">
-        <h3 class="text-lg font-semibold text-gray-800 mb-5">Teachers Without Section</h3>
-
-        <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
-                <thead>
-                    <tr class="bg-gray-100 border-b text-gray-600">
-                        <th class="py-3 px-4 text-left">Teacher</th>
-                        <th class="py-3 px-4 text-left">Email</th>
-                        <th class="py-3 px-4 text-left">Contact</th>
-                    </tr>
-                </thead>
-
-                <tbody class="divide-y">
-                    {% if teachers_without_section_list %}
-                        {% for teacher in teachers_without_section_list %}
-                        <tr class="hover:bg-gray-100">
-                            <td class="py-3 px-4">{{ teacher.full_name }}</td>
-                            <td class="py-3 px-4">{{ teacher.email or '—' }}</td>
-                            <td class="py-3 px-4">{{ teacher.contact_number or '—' }}</td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="4" class="text-center py-6 text-gray-500">
-                                All teachers already have sections
-                            </td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-
             </table>
         </div>
     </div>

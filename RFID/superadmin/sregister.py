@@ -4,11 +4,15 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 import os
-from datetime import datetime, timedelta
+import re
+from datetime import datetime, timedelta, date
 
 load_dotenv()
 
 sregister = Blueprint("sregister", __name__, template_folder="template")
+
+VALID_EXTENSIONS = {'', 'Jr.', 'Sr.', 'II', 'III', 'IV', 'V'}
+MIN_BIRTH_YEAR   = 2006
 
 
 # ─────────────────────────────────────────────
@@ -60,26 +64,109 @@ def normalize_birthday(value):
     raise ValueError(f"Invalid birthday format: {raw}")
 
 
+def validate_student_fields(last_name, first_name, middle_name, extension,
+                             birthday_raw, contact_number, email):
+    """
+    Returns a list of error strings. Empty list = all valid.
+    """
+    errors = []
+    today  = date.today()
+
+    # ── Last Name ─────────────────────────────────
+    if not last_name:
+        errors.append("Last name is required.")
+    elif not re.match(r"^[a-zA-ZÀ-ÿ\s'\-]+$", last_name):
+        errors.append("Last name must contain letters only.")
+    elif len(last_name) < 3:
+        errors.append("Last name must be at least 3 characters.")
+
+    # ── First Name ────────────────────────────────
+    if not first_name:
+        errors.append("First name is required.")
+    elif not re.match(r"^[a-zA-ZÀ-ÿ\s'\-]+$", first_name):
+        errors.append("First name must contain letters only.")
+    elif len(first_name) < 3:
+        errors.append("First name must be at least 3 characters.")
+
+    # ── Middle Name (optional, min 2 if provided) ─
+    if middle_name:
+        if not re.match(r"^[a-zA-ZÀ-ÿ\s'\-]+$", middle_name):
+            errors.append("Middle name must contain letters only.")
+        elif len(middle_name) < 2:
+            errors.append("Middle name must be at least 2 characters.")
+
+    # ── Extension ─────────────────────────────────
+    if extension and extension not in VALID_EXTENSIONS:
+        errors.append(f"Extension must be one of: Jr., Sr., II, III, IV, V.")
+
+    # ── Birthday ──────────────────────────────────
+    if not birthday_raw:
+        errors.append("Birthday is required.")
+    else:
+        try:
+            birthday = normalize_birthday(birthday_raw)
+            if birthday >= today:
+                errors.append("Birthday cannot be today or a future date.")
+            elif birthday.year >= today.year:
+                errors.append(f"Birth year cannot be the current year ({today.year}).")
+            elif birthday.year < MIN_BIRTH_YEAR:
+                errors.append(f"Birth year must be {MIN_BIRTH_YEAR} or later.")
+        except ValueError as e:
+            errors.append(str(e))
+
+    # ── Contact Number ────────────────────────────
+    if not contact_number:
+        errors.append("Contact number is required.")
+    elif not contact_number.isdigit():
+        errors.append("Contact number must contain digits only.")
+    elif len(contact_number) != 11:
+        errors.append(f"Contact number must be exactly 11 digits (got {len(contact_number)}).")
+    elif not contact_number.startswith('09'):
+        errors.append("Contact number must start with 09.")
+
+    # ── Email ─────────────────────────────────────
+    ALLOWED_DOMAINS = {
+        'gmail.com', 'yahoo.com', 'yahoo.com.ph',
+        'outlook.com', 'hotmail.com', 'live.com',
+        'icloud.com', 'me.com', 'mac.com',
+        'protonmail.com', 'proton.me',
+        'aol.com', 'zoho.com',
+        'deped.gov.ph', 'ched.gov.ph', 'edu.ph', 'school.edu.ph',
+        'up.edu.ph', 'dlsu.edu.ph', 'ateneo.edu.ph', 'ust.edu.ph',
+        'admu.edu.ph', 'mapua.edu.ph', 'pup.edu.ph', 'tip.edu.ph',
+        'feu.edu.ph', 'nu.edu.ph', 'ceu.edu.ph', 'slu.edu.ph',
+        'au.edu.ph', 'usc.edu.ph', 'usjr.edu.ph', 'cpu.edu.ph',
+        'wvsu.edu.ph', 'vsu.edu.ph',
+    }
+
+    def is_valid_email_domain(addr):
+        if '@' not in addr:
+            return False
+        domain = addr.lower().split('@')[-1]
+        if domain in ALLOWED_DOMAINS:
+            return True
+        if re.match(r'^[a-z0-9\-]+\.edu\.ph$', domain):
+            return True
+        if re.match(r'^[a-z0-9\-]+\.gov\.ph$', domain):
+            return True
+        return False
+
+    if not email:
+        errors.append("Email address is required.")
+    elif not re.match(r'^[^\s@]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$', email):
+        errors.append("Please enter a valid email address.")
+    elif not is_valid_email_domain(email):
+        domain_part = email.split('@')[-1] if '@' in email else ''
+        errors.append(f'"{domain_part}" is not an accepted email domain. Use Gmail, Yahoo, Outlook, iCloud, or a valid school/government email.')
+
+    return errors
+
+
 def get_db_connection():
-    """
-    🔥 THIS IS YOUR ONLY DB CONNECTION
-
-    ❌ NO SUPABASE
-    ❌ NO LOCALHOST
-    ❌ NO MULTIPLE CONFIGS
-
-    ✅ ONLY RAILWAY DATABASE_URL
-    """
-
     database_url = os.getenv("DATABASE_URL")
-
     if not database_url:
         raise Exception("❌ DATABASE_URL not found in .env")
-
-    return psycopg2.connect(
-        database_url.strip(),
-        sslmode="require"
-    )
+    return psycopg2.connect(database_url.strip(), sslmode="require")
 
 
 # ─────────────────────────────────────────────
@@ -106,13 +193,12 @@ def test_db():
 def student():
     students = []
     available_uids = []
-    sections = []
-    teachers = []
 
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
+        # Students with existing section info (for table display only)
         cur.execute("""
             SELECT
                 s.id,
@@ -129,102 +215,35 @@ def student():
                 s.section_id,
                 sec.section_name,
                 sec.year_level,
-
                 CASE
                     WHEN t.id IS NOT NULL THEN
                         TRIM(
                             COALESCE(t.last_name, '') || ', ' ||
                             COALESCE(t.first_name, '') ||
                             CASE
-                                WHEN t.middle_name IS NOT NULL
-                                     AND t.middle_name <> ''
+                                WHEN t.middle_name IS NOT NULL AND t.middle_name <> ''
                                 THEN ' ' || t.middle_name
                                 ELSE ''
                             END
                         )
                     ELSE NULL
                 END AS teacher_name
-
             FROM students s
-
-            LEFT JOIN sections sec
-                ON s.section_id = sec.id
-
-            LEFT JOIN teachers t
-                ON sec.teacher_id = t.id
-
+            LEFT JOIN sections sec ON s.section_id = sec.id
+            LEFT JOIN teachers t   ON sec.teacher_id = t.id
             ORDER BY s.id ASC
         """)
         students = cur.fetchall()
 
+        # Available UIDs for add form
         cur.execute("""
             SELECT rc.uid
             FROM rfid_cards rc
-
-            LEFT JOIN students s
-                ON s.uid = rc.uid
-
+            LEFT JOIN students s ON s.uid = rc.uid
             WHERE s.uid IS NULL
-
             ORDER BY rc.id ASC
         """)
         available_uids = [row["uid"] for row in cur.fetchall()]
-
-        cur.execute("""
-            SELECT
-                sec.id,
-                sec.section_name,
-                sec.year_level,
-                sec.teacher_id,
-
-                CASE
-                    WHEN t.id IS NOT NULL THEN
-                        TRIM(
-                            COALESCE(t.last_name, '') || ', ' ||
-                            COALESCE(t.first_name, '') ||
-
-                            CASE
-                                WHEN t.middle_name IS NOT NULL
-                                     AND t.middle_name <> ''
-                                THEN ' ' || t.middle_name
-                                ELSE ''
-                            END
-                        )
-                    ELSE NULL
-                END AS teacher_name
-
-            FROM sections sec
-
-            LEFT JOIN teachers t
-                ON sec.teacher_id = t.id
-
-            ORDER BY sec.section_name ASC
-        """)
-        sections = cur.fetchall()
-
-        cur.execute("""
-            SELECT
-                id,
-                first_name,
-                middle_name,
-                last_name,
-
-                TRIM(
-                    last_name || ', ' || first_name ||
-
-                    CASE
-                        WHEN middle_name IS NOT NULL
-                             AND middle_name <> ''
-                        THEN ' ' || middle_name
-                        ELSE ''
-                    END
-                ) AS full_name
-
-            FROM teachers
-
-            ORDER BY last_name ASC, first_name ASC
-        """)
-        teachers = cur.fetchall()
 
         cur.close()
         conn.close()
@@ -235,211 +254,103 @@ def student():
     return render_template(
         "superadmin/student.html",
         students=students,
-        available_uids=available_uids,
-        sections=sections,
-        teachers=teachers
+        available_uids=available_uids
     )
 
 
 @sregister.route('/add-student', methods=['POST'])
 @login_required
 def add_student():
-
-    uid = request.form.get('uid', '').strip()
-    existing_section_id = request.form.get('section_id', '').strip()
-    new_section_name = request.form.get('new_section_name', '').strip()
-    new_year_level = request.form.get('new_year_level', '').strip()
-    new_teacher_id_raw = request.form.get('new_teacher_id', '').strip()
-    last_name = request.form.get('last_name', '').strip()
-    first_name = request.form.get('first_name', '').strip()
-    middle_name = request.form.get('middle_name', '').strip()
-    extension = request.form.get('extension', '').strip()
-    birthday_raw = request.form.get('birthday', '').strip()
+    uid            = request.form.get('uid', '').strip()
+    last_name      = request.form.get('last_name', '').strip()
+    first_name     = request.form.get('first_name', '').strip()
+    middle_name    = request.form.get('middle_name', '').strip()
+    extension      = request.form.get('extension', '').strip()
+    birthday_raw   = request.form.get('birthday', '').strip()
     contact_number = request.form.get('contact_number', '').strip()
-    email = request.form.get('email', '').strip()
-    schedule = request.form.get('schedule', '').strip()
+    email          = request.form.get('email', '').strip()
 
-    if (
-        not last_name or
-        not first_name or
-        not birthday_raw or
-        not contact_number or
-        not email or
-        not schedule
-    ):
-        flash("Please fill in all required fields.", "error")
+    # ── Strong validation ─────────────────────────
+    errors = validate_student_fields(
+        last_name, first_name, middle_name, extension,
+        birthday_raw, contact_number, email
+    )
+    if errors:
+        for err in errors:
+            flash(err, "error")
         return redirect(url_for('sregister.student'))
 
     try:
         birthday = normalize_birthday(birthday_raw)
 
-        section_id = (
-            int(existing_section_id)
-            if existing_section_id else None
-        )
-
-        new_teacher_id = (
-            int(new_teacher_id_raw)
-            if new_teacher_id_raw else None
-        )
-
         conn = get_db_connection()
-        cur = conn.cursor()
+        cur  = conn.cursor()
 
-        cur.execute(
-            "SELECT id FROM students WHERE email = %s",
-            (email,)
-        )
-
+        # Duplicate email check
+        cur.execute("SELECT id FROM students WHERE email = %s", (email,))
         if cur.fetchone():
-            cur.close()
-            conn.close()
+            cur.close(); conn.close()
             flash("This email is already registered.", "error")
             return redirect(url_for('sregister.student'))
 
-        cur.execute("""
-            SELECT id
-            FROM students
-            WHERE last_name = %s
-            AND first_name = %s
-            AND birthday = %s
-        """, (last_name, first_name, birthday))
-
+        # Duplicate contact number check
+        cur.execute("SELECT id FROM students WHERE contact_number = %s", (contact_number,))
         if cur.fetchone():
-            cur.close()
-            conn.close()
+            cur.close(); conn.close()
+            flash("This contact number is already registered.", "error")
+            return redirect(url_for('sregister.student'))
+
+        # Duplicate student check (name + birthday)
+        cur.execute("""
+            SELECT id FROM students
+            WHERE last_name = %s AND first_name = %s AND birthday = %s
+        """, (last_name, first_name, birthday))
+        if cur.fetchone():
+            cur.close(); conn.close()
             flash("This student is already registered.", "error")
             return redirect(url_for('sregister.student'))
 
-        if section_id is not None:
-            cur.execute("""
-                SELECT id
-                FROM sections
-                WHERE id = %s
-            """, (section_id,))
-
-            if not cur.fetchone():
-                cur.close()
-                conn.close()
-                flash("Selected section does not exist.", "error")
-                return redirect(url_for('sregister.student'))
-
-        elif new_section_name:
-            if new_teacher_id is not None:
-                cur.execute("""
-                    SELECT id
-                    FROM teachers
-                    WHERE id = %s
-                """, (new_teacher_id,))
-
-                if not cur.fetchone():
-                    cur.close()
-                    conn.close()
-                    flash("Selected teacher does not exist.", "error")
-                    return redirect(url_for('sregister.student'))
-
-            cur.execute("""
-                SELECT id
-                FROM sections
-                WHERE LOWER(section_name) = LOWER(%s)
-                LIMIT 1
-            """, (new_section_name,))
-
-            existing = cur.fetchone()
-
-            if existing:
-                section_id = existing[0]
-            else:
-                cur.execute("""
-                    INSERT INTO sections (
-                        section_name,
-                        year_level,
-                        teacher_id
-                    )
-                    VALUES (%s, %s, %s)
-                    RETURNING id
-                """, (
-                    new_section_name,
-                    new_year_level if new_year_level else None,
-                    new_teacher_id
-                ))
-                section_id = cur.fetchone()[0]
-
+        # UID handling
         if not uid:
             cur.execute("""
-                SELECT rc.uid
-                FROM rfid_cards rc
+                SELECT rc.uid FROM rfid_cards rc
                 LEFT JOIN students s ON s.uid = rc.uid
                 WHERE s.uid IS NULL
-                ORDER BY rc.id ASC
-                LIMIT 1
+                ORDER BY rc.id ASC LIMIT 1
             """)
             uid_row = cur.fetchone()
-
             if not uid_row:
-                cur.close()
-                conn.close()
+                cur.close(); conn.close()
                 flash("No available UID found.", "error")
                 return redirect(url_for('sregister.student'))
-
             uid = uid_row[0]
-
         else:
-            cur.execute("""
-                SELECT uid
-                FROM rfid_cards
-                WHERE uid = %s
-            """, (uid,))
-
+            cur.execute("SELECT uid FROM rfid_cards WHERE uid = %s", (uid,))
             if not cur.fetchone():
-                cur.close()
-                conn.close()
+                cur.close(); conn.close()
                 flash("Selected UID does not exist.", "error")
                 return redirect(url_for('sregister.student'))
 
-            cur.execute("""
-                SELECT id
-                FROM students
-                WHERE uid = %s
-            """, (uid,))
-
+            cur.execute("SELECT id FROM students WHERE uid = %s", (uid,))
             if cur.fetchone():
-                cur.close()
-                conn.close()
+                cur.close(); conn.close()
                 flash("This UID is already linked to another student.", "error")
                 return redirect(url_for('sregister.student'))
 
+        # INSERT - no section / schedule
         cur.execute("""
-            INSERT INTO students (
-                uid,
-                last_name,
-                first_name,
-                middle_name,
-                extension,
-                birthday,
-                contact_number,
-                email,
-                schedule,
-                section_id
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO students
+                (uid, last_name, first_name, middle_name, extension,
+                 birthday, contact_number, email)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """, (
-            uid,
-            last_name,
-            first_name,
-            middle_name if middle_name else None,
-            extension if extension else None,
-            birthday,
-            contact_number,
-            email,
-            schedule,
-            section_id
+            uid, last_name, first_name,
+            middle_name or None, extension or None,
+            birthday, contact_number, email
         ))
 
         conn.commit()
-        cur.close()
-        conn.close()
-
+        cur.close(); conn.close()
         flash("Student added successfully.", "success")
         return redirect(url_for('sregister.student'))
 
@@ -451,98 +362,82 @@ def add_student():
 @sregister.route('/update-student/<int:student_id>', methods=['POST'])
 @login_required
 def update_student(student_id):
-
-    last_name = request.form.get('last_name', '').strip()
-    first_name = request.form.get('first_name', '').strip()
-    middle_name = request.form.get('middle_name', '').strip()
-    extension = request.form.get('extension', '').strip()
-    birthday_raw = request.form.get('birthday', '').strip()
+    last_name      = request.form.get('last_name', '').strip()
+    first_name     = request.form.get('first_name', '').strip()
+    middle_name    = request.form.get('middle_name', '').strip()
+    extension      = request.form.get('extension', '').strip()
+    birthday_raw   = request.form.get('birthday', '').strip()
     contact_number = request.form.get('contact_number', '').strip()
-    email = request.form.get('email', '').strip()
-    schedule = request.form.get('schedule', '').strip()
-    section_id_raw = request.form.get('section_id', '').strip()
+    email          = request.form.get('email', '').strip()
 
-    if (
-        not last_name or
-        not first_name or
-        not birthday_raw or
-        not contact_number or
-        not email or
-        not schedule
-    ):
-        flash("Please fill in all required fields.", "error")
+    # ── Strong validation ─────────────────────────
+    errors = validate_student_fields(
+        last_name, first_name, middle_name, extension,
+        birthday_raw, contact_number, email
+    )
+    if errors:
+        for err in errors:
+            flash(err, "error")
         return redirect(url_for('sregister.student'))
 
     conn = None
-    cur = None
+    cur  = None
 
     try:
         birthday = normalize_birthday(birthday_raw)
-        section_id = int(section_id_raw) if section_id_raw else None
 
         conn = get_db_connection()
-        cur = conn.cursor()
+        cur  = conn.cursor()
 
-        cur.execute("""
-            SELECT id
-            FROM students
-            WHERE id = %s
-        """, (student_id,))
-
+        cur.execute("SELECT id FROM students WHERE id = %s", (student_id,))
         if not cur.fetchone():
             flash("Student not found.", "error")
             return redirect(url_for('sregister.student'))
 
-        if section_id is not None:
-            cur.execute("""
-                SELECT id
-                FROM sections
-                WHERE id = %s
-            """, (section_id,))
-
-            if not cur.fetchone():
-                flash("Selected section does not exist.", "error")
-                return redirect(url_for('sregister.student'))
-
+        # Duplicate email check (exclude self)
         cur.execute("""
-            SELECT id
-            FROM students
-            WHERE email = %s
-            AND id <> %s
+            SELECT id FROM students WHERE email = %s AND id <> %s
         """, (email, student_id))
-
         if cur.fetchone():
             flash("This email is already registered to another student.", "error")
+            return redirect(url_for('sregister.student'))
+
+        # Duplicate contact number check (exclude self)
+        cur.execute("""
+            SELECT id FROM students WHERE contact_number = %s AND id <> %s
+        """, (contact_number, student_id))
+        if cur.fetchone():
+            flash("This contact number is already registered to another student.", "error")
+            return redirect(url_for('sregister.student'))
+
+        # Duplicate name + birthday check (exclude self)
+        cur.execute("""
+            SELECT id FROM students
+            WHERE last_name = %s AND first_name = %s AND birthday = %s AND id <> %s
+        """, (last_name, first_name, birthday, student_id))
+        if cur.fetchone():
+            flash("Another student with the same name and birthday already exists.", "error")
             return redirect(url_for('sregister.student'))
 
         cur.execute("""
             UPDATE students
             SET
-                last_name = %s,
-                first_name = %s,
-                middle_name = %s,
-                extension = %s,
-                birthday = %s,
+                last_name      = %s,
+                first_name     = %s,
+                middle_name    = %s,
+                extension      = %s,
+                birthday       = %s,
                 contact_number = %s,
-                email = %s,
-                schedule = %s,
-                section_id = %s
+                email          = %s
             WHERE id = %s
         """, (
-            last_name,
-            first_name,
-            middle_name if middle_name else None,
-            extension if extension else None,
-            birthday,
-            contact_number,
-            email,
-            schedule,
-            section_id,
+            last_name, first_name,
+            middle_name or None, extension or None,
+            birthday, contact_number, email,
             student_id
         ))
 
         conn.commit()
-
         flash("Student updated successfully.", "success")
         return redirect(url_for('sregister.student'))
 
@@ -553,120 +448,121 @@ def update_student(student_id):
         return redirect(url_for('sregister.student'))
 
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
-            
+        if cur:  cur.close()
+        if conn: conn.close()
+
 
 @sregister.route('/import-excel', methods=['POST'])
 @login_required
 def import_excel():
     from flask import jsonify
-    data = request.get_json()
+    data     = request.get_json()
     students = data.get('students', [])
 
     if not students:
         return jsonify({'message': 'No students provided.'}), 400
 
     conn = None
-    cur = None
+    cur  = None
     imported = 0
-    skipped = 0
+    skipped  = 0
     no_uid_available = False
 
     try:
         conn = get_db_connection()
-        cur = conn.cursor()
+        cur  = conn.cursor()
 
-        # FIRST: Check if there are enough available UIDs
+        # Count available UIDs
         cur.execute("""
-            SELECT COUNT(rc.uid) as available_uids
+            SELECT COUNT(rc.uid)
             FROM rfid_cards rc
             LEFT JOIN students s ON s.uid = rc.uid
             WHERE s.uid IS NULL
         """)
         available_count = cur.fetchone()[0]
-        
-        # Count valid students to import (excluding duplicates)
+
+        # Count valid students
         valid_students_count = 0
         for s in students:
             try:
-                last_name = (s.get('last_name') or '').strip()
-                first_name = (s.get('first_name') or '').strip()
+                last_name    = (s.get('last_name') or '').strip()
+                first_name   = (s.get('first_name') or '').strip()
+                middle_name  = (s.get('middle_name') or '').strip()
+                extension    = (s.get('extension') or '').strip()
                 birthday_raw = (s.get('birthday') or '').strip()
-                email = (s.get('email') or '').strip()
-                
-                if not (last_name and first_name and birthday_raw and email):
+                contact      = (s.get('contact_number') or '').strip()
+                email        = (s.get('email') or '').strip()
+
+                if not (last_name and first_name and birthday_raw and contact and email):
                     continue
-                
-                # Check if email already exists
+                field_errors = validate_student_fields(
+                    last_name, first_name, middle_name, extension,
+                    birthday_raw, contact, email
+                )
+                if field_errors:
+                    continue
                 cur.execute("SELECT id FROM students WHERE email = %s", (email,))
                 if cur.fetchone():
                     continue
-                    
+                cur.execute("SELECT id FROM students WHERE contact_number = %s", (contact,))
+                if cur.fetchone():
+                    continue
                 valid_students_count += 1
             except Exception:
                 continue
-        
+
         if valid_students_count > available_count:
-            cur.close()
-            conn.close()
+            cur.close(); conn.close()
             return jsonify({
-                'message': f'❌ Import failed: Not enough available UIDs. Need {valid_students_count} UIDs but only {available_count} available. Please add more RFID cards first.'
+                'message': (
+                    f'❌ Import failed: Not enough available UIDs. '
+                    f'Need {valid_students_count} UIDs but only {available_count} available. '
+                    f'Please add more RFID cards first.'
+                )
             }), 400
-        
-        # Process each student
+
         for s in students:
             try:
-                last_name     = (s.get('last_name') or '').strip()
-                first_name    = (s.get('first_name') or '').strip()
-                middle_name   = (s.get('middle_name') or '').strip() or None
-                extension     = (s.get('extension') or '').strip() or None
-                birthday_raw  = (s.get('birthday') or '').strip()
-                contact       = (s.get('contact_number') or '').strip()
-                email         = (s.get('email') or '').strip()
-                schedule      = (s.get('schedule') or '').strip()
-                section_name  = (s.get('section_name') or '').strip()
-                year_level    = (s.get('year_level') or '').strip() or None
-                
-                # Validate required fields
-                if not (last_name and first_name and birthday_raw and contact and email and schedule):
+                last_name    = (s.get('last_name') or '').strip()
+                first_name   = (s.get('first_name') or '').strip()
+                middle_name  = (s.get('middle_name') or '').strip() or None
+                extension    = (s.get('extension') or '').strip() or None
+                birthday_raw = (s.get('birthday') or '').strip()
+                contact      = (s.get('contact_number') or '').strip()
+                email        = (s.get('email') or '').strip()
+
+                if not (last_name and first_name and birthday_raw and contact and email):
+                    skipped += 1
+                    continue
+
+                field_errors = validate_student_fields(
+                    last_name, first_name, middle_name or '', extension or '',
+                    birthday_raw, contact, email
+                )
+                if field_errors:
                     skipped += 1
                     continue
 
                 birthday = normalize_birthday(birthday_raw)
 
-                # Check for duplicate email
+                # Duplicate checks
                 cur.execute("SELECT id FROM students WHERE email = %s", (email,))
                 if cur.fetchone():
                     skipped += 1
                     continue
-                
-                # Check for duplicate student (same name and birthday)
+                cur.execute("SELECT id FROM students WHERE contact_number = %s", (contact,))
+                if cur.fetchone():
+                    skipped += 1
+                    continue
                 cur.execute("""
-                    SELECT id FROM students 
+                    SELECT id FROM students
                     WHERE last_name = %s AND first_name = %s AND birthday = %s
                 """, (last_name, first_name, birthday))
                 if cur.fetchone():
                     skipped += 1
                     continue
 
-                # Resolve or create section
-                section_id = None
-                if section_name:
-                    cur.execute("SELECT id FROM sections WHERE LOWER(section_name) = LOWER(%s) LIMIT 1", (section_name,))
-                    row = cur.fetchone()
-                    if row:
-                        section_id = row[0]
-                    else:
-                        cur.execute(
-                            "INSERT INTO sections (section_name, year_level) VALUES (%s, %s) RETURNING id",
-                            (section_name, year_level)
-                        )
-                        section_id = cur.fetchone()[0]
-
-                # Get available UID
+                # Assign next available UID
                 cur.execute("""
                     SELECT rc.uid FROM rfid_cards rc
                     LEFT JOIN students s ON s.uid = rc.uid
@@ -674,22 +570,19 @@ def import_excel():
                     ORDER BY rc.id ASC LIMIT 1
                 """)
                 uid_row = cur.fetchone()
-                
-                # This should always have a value since we checked count above
                 if not uid_row:
                     no_uid_available = True
                     break
-                    
                 uid = uid_row[0]
 
-                # Insert the student
+                # INSERT - basic fields only
                 cur.execute("""
                     INSERT INTO students
                         (uid, last_name, first_name, middle_name, extension,
-                         birthday, contact_number, email, schedule, section_id)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        birthday, contact_number, email)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """, (uid, last_name, first_name, middle_name, extension,
-                      birthday, contact, email, schedule, section_id))
+                    birthday, contact, email))
 
                 imported += 1
 
@@ -697,17 +590,17 @@ def import_excel():
                 print(f"Error processing student: {str(e)}")
                 skipped += 1
                 continue
-        
+
         if no_uid_available:
             conn.rollback()
-            return jsonify({'message': f'❌ Import failed: No available UIDs found during import process.'}), 400
+            return jsonify({'message': '❌ Import failed: No available UIDs found during import process.'}), 400
 
         conn.commit()
-        
+
         if imported > 0:
             return jsonify({'message': f'✅ Successfully imported {imported} students. Skipped {skipped} duplicate/invalid rows.'})
         else:
-            return jsonify({'message': f'⚠️ No students were imported. Skipped {skipped} duplicate/invalid rows. No available UIDs or all students were duplicates.'}), 400
+            return jsonify({'message': f'⚠️ No students were imported. Skipped {skipped} duplicate/invalid rows.'}), 400
 
     except Exception as e:
         if conn:
@@ -715,7 +608,5 @@ def import_excel():
         return jsonify({'message': f'❌ Import failed: {str(e)}'}), 500
 
     finally:
-        if cur: 
-            cur.close()
-        if conn: 
-            conn.close()
+        if cur:  cur.close()
+        if conn: conn.close()
