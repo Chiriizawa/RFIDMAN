@@ -59,17 +59,15 @@
         padding: 2rem;
         margin-bottom: 2rem;
         color: white;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
     }
     
-    /* Stat Cards - Only 2 cards */
+    /* Stat Cards */
     .stat-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 1.5rem;
         margin-bottom: 2rem;
-        max-width: 800px;
-        margin-left: auto;
-        margin-right: auto;
     }
     
     .stat-card-modern {
@@ -80,6 +78,7 @@
         border: 1px solid #e2e8f0;
         position: relative;
         overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     
     .stat-card-modern::before {
@@ -121,7 +120,7 @@
         font-weight: 500;
     }
     
-    /* Section Headers */
+    /* Section Header Box - NEW STYLES */
     .section-header {
         display: flex;
         justify-content: space-between;
@@ -131,64 +130,44 @@
         gap: 1rem;
     }
     
-    .section-title {
+    .section-title-box {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-left: 4px solid #f59e0b;
+        border-radius: 0.75rem;
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    .section-title-box i {
+        font-size: 1.8rem;
+        color: #f59e0b;
+        background: white;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    
+    .section-title-text {
         font-size: 1.25rem;
         font-weight: 700;
         color: #1e293b;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
+        margin: 0;
     }
     
-    .section-title i {
-        color: #f59e0b;
-    }
-    
-    /* Table Styles */
-    .data-table {
-        width: 100%;
-        background: white;
-        border-radius: 1rem;
-        overflow: hidden;
-        border: 1px solid #e2e8f0;
-    }
-    
-    .data-table th {
-        background: #f8fafc;
-        padding: 1rem 1rem;
-        text-align: left;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        color: #64748b;
-        border-bottom: 1px solid #e2e8f0;
-    }
-    
-    .data-table td {
-        padding: 1rem 1rem;
-        font-size: 0.875rem;
-        color: #1e293b;
-        border-bottom: 1px solid #e2e8f0;
-    }
-    
-    .data-table tr:hover {
-        background: #f8fafc;
-    }
-    
-    .badge {
-        padding: 0.25rem 0.75rem;
-        border-radius: 0.5rem;
+    .section-title-sub {
         font-size: 0.7rem;
-        font-weight: 600;
-        display: inline-block;
+        color: #64748b;
+        margin: 0.15rem 0 0 0;
     }
     
-    .badge-warning {
-        background: #fef3c7;
-        color: #92400e;
-    }
-    
-    /* Quick Action Buttons for Recent Scans */
+    /* Quick Actions */
     .quick-actions {
         display: flex;
         gap: 1rem;
@@ -198,13 +177,16 @@
     .quick-btn {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
-        padding: 0.5rem 1rem;
+        padding: 0.6rem 1.25rem;
         border-radius: 0.5rem;
         font-size: 0.85rem;
         font-weight: 500;
         color: #1e293b;
         transition: all 0.2s;
         cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
     }
     
     .quick-btn:hover {
@@ -214,6 +196,130 @@
         transform: translateY(-2px);
     }
     
+    /* Table Styles */
+    .data-table {
+        width: 100%;
+        background: white;
+        border-radius: 1rem;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    .data-table th {
+        background: #f8fafc;
+        padding: 1rem 1.25rem;
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #475569;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .data-table td {
+        padding: 1rem 1.25rem;
+        font-size: 0.875rem;
+        color: #1e293b;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+    
+    .data-table tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .data-table tr:hover {
+        background: #f8fafc;
+    }
+    
+    .badge {
+        padding: 0.3rem 0.85rem;
+        border-radius: 0.5rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+    
+    .badge-section {
+        background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+        color: #1e3a8a;
+        font-weight: 700;
+    }
+    
+    .badge-year {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    
+    .badge-present {
+        background: #dcfce7;
+        color: #166534;
+    }
+    
+    .badge-absent {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+    
+    .btn-view {
+        background: #f59e0b;
+        color: white;
+        padding: 0.45rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .btn-view:hover {
+        background: #d97706;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem;
+        background: #f8fafc;
+        border-radius: 1rem;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        color: #cbd5e1;
+        margin-bottom: 1rem;
+    }
+    
+    .empty-state p {
+        color: #64748b;
+        font-size: 0.875rem;
+    }
+    
+    .empty-state .sub-text {
+        font-size: 0.75rem;
+        color: #94a3b8;
+        margin-top: 0.5rem;
+    }
+    
+    .attendance-stats {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .attendance-percent {
+        font-size: 0.7rem;
+        color: #64748b;
+    }
+    
     /* Responsive */
     @media (max-width: 768px) {
         .welcome-header {
@@ -221,6 +327,7 @@
         }
         .stat-grid {
             gap: 1rem;
+            grid-template-columns: 1fr;
         }
         .stat-number {
             font-size: 1.5rem;
@@ -228,12 +335,23 @@
         .data-table th, .data-table td {
             padding: 0.75rem;
         }
-    }
-    
-    @media (max-width: 640px) {
-        .stat-grid {
-            grid-template-columns: 1fr;
-            max-width: 100%;
+        .data-table {
+            font-size: 0.8rem;
+        }
+        .btn-view {
+            padding: 0.35rem 0.75rem;
+            font-size: 0.7rem;
+        }
+        .section-title-box {
+            padding: 0.75rem 1rem;
+        }
+        .section-title-box i {
+            width: 40px;
+            height: 40px;
+            font-size: 1.4rem;
+        }
+        .section-title-text {
+            font-size: 1rem;
         }
     }
 </style>
@@ -244,41 +362,49 @@
     <div class="welcome-header">
         <div>
             <h1 class="text-2xl font-bold mb-2">Welcome back, {{ session.get('teacher_name', 'Teacher') }}!</h1>
-            <p class="text-white/80 text-sm">Student Attendance Monitoring System - Track and manage attendance efficiently</p>
+            <p class="text-white/80 text-sm">Student Attendance Monitoring System - Track and manage your assigned classes</p>
         </div>
     </div>
 
-    <!-- Statistics Cards Row - Only 2 cards -->
+    <!-- Statistics Cards -->
     <div class="stat-grid">
         <div class="stat-card-modern">
             <div class="stat-icon" style="background: #dbeafe; color: #2563eb;">
                 <i class="fa-solid fa-users"></i>
             </div>
             <div class="stat-number" id="totalStudents">--</div>
-            <div class="stat-label">Registered Students</div>
+            <div class="stat-label">Total Students</div>
         </div>
         
         <div class="stat-card-modern">
             <div class="stat-icon" style="background: #fef3c7; color: #d97706;">
                 <i class="fa-solid fa-chalkboard-user"></i>
             </div>
-            <div class="stat-number" id="totalClasses">--</div>
-            <div class="stat-label">Classes</div>
+            <div class="stat-number" id="totalSections">--</div>
+            <div class="stat-label">My Sections</div>
+        </div>
+
+        <div class="stat-card-modern">
+            <div class="stat-icon" style="background: #dcfce7; color: #16a34a;">
+                <i class="fa-solid fa-id-card"></i>
+            </div>
+            <div class="stat-number" id="todayScans">--</div>
+            <div class="stat-label">Present Today</div>
         </div>
     </div>
 
-    <!-- Recent Scans Table -->
+    <!-- My Assigned Sections - Boxed Header -->
     <div class="section-header">
-        <div class="section-title">
-            <i class="fa-solid fa-clock-rotate-left"></i>
-            Recent Scans
+        <div class="section-title-box">
+            <i class="fa-solid fa-layer-group"></i>
+            <div>
+                <h2 class="section-title-text">My Assigned Sections</h2>
+                <p class="section-title-sub">Classes assigned to you by the administrator</p>
+            </div>
         </div>
         <div class="quick-actions">
             <button class="quick-btn" onclick="manualRefresh()">
-                <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
-            </button>
-            <button class="quick-btn" onclick="clearRecentScans()">
-                <i class="fa-solid fa-trash-alt mr-1"></i> Clear
+                <i class="fa-solid fa-rotate-right"></i> Refresh
             </button>
         </div>
     </div>
@@ -287,49 +413,32 @@
         <table class="w-full">
             <thead>
                 <tr>
-                    <th>#</th>
-                    <th>UID</th>
-                    <th>Student Name</th>
-                    <th>Time</th>
+                    <th style="width: 5%">#</th>
+                    <th style="width: 30%">Section Name</th>
+                    <th style="width: 20%">Year Level</th>
+                    <th style="width: 15%">Students</th>
+                    <th style="width: 20%">Today's Attendance</th>
+                    <th style="width: 10%">Action</th>
                 </tr>
             </thead>
-            <tbody id="uid-table-body">
+            <tbody id="sectionsTableBody">
                 <tr>
-                    <td colspan="4" class="text-center py-8 text-gray-400">
-                        <i class="fa-regular fa-clock text-3xl mb-2 block"></i>
-                        No recent scans
+                    <td colspan="6" class="text-center py-8">
+                        <div class="empty-state">
+                            <i class="fa-solid fa-spinner fa-spin"></i>
+                            <p>Loading your sections...</p>
+                        </div>
                     </td>
                 </tr>
             </tbody>
         </table>
     </div>
-
-    <!-- Success Banner -->
-    <div id="nameBanner" class="fixed bottom-5 right-5 hidden success-banner z-50">
-        <div class="flex items-center gap-3">
-            <div class="text-3xl">✅</div>
-            <div>
-                <p class="text-emerald-700 font-semibold text-xs">New Scan Detected</p>
-                <p id="bannerName" class="text-base font-bold text-gray-800 mt-1">—</p>
-                <p id="bannerTime" class="text-gray-500 text-xs mt-1">
-                    <i class="fa-regular fa-clock mr-1"></i>Just now
-                </p>
-            </div>
-        </div>
-    </div>
 </div>
 
 <script>
-    let lastUID = '';
-    let bannerTimeout = null;
-    let expirationTimeout = null;
-    let tableTimeout = null;
-    let recentScans = [];
-    let connectionStatus = true;
-    let reconnectAttempts = 0;
+    let sections = [];
     let totalStudentsCount = 0;
-
-    const TABLE_EXPIRATION_TIME = 60 * 1000;
+    let todayScansCount = 0;
 
     function showToast(message, type = 'success', title = '') {
         const titles = { success: '✓ Success!', error: '✗ Error!', info: 'ℹ Info', warning: '⚠ Warning' };
@@ -341,139 +450,135 @@
         setTimeout(() => { if (toast && toast.parentElement) { toast.style.animation = 'slideOutRight 0.3s ease'; setTimeout(() => toast.remove(), 300); } }, 3000);
     }
 
-    async function fetchTotalStudents() {
+    async function fetchMySections() {
         try {
-            const response = await fetch('/admin/registered_students/api');
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success) {
-                    totalStudentsCount = data.total;
-                    document.getElementById('totalStudents').textContent = totalStudentsCount;
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching total students:', error);
-        }
-    }
-
-    async function fetchTotalClasses() {
-        document.getElementById('totalClasses').textContent = '5';
-    }
-
-    async function refreshData() {
-        try {
-            const response = await fetch('/admin/get_latest');
+            const response = await fetch('/admin/api/get_sections_for_sidebar');
             const data = await response.json();
-
-            if (!connectionStatus) {
-                connectionStatus = true;
-                showToast('Connection restored', 'success', 'Reconnected');
+            if (data.success) {
+                sections = data.sections;
+                renderSectionsTable();
+                document.getElementById('totalSections').textContent = sections.length;
+                calculateTotalStudents();
+            } else if (data.sections && data.sections.length === 0) {
+                document.getElementById('sectionsTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-8">
+                            <div class="empty-state">
+                                <i class="fa-solid fa-folder-open"></i>
+                                <p>No sections assigned to you yet</p>
+                                <p class="sub-text">Contact Super Admin to assign sections</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
             }
-            reconnectAttempts = 0;
-
-            if (data.uid && data.uid !== lastUID && data.uid !== '') {
-                lastUID = data.uid;
-
-                recentScans.unshift({
-                    id: Date.now(),
-                    uid: data.uid,
-                    full_name: data.name || 'Unknown Student',
-                    created_at: data.time || new Date().toLocaleTimeString()
-                });
-
-                if (recentScans.length > 10) recentScans.pop();
-
-                showNameBanner(data.name, data.time);
-                startExpirationTimer();
-                refreshRecentTable();
-                startTableExpirationTimer();
-            }
-
         } catch (error) {
-            console.error('Error fetching latest scan:', error);
-            if (connectionStatus) {
-                connectionStatus = false;
-                reconnectAttempts++;
-                if (reconnectAttempts >= 3) {
-                    showToast('Connection lost. Check if server is running.', 'error', 'Connection Error');
-                }
-            }
+            console.error('Error fetching sections:', error);
+            showToast('Failed to load your sections', 'error');
         }
     }
 
-    function showNameBanner(name, time) {
-        const banner = document.getElementById('nameBanner');
-        document.getElementById('bannerName').textContent = name || 'Unknown Student';
-        document.getElementById('bannerTime').innerHTML = `<i class="fa-regular fa-clock mr-1"></i>${time || 'Just now'}`;
-        banner.classList.remove('hidden');
-        
-        if (name && name !== 'Unknown Student') {
-            showToast(`${name} has been detected`, 'success', 'New Scan');
-        }
-        
-        if (bannerTimeout) clearTimeout(bannerTimeout);
-        bannerTimeout = setTimeout(() => banner.classList.add('hidden'), 5000);
-    }
-
-    function startExpirationTimer() {
-        if (expirationTimeout) clearTimeout(expirationTimeout);
-        expirationTimeout = setTimeout(() => {
-            lastUID = '';
-            document.getElementById('nameBanner').classList.add('hidden');
-        }, 5 * 60 * 1000);
-    }
-
-    function refreshRecentTable() {
-        const tbody = document.getElementById('uid-table-body');
-
-        if (recentScans.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-gray-400"><i class="fa-regular fa-clock text-3xl mb-2 block"></i>No recent scans</td></tr>`;
+    function renderSectionsTable() {
+        const tbody = document.getElementById('sectionsTableBody');
+        if (!sections || sections.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-8">
+                        <div class="empty-state">
+                            <i class="fa-solid fa-folder-open"></i>
+                            <p>No sections assigned to you yet</p>
+                            <p class="sub-text">Contact Super Admin to assign sections</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
             return;
         }
-
-        tbody.innerHTML = recentScans.map((row, index) => `
+        
+        tbody.innerHTML = sections.map((section, index) => `
             <tr>
-                <td class="py-3 px-4">${index + 1}</td>
-                <td class="py-3 px-4"><span class="badge badge-warning">${row.uid}</span></td>
-                <td class="py-3 px-4">${row.full_name}</td>
-                <td class="py-3 px-4">${row.created_at}</td>
+                <td class="font-medium text-gray-500">${index + 1}</td>
+                <td>
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-accent text-sm"></i>
+                        <span class="font-semibold text-gray-800">${escapeHtml(section.section_name)}</span>
+                    </div>
+                </td>
+                <td><span class="badge badge-year">${escapeHtml(section.year_level) || 'N/A'}</span></td>
+                <td class="font-medium">${section.student_count || 0}</td>
+                <td>
+                    <div class="attendance-stats" id="attendance-${section.id}">
+                        <span class="badge badge-present">Loading...</span>
+                    </div>
+                </td>
+                <td>
+                    <a href="/admin/class_section/${section.id}" class="btn-view">
+                        <i class="fa-solid fa-eye"></i>
+                    </a>
+                </td>
             </tr>
         `).join('');
+        
+        todayScansCount = 0;
+        sections.forEach(section => {
+            fetchSectionAttendance(section.id);
+        });
     }
 
-    function startTableExpirationTimer() {
-        if (tableTimeout) clearTimeout(tableTimeout);
-        tableTimeout = setTimeout(() => {
-            recentScans = [];
-            refreshRecentTable();
-        }, TABLE_EXPIRATION_TIME);
+    async function fetchSectionAttendance(sectionId) {
+        try {
+            const response = await fetch(`/admin/class_section/${sectionId}`);
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const presentText = doc.querySelector('#presentCount')?.textContent;
+            const totalText = doc.querySelector('#totalStudents')?.textContent;
+            const attendanceRate = doc.querySelector('#attendanceRate')?.textContent;
+            
+            const attendanceCell = document.getElementById(`attendance-${sectionId}`);
+            if (attendanceCell) {
+                if (presentText && totalText) {
+                    const present = parseInt(presentText);
+                    const total = parseInt(totalText);
+                    todayScansCount += present;
+                    attendanceCell.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <span class="badge badge-present">${present} / ${total}</span>
+                            ${attendanceRate ? `<span class="attendance-percent">(${attendanceRate})</span>` : ''}
+                        </div>
+                    `;
+                } else {
+                    attendanceCell.innerHTML = '<span class="badge badge-absent">No data</span>';
+                }
+            }
+            document.getElementById('todayScans').textContent = todayScansCount;
+        } catch (error) {
+            console.error(`Error fetching attendance for section ${sectionId}:`, error);
+            const attendanceCell = document.getElementById(`attendance-${sectionId}`);
+            if (attendanceCell) {
+                attendanceCell.innerHTML = '<span class="badge badge-absent">Error</span>';
+            }
+        }
     }
 
-    function manualRefresh() { 
-        refreshData(); 
-        fetchTotalStudents();
-        showToast('Dashboard refreshed', 'info', 'Refreshing'); 
-    }
-    
-    function clearRecentScans() { 
-        recentScans = []; 
-        refreshRecentTable(); 
-        showToast('Recent activity cleared', 'success', 'Cleared'); 
+    function calculateTotalStudents() {
+        totalStudentsCount = sections.reduce((sum, section) => sum + (section.student_count || 0), 0);
+        document.getElementById('totalStudents').textContent = totalStudentsCount;
     }
 
-    document.addEventListener('keydown', (e) => {
-        if (e.ctrlKey && e.key === 'r') { e.preventDefault(); manualRefresh(); }
-        else if (e.ctrlKey && e.key === 'c') { e.preventDefault(); clearRecentScans(); }
-    });
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function manualRefresh() {
+        showToast('Refreshing dashboard...', 'info', 'Refreshing');
+        fetchMySections();
+    }
 
     // Initialize
-    refreshData();
-    refreshRecentTable();
-    fetchTotalStudents();
-    fetchTotalClasses();
-    setInterval(refreshData, 1000);
-    setInterval(fetchTotalStudents, 30000);
-    
-    console.log('School Dashboard loaded - Keyboard shortcuts: Ctrl+R (Refresh), Ctrl+C (Clear scans)');
+    fetchMySections();
 </script>
 {% endblock %}

@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, jsonify, render_template
 from datetime import datetime
 import os
 import re
@@ -7,328 +7,176 @@ import time
 import psycopg2
 import psycopg2.extras
 from urllib.parse import urlparse
-
-# Try to import serial
-try:
-    import serial
-    import serial.tools.list_ports
-    SERIAL_AVAILABLE = True
-except ImportError:
-    SERIAL_AVAILABLE = False
-    print("[WARNING] pyserial not installed. Run: pip install pyserial")
+import serial
 
 rfid_bp = Blueprint('rfid', __name__, template_folder='template')
 
-# Shared state
-_rfid_data = {'uid': 'Waiting for RFID card...', 'last_insert': None}
+# Data storage
+_rfid_data = {'uid': 'Waiting...', 'last_insert': None}
 _db_config = {}
 
-# Serial control
+# Serial
 _serial_port = None
-_serial_lock = threading.Lock()
-_serial_thread = None
 _stop_event = threading.Event()
-_DEBOUNCE_SECONDS = 2
-_last_uid_seen = None
-_last_uid_time = 0.0
 
 def _close_serial():
-    """Close serial port"""
     global _serial_port
-    with _serial_lock:
-        if _serial_port and _serial_port.is_open:
-            try:
-                _serial_port.close()
-                print("[Serial] Port closed")
-            except:
-                pass
-            _serial_port = None
+    if _serial_port and _serial_port.is_open:
+        try:
+            _serial_port.close()
+            print("[Serial] Closed")
+        except:
+            pass
 
-def set_rfid_data(data: dict):
+def set_rfid_data(data):
     global _rfid_data
     _rfid_data = data
 
-def set_db_config(config: dict):
+def set_db_config(config):
     global _db_config
     _db_config = config
 
 def get_db_connection():
-    """Get database connection from DATABASE_URL"""
-    database_url = os.getenv('DATABASE_URL')
-    if not database_url:
+    db_url = os.getenv('DATABASE_URL')
+    if db_url:
+        p = urlparse(db_url)
         return psycopg2.connect(
-            host=_db_config.get('DB_HOST', 'localhost'),
-            port=_db_config.get('DB_PORT', 5432),
-            dbname=_db_config.get('DB_NAME', 'postgres'),
-            user=_db_config.get('DB_USER', 'postgres'),
-            password=_db_config.get('DB_PASSWORD', ''),
+            host=p.hostname, port=p.port or 5432,
+            dbname=p.path.lstrip('/'), user=p.username,
+            password=p.password, sslmode='require'
         )
-    
-    parsed = urlparse(database_url)
-    return psycopg2.connect(
-        host=parsed.hostname,
-        port=parsed.port or 5432,
-        dbname=parsed.path.lstrip('/'),
-        user=parsed.username,
-        password=parsed.password,
-        sslmode='require'
-    )
+    return psycopg2.connect(**_db_config)
 
 def init_db():
-    """Initialize database tables"""
-    print("[DB] Initializing database...")
     try:
         conn = get_db_connection()
-        with conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS rfid_cards (
-                        id         SERIAL PRIMARY KEY,
-                        uid        VARCHAR(50)  NOT NULL,
-                        tapped_at  TIMESTAMP    NOT NULL DEFAULT NOW()
-                    );
-                """)
-                cur.execute("""
-                    CREATE INDEX IF NOT EXISTS idx_rfid_cards_uid_tapped 
-                    ON rfid_cards(uid, DATE(tapped_at));
-                """)
-        print("[DB] rfid_cards table ready.")
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS rfid_cards (
+                    id SERIAL PRIMARY KEY,
+                    uid VARCHAR(50) NOT NULL,
+                    tapped_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+        conn.commit()
         conn.close()
+        print("[DB] Ready")
     except Exception as e:
-        print(f"[DB] Init error: {e}")
+        print(f"[DB] Error: {e}")
 
-def insert_rfid_card(uid: str) -> dict:
-    """Insert a UID into rfid_cards"""
+def save_card(uid):
     conn = get_db_connection()
     try:
-        with conn:
-            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
-                cur.execute(
-                    """
-                    INSERT INTO rfid_cards (uid, tapped_at)
-                    VALUES (%s, NOW())
-                    RETURNING id, uid, tapped_at
-                    """,
-                    (uid,)
-                )
-                row = cur.fetchone()
-                print(f"[DB] Inserted: {uid}")
-                return {'id': row['id'], 'uid': row['uid'], 'tapped_at': str(row['tapped_at'])}
-    except Exception as e:
-        print(f"[DB] Insert error: {e}")
-        raise
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+            cur.execute(
+                "INSERT INTO rfid_cards (uid) VALUES (%s) RETURNING id, uid, tapped_at",
+                (uid,)
+            )
+            row = cur.fetchone()
+            conn.commit()
+            return dict(row)
     finally:
         conn.close()
 
-def find_serial_port():
-    """Find the RFID serial port"""
-    # Check environment variable first
-    manual_port = os.environ.get('RFID_PORT')
-    if manual_port:
-        print(f"[Serial] Using manual port from .env: {manual_port}")
-        return manual_port
+def reader_thread():
+    global _serial_port, _rfid_data
     
-    if not SERIAL_AVAILABLE:
-        return None
-    
-    # Try common ports
-    for port in ['COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM3']:
-        try:
-            test_ser = serial.Serial(port, 9600, timeout=0.3)
-            test_ser.close()
-            print(f"[Serial] Found working port: {port}")
-            return port
-        except Exception as e:
-            continue
-    
-    # Auto-detect
-    for port in serial.tools.list_ports.comports():
-        desc = port.description.lower()
-        if any(k in desc for k in ('arduino', 'ch340', 'cp210', 'usb serial', 'rfid', 'serial')):
-            print(f"[Serial] Auto-detected: {port.device}")
-            return port.device
-    
-    return None
-
-def serial_reader_thread():
-    """Background thread to read RFID tags"""
-    global _serial_port, _last_uid_seen, _last_uid_time, _rfid_data
-    
-    port_name = find_serial_port()
-    if not port_name:
-        print("[Serial] No RFID reader found.")
-        print("[Serial] Make sure:")
-        print("   1. RFID reader is connected via USB")
-        print("   2. Correct COM port is set in .env file (RFID_PORT=COMx)")
-        print("   3. No other program is using the COM port")
+    port = os.environ.get('RFID_PORT')
+    if not port:
+        print("[RFID] No RFID_PORT in .env")
         return
     
-    print(f"[Serial] Attempting to connect to {port_name}...")
+    print(f"[RFID] Connecting to {port}...")
     
     while not _stop_event.is_set():
         try:
-            # Try to open port
-            with _serial_lock:
-                _serial_port = serial.Serial(port_name, 9600, timeout=1)
-            
-            print(f"[Serial] ✅ Connected to {port_name} - Ready for RFID tags!")
-            print(f"[Serial] Listening for card taps...")
+            _serial_port = serial.Serial(port, 9600, timeout=1)
+            print(f"[RFID] ✅ Connected! Tap your card...")
             
             while not _stop_event.is_set():
-                if _serial_port and _serial_port.in_waiting:
-                    line = _serial_port.readline().decode('utf-8', errors='ignore').strip()
-                    if line:
-                        print(f"[RFID] Raw data: {line}")
-                        
-                        # Look for 8-character hex UID
-                        uid_match = re.search(r'([0-9A-Fa-f]{8})', line)
-                        if uid_match:
-                            uid = uid_match.group(1).upper()
-                            
-                            # Debounce
-                            now = time.time()
-                            if uid == _last_uid_seen and (now - _last_uid_time) < _DEBOUNCE_SECONDS:
-                                print(f"[RFID] Skipped duplicate: {uid}")
-                                continue
-                            
-                            _last_uid_seen = uid
-                            _last_uid_time = now
-                            
-                            print(f"[RFID] ✅ CARD DETECTED! UID: {uid}")
-                            _rfid_data['uid'] = uid
-                            
-                            try:
-                                record = insert_rfid_card(uid)
-                                _rfid_data['last_insert'] = record
-                                print(f"[RFID] ✅ Saved to database")
-                            except Exception as db_err:
-                                print(f"[RFID] Database error: {db_err}")
-                
+                if _serial_port.in_waiting:
+                    line = _serial_port.readline().decode().strip()
+                    if line and re.match(r'^[0-9A-F]{8}$', line.upper()):
+                        uid = line.upper()
+                        print(f"[RFID] 🎉 Card: {uid}")
+                        _rfid_data['uid'] = uid
+                        _rfid_data['last_insert'] = save_card(uid)
                 time.sleep(0.05)
-        
-        except serial.SerialException as e:
-            error_msg = str(e)
-            if "Access is denied" in error_msg or "PermissionError" in error_msg:
-                print(f"[Serial] ❌ Port {port_name} is in use by another program!")
-                print(f"[Serial] Please close other programs using the COM port")
-            else:
-                print(f"[Serial] ❌ Error: {e}")
-            print(f"[Serial] Retrying in 5 seconds...")
-            _close_serial()
-            time.sleep(5)
+                
         except Exception as e:
-            print(f"[Serial] Unexpected error: {e}")
+            print(f"[RFID] Error: {e}")
             time.sleep(5)
         finally:
             _close_serial()
 
 def start_serial_reader():
-    """Start the RFID reader thread"""
-    global _serial_thread
-    
-    _stop_event.clear()
-    _serial_thread = threading.Thread(target=serial_reader_thread, daemon=True)
-    _serial_thread.start()
-    print("[RFID] Reader thread started")
+    t = threading.Thread(target=reader_thread, daemon=True)
+    t.start()
+    print("[RFID] Started")
 
-# ============= ROUTES =============
-
+# Routes
 @rfid_bp.route('/')
 def index():
     return render_template('user/index.html')
 
 @rfid_bp.route('/status')
 def status():
-    return jsonify({
-        'uid': _rfid_data.get('uid', 'Waiting for RFID card...'),
-        'last_insert': _rfid_data.get('last_insert'),
-        'timestamp': datetime.now().isoformat()
-    })
+    return jsonify(_rfid_data)
 
 @rfid_bp.route('/stats')
 def stats():
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
-            today = datetime.now().strftime('%Y-%m-%d')
-            cur.execute("""
-                SELECT COUNT(*) as total_taps, COUNT(DISTINCT uid) as unique_students
-                FROM rfid_cards WHERE DATE(tapped_at) = %s
-            """, (today,))
-            row = cur.fetchone()
-            return jsonify({
-                'success': True,
-                'total_taps': row[0] if row[0] else 0,
-                'unique_students': row[1] if row[1] else 0
-            })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+            cur.execute("SELECT COUNT(*) FROM rfid_cards WHERE DATE(tapped_at) = CURRENT_DATE")
+            total = cur.fetchone()[0]
+            return jsonify({'success': True, 'total_taps': total})
+    except:
+        return jsonify({'success': False, 'total_taps': 0})
     finally:
         conn.close()
-
-@rfid_bp.route('/tap/<uid>', methods=['POST'])
-def manual_tap(uid):
-    uid = uid.upper().strip()
-    if not uid or not re.match(r'^[0-9A-F]{8}$', uid):
-        return jsonify({'error': 'Invalid UID format'}), 400
-    
-    try:
-        record = insert_rfid_card(uid)
-        _rfid_data['uid'] = uid
-        _rfid_data['last_insert'] = record
-        print(f"[Manual] Tap: {uid}")
-        return jsonify({'success': True, 'record': record}), 201
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@rfid_bp.route('/simulate/<uid>')
-def simulate_tap(uid):
-    uid = uid.upper().strip()
-    if not re.match(r'^[0-9A-F]{8}$', uid):
-        return f"Invalid UID: {uid}"
-    
-    try:
-        record = insert_rfid_card(uid)
-        _rfid_data['uid'] = uid
-        _rfid_data['last_insert'] = record
-        return f"✅ Tap recorded: {uid}"
-    except Exception as e:
-        return f"Error: {e}"
 
 @rfid_bp.route('/history')
 def history():
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
-            cur.execute("SELECT id, uid, tapped_at FROM rfid_cards ORDER BY tapped_at DESC LIMIT 20")
-            rows = cur.fetchall()
-            return jsonify({'success': True, 'history': [dict(row) for row in rows]})
+            cur.execute("SELECT id, uid, tapped_at FROM rfid_cards ORDER BY tapped_at DESC LIMIT 30")
+            return jsonify({'success': True, 'history': [dict(r) for r in cur.fetchall()]})
+    except:
+        return jsonify({'success': False, 'history': []})
+    finally:
+        conn.close()
+
+print("[RFID] Module loaded")
+@rfid_bp.route('/tap_relay/<uid>', methods=['POST'])
+def tap_relay(uid):
+    """Receive taps from the relay script"""
+    uid = uid.upper().strip()
+    if not re.match(r'^[0-9A-F]{8}$', uid):
+        return jsonify({'error': 'Invalid UID'}), 400
+    
+    try:
+        record = insert_rfid_card(uid)
+        _rfid_data['uid'] = uid
+        _rfid_data['last_insert'] = record
+        print(f"[Relay] ✅ Saved: {uid}")
+        return jsonify({'success': True, 'record': record}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@rfid_bp.route('/rooms')
+def get_rooms():
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+            cur.execute("SELECT id, room_name, created_at FROM rooms ORDER BY room_name")
+            rooms = cur.fetchall()
+            return jsonify({
+                'success': True,
+                'rooms': [dict(room) for room in rooms]
+            })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
     finally:
         conn.close()
-
-@rfid_bp.route('/clear')
-def clear():
-    _rfid_data['uid'] = 'Waiting for RFID card...'
-    _rfid_data['last_insert'] = None
-    return jsonify({'success': True})
-
-@rfid_bp.route('/debug')
-def debug():
-    """Debug endpoint"""
-    ports = []
-    if SERIAL_AVAILABLE:
-        for port in serial.tools.list_ports.comports():
-            ports.append({
-                'device': port.device,
-                'description': port.description
-            })
-    return jsonify({
-        'serial_available': SERIAL_AVAILABLE,
-        'available_ports': ports,
-        'env_rfid_port': os.environ.get('RFID_PORT'),
-        'current_uid': _rfid_data.get('uid')
-    })
-
-print("[user.py] Loaded - RFID Ready")

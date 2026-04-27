@@ -2,106 +2,82 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}RFID Attendance System{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>{% block title %}RFID Attendance System | Don Manuel Rivera School{% endblock %}</title>
     
-    <!-- Tailwind CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <style>
+        * { 
+            font-family: 'Inter', system-ui, sans-serif; 
+        }
+
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-image: url("{{ url_for('static', filename='images/bg.png') }}");
+            background-size: cover;
+            background-position: center 30%;
+            background-repeat: no-repeat;
+            background-color: #1e293b;
             min-height: 100vh;
         }
-        
-        .white-card {
-            background: white;
-            border-radius: 1.5rem;
-            overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+
+        /* Dark overlay to make content readable */
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(30, 41, 59, 0.75),
+                rgba(15, 23, 42, 0.85)
+            );
+            z-index: -1;
         }
-        
+
+        .main-content {
+            position: relative;
+            z-index: 10;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.6);
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4);
+        }
+
         .header-gradient {
-            background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);
-            padding: 1.5rem 2rem;
+            background: linear-gradient(135deg, #1e40af, #312e81);
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
         
-        .text-accent {
-            color: #f59e0b;
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
         }
-        
-        .status-card {
-            transition: all 0.3s ease;
-            padding: 1.25rem;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 1rem;
-        }
-        
-        .status-card:hover {
-            transform: translateY(-5px);
-            background: #f1f5f9;
-            border-color: #f59e0b;
-        }
-        
-        .btn-primary {
-            background: #f59e0b;
-            color: white;
-            font-weight: 600;
-            padding: 0.6rem 1.25rem;
-            border-radius: 0.5rem;
-            transition: all 0.2s;
-            cursor: pointer;
-            border: none;
-        }
-        
-        .btn-primary:hover {
-            background: #d97706;
-            transform: translateY(-2px);
-        }
-        
-        .present-badge {
-            background: #dcfce7;
-            color: #166534;
-            padding: 0.25rem 0.75rem;
-            border-radius: 0.5rem;
-            font-size: 0.7rem;
-            font-weight: 600;
-            display: inline-block;
-        }
-        
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        
-        .toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 9999;
-            min-width: 300px;
-            padding: 16px 20px;
-            border-radius: 16px;
-            background: rgba(30, 58, 138, 0.95);
-            backdrop-filter: blur(18px);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            animation: slideInRight 0.3s ease;
-            border: 1px solid rgba(255,255,255,0.15);
-        }
-        
-        .toast.success { background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95)); }
-        .toast.error { background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95)); }
     </style>
 </head>
-<body>
-    <div class="container mx-auto px-4 py-8 max-w-7xl">
+<body class="relative min-h-screen">
+
+    <!-- Background Overlay -->
+    <div class="overlay"></div>
+
+    <div class="main-content container mx-auto px-4 py-8 max-w-7xl min-h-screen">
         {% block content %}{% endblock %}
     </div>
+
+    <!-- Optional Footer -->
+    <footer class="relative z-10 text-white/80 text-center py-6 text-sm border-t border-white/10 mt-auto">
+        <div class="flex flex-col md:flex-row justify-center items-center gap-4">
+            <span>Don Manuel Rivera Memorial Integrated National High School</span>
+            <span class="hidden md:inline">•</span>
+            <span>Pila, Laguna, Philippines</span>
+        </div>
+    </footer>
+
 </body>
 </html>

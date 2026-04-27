@@ -1,296 +1,187 @@
-{% extends "user/base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>RFID Attendance System | Don Manuel Rivera School</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <style>
+        * { 
+            font-family: 'Inter', system-ui, sans-serif; 
+        }
 
-{% block title %}RFID Attendance System{% endblock %}
+        body {
+            background-image: url("{{ url_for('static', filename='images/bg.png') }}");
+            background-size: cover;
+            background-position: center 30%;
+            background-repeat: no-repeat;
+            background-color: #1e293b;
+            min-height: 100vh;
+        }
 
-{% block content %}
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(to bottom, rgba(30, 41, 59, 0.78), rgba(15, 23, 42, 0.88));
+            z-index: -1;
+        }
 
-<div class="white-card">
-    <div class="header-gradient text-white">
-        <div class="flex items-center justify-between flex-wrap gap-4">
-            <div>
+        .main-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.7);
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.35);
+            max-width: 480px;
+            margin: 40px auto;
+            overflow: hidden;
+            border-radius: 24px;
+        }
+
+        .success-flash {
+            animation: successPop 0.5s ease;
+        }
+
+        @keyframes successPop {
+            0% { transform: scale(0.85); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="relative">
+
+    <div class="overlay"></div>
+
+    <div class="min-h-screen flex items-center justify-center p-6 relative z-10">
+        <div class="main-card">
+            
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-blue-700 to-indigo-700 px-8 py-5 text-white">
                 <div class="flex items-center gap-3">
-                    <i class="fa-solid fa-id-card text-accent text-3xl"></i>
-                    <h1 class="text-2xl font-semibold">RFID Attendance System</h1>
+                    <i class="fas fa-id-card text-3xl"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold">RFID Attendance</h1>
+                        <p class="text-blue-100 text-sm">Don Manuel Rivera Memorial Integrated NHS</p>
+                    </div>
                 </div>
-                <p class="text-white/80 mt-2 text-sm">
-                    <i class="fa-solid fa-credit-card mr-1"></i>
-                    Tap your RFID card to record attendance
-                </p>
             </div>
-            <div class="flex gap-3">
-                <div class="text-right">
-                    <div class="text-accent text-sm font-medium">SYSTEM STATUS</div>
-                    <div class="text-2xl font-bold" id="systemStatus">Active</div>
+
+            <!-- Main Content -->
+            <div class="p-8 text-center">
+                
+                <!-- Waiting State -->
+                <div id="scanner-area" class="mb-8">
+                    <div class="w-20 h-20 mx-auto bg-blue-100 rounded-3xl flex items-center justify-center mb-5">
+                        <i class="fas fa-rfid text-5xl text-blue-600"></i>
+                    </div>
+                    <p id="status-text" class="text-lg font-medium text-gray-600">Waiting for RFID tap...</p>
                 </div>
+
+                <!-- Success Result - Now Much Smaller & Compact -->
+                <div id="result-area" class="hidden">
+                    <div class="success-flash bg-emerald-50 border border-emerald-200 rounded-2xl p-6 mb-6">
+                        <i class="fas fa-check-circle text-5xl text-emerald-500 mb-3"></i>
+                        
+                        <h2 id="room-name" class="text-2xl font-bold text-gray-800 mb-1">
+                            <!-- Room name -->
+                        </h2>
+                        <p class="text-emerald-600 text-sm font-medium mb-4">Successfully marked present</p>
+                        
+                        <!-- Compact Info Box -->
+                        <div class="bg-white rounded-xl p-4 text-sm">
+                            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                                <span class="text-gray-500">Time In</span>
+                                <span id="time-in" class="font-mono font-semibold text-gray-800"></span>
+                            </div>
+                            <div class="flex justify-between items-center py-2">
+                                <span class="text-gray-500">Student UID</span>
+                                <span id="uid-display" class="font-mono text-gray-700"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manual Testing -->
+                
+            </div>
+
+            <!-- Footer -->
+            <div class="bg-white/70 px-8 py-4 text-center text-sm text-gray-600 border-t">
+                <span id="live-status" class="inline-flex items-center gap-2">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    Reader is online • Listening...
+                </span>
             </div>
         </div>
     </div>
 
-    <div class="p-6">
-        <!-- RFID Scanner Status Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="status-card">
-                <p><i class="fa-solid fa-circle-info mr-1 text-accent"></i> Current Status</p>
-                <p id="statusText" class="text-lg font-semibold text-green-600 mt-2">
-                    <i class="fa-solid fa-circle-check"></i> Listening for RFID...
-                </p>
-            </div>
-            <div class="status-card">
-                <p><i class="fa-solid fa-id-card mr-1 text-accent"></i> Last Scanned UID</p>
-                <p id="uidDisplay" class="font-mono text-accent text-xl font-bold mt-2">—</p>
-            </div>
-            <div class="status-card">
-                <p><i class="fa-regular fa-clock mr-1 text-accent"></i> Scan Time</p>
-                <p id="scanTime" class="text-gray-700 mt-2">—</p>
-            </div>
-        </div>
+    <script>
+        let lastUid = '';
 
-        <!-- Scanner Area -->
-        <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-8 mb-6 text-center">
-            <div class="relative inline-block">
-                <div class="w-32 h-32 mx-auto bg-white rounded-full flex items-center justify-center shadow-lg">
-                    <i class="fa-solid fa-id-card text-6xl text-accent"></i>
-                </div>
-                <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
-                    <div class="bg-green-500 rounded-full p-2 animate-pulse">
-                        <i class="fa-solid fa-check text-white text-sm"></i>
-                    </div>
-                </div>
-            </div>
-            <p class="text-gray-500 mt-4 text-sm">Ready for RFID scan</p>
-        </div>
-
-        <!-- Statistics -->
-        <div class="grid grid-cols-2 gap-4 mb-6">
-            <div class="bg-gray-50 rounded-xl p-4 text-center">
-                <p class="text-xs text-gray-500">Total Taps Today</p>
-                <p class="text-2xl font-bold text-gray-800" id="totalTaps">0</p>
-            </div>
-            <div class="bg-gray-50 rounded-xl p-4 text-center">
-                <p class="text-xs text-gray-500">Last Activity</p>
-                <p class="text-sm font-bold text-gray-800" id="lastActivity">—</p>
-            </div>
-        </div>
-
-        <!-- Manual Entry -->
-        <div class="bg-gray-50 rounded-xl p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <i class="fa-solid fa-keyboard text-accent"></i>
-                Manual Test Entry
-            </h2>
-            <div class="flex gap-3">
-                <input type="text" id="manualUid" 
-                       class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-accent font-mono"
-                       placeholder="Enter 8-digit UID (e.g., 03142239)" maxlength="8">
-                <button onclick="manualTap()" class="btn-primary">
-                    <i class="fa-solid fa-tap mr-2"></i> Tap
-                </button>
-            </div>
-            <div class="flex gap-2 mt-3">
-                <span class="text-xs text-gray-500">Quick test:</span>
-                <a href="#" onclick="quickTap('03142239')" class="text-xs text-blue-500 hover:underline">03142239</a>
-                <a href="#" onclick="quickTap('A1B2C3D4')" class="text-xs text-blue-500 hover:underline">A1B2C3D4</a>
-                <a href="#" onclick="quickTap('FFEE1122')" class="text-xs text-blue-500 hover:underline">FFEE1122</a>
-            </div>
-        </div>
-
-        <!-- Event Log -->
-        <div class="mt-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-list text-accent"></i>
-                Event Log
-            </h2>
-            <div class="bg-gray-50 rounded-xl p-4 max-h-64 overflow-y-auto">
-                <div id="eventLog">
-                    <div class="text-center text-gray-500 py-4">
-                        <i class="fa-regular fa-clock mr-2"></i>No events yet...
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-let lastUid = null;
-let eventCount = 0;
-
-function showToast(message, type = 'success') {
-    const icon = type === 'success' ? '✅' : '❌';
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `
-        <div class="toast-icon">${icon}</div>
-        <div class="toast-content">
-            <div class="toast-title">${type === 'success' ? 'Success!' : 'Error!'}</div>
-            <div class="toast-message">${message}</div>
-        </div>
-        <div class="toast-close" onclick="this.parentElement.remove()">✕</div>
-    `;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        if (toast && toast.parentElement) {
-            toast.style.animation = 'slideOutRight 0.3s ease';
-            setTimeout(() => toast.remove(), 300);
-        }
-    }, 3000);
-}
-
-function addEventLog(uid, time, type = 'success') {
-    const log = document.getElementById('eventLog');
-    const entry = document.createElement('div');
-    entry.className = 'flex items-center justify-between py-2 border-b border-gray-200 last:border-0 slide-in';
-    entry.innerHTML = `
-        <div class="flex items-center gap-2">
-            <i class="fa-solid fa-id-card text-accent"></i>
-            <span class="font-mono text-sm">${uid}</span>
-        </div>
-        <div class="flex items-center gap-4">
-            <span class="text-xs text-gray-500">${time}</span>
-            <span class="present-badge"><i class="fa-solid fa-check-circle text-xs mr-1"></i> Detected</span>
-        </div>
-    `;
-    
-    if (log.firstChild && log.firstChild.classList && log.firstChild.classList.contains('text-center')) {
-        log.innerHTML = '';
-    }
-    log.prepend(entry);
-    
-    while (log.children.length > 20) {
-        log.removeChild(log.lastChild);
-    }
-}
-
-function updateUI(data) {
-    const uid = data.uid;
-    const lastInsert = data.last_insert;
-    
-    if (uid && uid !== 'Waiting for RFID card...' && uid !== lastUid) {
-        lastUid = uid;
-        
-        let formattedUid = uid;
-        if (uid.length === 8) {
-            formattedUid = `${uid.substring(0,2)} ${uid.substring(2,4)} ${uid.substring(4,6)} ${uid.substring(6,8)}`;
-        }
-        
-        document.getElementById('uidDisplay').textContent = formattedUid;
-        const now = new Date();
-        const timeStr = now.toLocaleTimeString();
-        document.getElementById('scanTime').textContent = timeStr;
-        document.getElementById('lastActivity').textContent = timeStr;
-        
-        document.getElementById('statusText').innerHTML = '<i class="fa-solid fa-circle-check"></i> Card Detected!';
-        document.getElementById('statusText').className = 'text-lg font-semibold text-green-600 mt-2';
-        
-        addEventLog(uid, timeStr);
-        showToast(`Card detected: ${uid}`, 'success');
-        
-        setTimeout(() => {
-            if (document.getElementById('uidDisplay').textContent === formattedUid) {
-                document.getElementById('uidDisplay').textContent = '—';
-                document.getElementById('statusText').innerHTML = '<i class="fa-solid fa-circle-check"></i> Listening for RFID...';
+        async function fetchStatus() {
+            try {
+                const res = await fetch('/user/status');
+                const data = await res.json();
+                
+                const resultArea = document.getElementById('result-area');
+                const scannerArea = document.getElementById('scanner-area');
+                
+                if (data.uid && data.uid !== 'Waiting for RFID card...' && data.uid !== lastUid) {
+                    lastUid = data.uid;
+                    
+                    scannerArea.classList.add('hidden');
+                    resultArea.classList.remove('hidden');
+                    
+                    document.getElementById('uid-display').textContent = data.uid;
+                    document.getElementById('time-in').textContent = new Date().toLocaleTimeString([], {
+                        hour: '2-digit', 
+                        minute: '2-digit'
+                    });
+                    
+                    // Change this later to real room logic
+                    document.getElementById('room-name').textContent = "Room 101 - Programming Lab";
+                    
+                    // Auto hide after 6 seconds (shorter now)
+                    setTimeout(() => {
+                        resultArea.classList.add('hidden');
+                        scannerArea.classList.remove('hidden');
+                        document.getElementById('status-text').textContent = "Waiting for next tap...";
+                    }, 6000);
+                }
+            } catch (e) {
+                console.error("Error:", e);
             }
-        }, 3000);
-        
-        fetchStats();
-    }
-}
-
-async function fetchStatus() {
-    try {
-        const response = await fetch('/user/status');
-        const data = await response.json();
-        updateUI(data);
-    } catch (error) {
-        console.error('Error:', error);
-    }
-}
-
-async function fetchStats() {
-    try {
-        const response = await fetch('/user/stats');
-        const data = await response.json();
-        if (data.success) {
-            document.getElementById('totalTaps').textContent = data.total_taps;
         }
-    } catch (error) {
-        console.error('Stats error:', error);
-    }
-}
 
-async function manualTap() {
-    const uid = document.getElementById('manualUid').value.trim().toUpperCase();
-    if (!uid) {
-        showToast('Please enter a UID', 'error');
-        return;
-    }
-    
-    if (!/^[0-9A-F]{8}$/.test(uid)) {
-        showToast('Invalid UID format. Must be 8 hex characters', 'error');
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/user/tap/${uid}`, { method: 'POST' });
-        const data = await response.json();
-        
-        if (response.ok) {
-            showToast(`UID ${uid} recorded!`, 'success');
-            document.getElementById('manualUid').value = '';
+        function manualTap() {
+            const uid = document.getElementById('manual-uid').value.trim().toUpperCase();
+            if (!uid) return;
+            
+            document.getElementById('manual-uid').value = '';
+            
+            const resultArea = document.getElementById('result-area');
+            const scannerArea = document.getElementById('scanner-area');
+            
+            scannerArea.classList.add('hidden');
+            resultArea.classList.remove('hidden');
+            
+            document.getElementById('uid-display').textContent = uid;
+            document.getElementById('time-in').textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+            document.getElementById('room-name').textContent = "Room 101 - Programming Lab";
+            
+            setTimeout(() => {
+                resultArea.classList.add('hidden');
+                scannerArea.classList.remove('hidden');
+            }, 6000);
+        }
+
+        setInterval(fetchStatus, 1000);
+
+        window.onload = () => {
             fetchStatus();
-            fetchStats();
-        } else {
-            showToast(data.error || 'Failed to record', 'error');
-        }
-    } catch (error) {
-        showToast('Network error', 'error');
-    }
-}
-
-async function quickTap(uid) {
-    try {
-        const response = await fetch(`/user/tap/${uid}`, { method: 'POST' });
-        if (response.ok) {
-            showToast(`UID ${uid} recorded!`, 'success');
-            fetchStatus();
-            fetchStats();
-        }
-    } catch (error) {
-        console.error('Error:', error);
-    }
-}
-
-document.getElementById('manualUid').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') manualTap();
-});
-
-setInterval(fetchStatus, 1000);
-setInterval(fetchStats, 5000);
-fetchStatus();
-fetchStats();
-</script>
-
-<style>
-.slide-in {
-    animation: slideIn 0.3s ease;
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateX(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-@keyframes slideOutRight {
-    from { transform: translateX(0); opacity: 1; }
-    to { transform: translateX(100%); opacity: 0; }
-}
-</style>
-
-{% endblock %}
+        };
+    </script>
+</body>
+</html>
