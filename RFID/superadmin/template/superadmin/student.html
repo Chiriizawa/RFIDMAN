@@ -80,12 +80,12 @@
               <th class="text-left py-5 px-4 w-40">Contact</th>
               <th class="text-left py-5 px-4">Email</th>
               <th class="text-left py-5 px-4 w-72">Schedule</th>
-              <th class="text-left py-5 px-4 w-44">Action</th>
+              <th class="text-left py-5 px-4 w-56">Action</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100 text-sm">
             {% for s in students %}
-            <tr class="hover:bg-blue-50/50 transition-colors">
+            <tr class="hover:bg-blue-50/50 transition-colors" id="student-row-{{ s.id }}">
               <td class="py-5 px-4 align-top">
                 <code class="bg-blue-50 text-blue-700 px-3 py-1 rounded-2xl text-xs font-semibold">
                   {{ s.uid or '—' }}
@@ -96,15 +96,22 @@
                   {{ s.last_name }}, {{ s.first_name }}{% if s.middle_name %} {{ s.middle_name }}{% endif %}{% if s.extension %} {{ s.extension }}{% endif %}
                 </span>
               </td>
-              <td class="py-5 px-4 text-gray-500 align-top">{{ s.section_name or '—' }}</td>
-              <td class="py-5 px-4 text-gray-500 align-top">{{ s.year_level or '—' }}</td>
+              {# Section cell — updated live via JS after assign #}
+              <td class="py-5 px-4 text-gray-500 align-top" id="cell-section-{{ s.id }}">
+                {{ s.section_name or '—' }}
+              </td>
+              <td class="py-5 px-4 text-gray-500 align-top" id="cell-year-{{ s.id }}">
+                {{ s.year_level or '—' }}
+              </td>
               <td class="py-5 px-4 text-gray-500 align-top">{{ s.contact_number }}</td>
               <td class="py-5 px-4 text-gray-500 align-top break-all">{{ s.email }}</td>
-              <td class="py-5 px-4 text-gray-500 text-sm align-top">
+              {# Schedule cell — auto-filled from section on assign #}
+              <td class="py-5 px-4 text-gray-500 text-sm align-top" id="cell-schedule-{{ s.id }}">
                 <div class="schedule-cell whitespace-pre-line leading-6 max-w-xs">{{ s.schedule or '—' }}</div>
               </td>
               <td class="py-5 px-4 align-top">
                 <div class="flex flex-wrap items-center gap-2">
+                  {# VIEW button #}
                   <button type="button"
                     onclick='openViewStudentModal({
                       id: {{ s.id | tojson }},
@@ -122,7 +129,8 @@
                       schedule: {{ (s.schedule or "—") | tojson }},
                       created_at: {{ (s.created_at.strftime("%b %d, %Y") if s.created_at else "—") | tojson }}
                     })'
-                    class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-2xl shadow-sm transition-colors">
+                    class="view-btn inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-2xl shadow-sm transition-colors"
+                    data-student-id="{{ s.id }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
@@ -130,6 +138,7 @@
                     View
                   </button>
 
+                  {# EDIT button #}
                   <button type="button"
                     onclick='openEditStudentModal({
                       id: {{ s.id | tojson }},
@@ -147,6 +156,16 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M16.586 3.586a2 2 0 112.828 2.828L12 13.828l-4 1 1-4 7.586-7.242z"/>
                     </svg>
                     Edit
+                  </button>
+
+                  {# ASSIGN SECTION button #}
+                  <button type="button"
+                    onclick='openAssignSectionModal({{ s.id | tojson }}, {{ (s.section_id or "") | tojson }})'
+                    class="inline-flex items-center gap-2 bg-violet-500 hover:bg-violet-600 text-white text-sm font-medium px-4 py-2 rounded-2xl shadow-sm transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2h5M12 12a4 4 0 100-8 4 4 0 000 8z"/>
+                    </svg>
+                    Section
                   </button>
                 </div>
               </td>
@@ -301,7 +320,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
         </svg>
         <div>
-          <strong>Note:</strong> Import will only include basic information. Section, Year Level, and Schedule are NOT imported.
+          <strong>Note:</strong> Import will only include basic information. Section, Year Level, and Schedule are assigned separately via the <strong>Section</strong> button.
         </div>
       </div>
 
@@ -385,6 +404,26 @@
         <div class="sm:col-span-2">
           <label class="view-label">Email Address</label>
           <div id="view_email" class="view-field break-all"></div>
+        </div>
+
+        {# ── Section info (auto-filled from section assignment) ── #}
+        <hr class="sm:col-span-2 border-gray-100 my-1">
+
+        <div>
+          <label class="view-label">Section</label>
+          <div id="view_section_name" class="view-field"></div>
+        </div>
+        <div>
+          <label class="view-label">Year Level</label>
+          <div id="view_year_level" class="view-field"></div>
+        </div>
+        <div>
+          <label class="view-label">Adviser / Teacher</label>
+          <div id="view_teacher_name" class="view-field"></div>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="view-label">Schedule</label>
+          <div id="view_schedule" class="view-field whitespace-pre-line leading-6"></div>
         </div>
       </div>
     </div>
@@ -494,14 +533,71 @@
   </div>
 </div>
 
+<!-- ===== ASSIGN SECTION MODAL ===== -->
+<div id="assignSectionModal" class="modal-overlay hidden">
+  <div class="modal-panel modal-panel-md animate-fadeIn">
+    <div class="modal-header bg-gradient-to-r from-violet-500 to-violet-600">
+      <div>
+        <h2 class="text-white text-xl font-semibold">Assign Section</h2>
+        <p class="text-violet-100 text-sm mt-0.5">Selecting a section auto-fills the student's schedule</p>
+      </div>
+      <button type="button" onclick="closeModal('assignSectionModal')" class="modal-close-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body p-8">
+      {# Loading state #}
+      <div id="assignSectionLoading" class="py-10 flex flex-col items-center justify-center gap-3 text-gray-400">
+        <svg class="animate-spin w-7 h-7 text-violet-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+        </svg>
+        <span class="text-sm">Loading sections…</span>
+      </div>
+
+      {# Section list #}
+      <div id="assignSectionList" class="hidden flex flex-col gap-3">
+        {# Injected by JS #}
+      </div>
+
+      {# Empty state #}
+      <div id="assignSectionEmpty" class="hidden py-10 text-center text-gray-400 text-sm">
+        No sections found. Please create sections first.
+      </div>
+
+      {# Schedule preview #}
+      <div id="assignSchedulePreview" class="hidden mt-5 bg-violet-50 border border-violet-200 rounded-2xl p-4">
+        <p class="text-xs font-semibold text-violet-400 uppercase tracking-wider mb-1">Schedule Preview</p>
+        <p id="assignScheduleText" class="text-sm text-gray-700 whitespace-pre-line leading-6"></p>
+      </div>
+    </div>
+
+    <div class="modal-footer gap-3">
+      <button type="button" onclick="clearAssignSection()"
+              class="px-5 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-red-50 hover:border-red-200 hover:text-red-600 font-medium text-sm transition-colors">
+        Clear Section
+      </button>
+      <button type="button" onclick="closeModal('assignSectionModal')"
+              class="px-5 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors ml-auto">
+        Cancel
+      </button>
+      <button type="button" id="assignSectionSaveBtn" onclick="saveAssignSection()" disabled
+              class="px-7 py-2.5 rounded-2xl bg-violet-500 hover:bg-violet-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium text-sm shadow-sm transition-colors">
+        Save
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== GENERIC ALERT MODAL ===== -->
 <div id="alertModal" class="modal-overlay hidden">
   <div class="modal-panel modal-panel-sm animate-fadeIn" style="max-width:420px">
     <div id="alertModalHeader" class="modal-header bg-gradient-to-r from-red-500 to-red-600">
       <div class="flex items-center gap-3">
-        <div id="alertModalIcon" class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
-          <!-- icon injected by JS -->
-        </div>
+        <div id="alertModalIcon" class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"></div>
         <h2 id="alertModalTitle" class="text-white text-lg font-semibold">Alert</h2>
       </div>
       <button type="button" onclick="closeAlertModal()" class="modal-close-btn">
@@ -668,90 +764,43 @@ function validateStudentFields(prefix) {
   let valid = true
 
   const lastName = document.getElementById(`${prefix}_last_name`).value.trim()
-  if (!lastName) {
-    showError(`err_${prefix}_last_name`, 'Last name is required.')
-    valid = false
-  } else if (!/^[a-zA-ZÀ-ÿ\s'\-]+$/.test(lastName)) {
-    showError(`err_${prefix}_last_name`, 'Last name must contain letters only.')
-    valid = false
-  } else if (lastName.length < 3) {
-    showError(`err_${prefix}_last_name`, 'Last name must be at least 3 characters.')
-    valid = false
-  }
+  if (!lastName) { showError(`err_${prefix}_last_name`, 'Last name is required.'); valid = false }
+  else if (!/^[a-zA-ZÀ-ÿ\s'\-]+$/.test(lastName)) { showError(`err_${prefix}_last_name`, 'Last name must contain letters only.'); valid = false }
+  else if (lastName.length < 3) { showError(`err_${prefix}_last_name`, 'Last name must be at least 3 characters.'); valid = false }
 
   const firstName = document.getElementById(`${prefix}_first_name`).value.trim()
-  if (!firstName) {
-    showError(`err_${prefix}_first_name`, 'First name is required.')
-    valid = false
-  } else if (!/^[a-zA-ZÀ-ÿ\s'\-]+$/.test(firstName)) {
-    showError(`err_${prefix}_first_name`, 'First name must contain letters only.')
-    valid = false
-  } else if (firstName.length < 3) {
-    showError(`err_${prefix}_first_name`, 'First name must be at least 3 characters.')
-    valid = false
-  }
+  if (!firstName) { showError(`err_${prefix}_first_name`, 'First name is required.'); valid = false }
+  else if (!/^[a-zA-ZÀ-ÿ\s'\-]+$/.test(firstName)) { showError(`err_${prefix}_first_name`, 'First name must contain letters only.'); valid = false }
+  else if (firstName.length < 3) { showError(`err_${prefix}_first_name`, 'First name must be at least 3 characters.'); valid = false }
 
   const middleName = document.getElementById(`${prefix}_middle_name`).value.trim()
   if (middleName) {
-    if (!/^[a-zA-ZÀ-ÿ\s'\-]+$/.test(middleName)) {
-      showError(`err_${prefix}_middle_name`, 'Middle name must contain letters only.')
-      valid = false
-    } else if (middleName.length < 2) {
-      showError(`err_${prefix}_middle_name`, 'Middle name must be at least 2 characters.')
-      valid = false
-    }
+    if (!/^[a-zA-ZÀ-ÿ\s'\-]+$/.test(middleName)) { showError(`err_${prefix}_middle_name`, 'Middle name must contain letters only.'); valid = false }
+    else if (middleName.length < 2) { showError(`err_${prefix}_middle_name`, 'Middle name must be at least 2 characters.'); valid = false }
   }
 
   const birthdayVal = document.getElementById(`${prefix}_birthday`).value.trim()
-  if (!birthdayVal) {
-    showError(`err_${prefix}_birthday`, 'Birthday is required.')
-    valid = false
-  } else {
+  if (!birthdayVal) { showError(`err_${prefix}_birthday`, 'Birthday is required.'); valid = false }
+  else {
     const birthday = new Date(birthdayVal)
-    const today    = new Date()
-    today.setHours(0, 0, 0, 0)
-    const minYear = 2006
-    const maxYear = today.getFullYear() - 1
-
-    if (isNaN(birthday.getTime())) {
-      showError(`err_${prefix}_birthday`, 'Invalid date format.')
-      valid = false
-    } else if (birthday >= today) {
-      showError(`err_${prefix}_birthday`, 'Birthday cannot be today or a future date.')
-      valid = false
-    } else if (birthday.getFullYear() > maxYear) {
-      showError(`err_${prefix}_birthday`, `Birth year cannot be the current year (${today.getFullYear()}).`)
-      valid = false
-    } else if (birthday.getFullYear() < minYear) {
-      showError(`err_${prefix}_birthday`, `Birth year must be ${minYear} or later.`)
-      valid = false
-    }
+    const today = new Date(); today.setHours(0,0,0,0)
+    if (isNaN(birthday.getTime())) { showError(`err_${prefix}_birthday`, 'Invalid date format.'); valid = false }
+    else if (birthday >= today) { showError(`err_${prefix}_birthday`, 'Birthday cannot be today or a future date.'); valid = false }
+    else if (birthday.getFullYear() >= today.getFullYear()) { showError(`err_${prefix}_birthday`, `Birth year cannot be the current year (${today.getFullYear()}).`); valid = false }
+    else if (birthday.getFullYear() < 2006) { showError(`err_${prefix}_birthday`, 'Birth year must be 2006 or later.'); valid = false }
   }
 
   const contact = document.getElementById(`${prefix}_contact_number`).value.trim()
-  if (!contact) {
-    showError(`err_${prefix}_contact_number`, 'Contact number is required.')
-    valid = false
-  } else if (!/^\d+$/.test(contact)) {
-    showError(`err_${prefix}_contact_number`, 'Contact number must contain digits only.')
-    valid = false
-  } else if (contact.length !== 11) {
-    showError(`err_${prefix}_contact_number`, `Contact number must be exactly 11 digits (currently ${contact.length}).`)
-    valid = false
-  } else if (!contact.startsWith('09')) {
-    showError(`err_${prefix}_contact_number`, 'Contact number must start with 09.')
-    valid = false
-  }
+  if (!contact) { showError(`err_${prefix}_contact_number`, 'Contact number is required.'); valid = false }
+  else if (!/^\d+$/.test(contact)) { showError(`err_${prefix}_contact_number`, 'Contact number must contain digits only.'); valid = false }
+  else if (contact.length !== 11) { showError(`err_${prefix}_contact_number`, `Contact number must be exactly 11 digits (currently ${contact.length}).`); valid = false }
+  else if (!contact.startsWith('09')) { showError(`err_${prefix}_contact_number`, 'Contact number must start with 09.'); valid = false }
 
   const email = document.getElementById(`${prefix}_email`).value.trim()
   const basicEmailRegex = /^[^\s@]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/
-  if (!email) {
-    showError(`err_${prefix}_email`, 'Email address is required.')
-    valid = false
-  } else if (!basicEmailRegex.test(email)) {
-    showError(`err_${prefix}_email`, 'Please enter a valid email address.')
-    valid = false
-  } else if (!isValidEmailDomain(email)) {
+  if (!email) { showError(`err_${prefix}_email`, 'Email address is required.'); valid = false }
+  else if (!basicEmailRegex.test(email)) { showError(`err_${prefix}_email`, 'Please enter a valid email address.'); valid = false }
+  else if (!isValidEmailDomain(email)) {
     const atPart = email.split('@')[1] || ''
     showError(`err_${prefix}_email`, `"@${atPart}" is not an accepted email domain. Use Gmail, Yahoo, Outlook, iCloud, or a valid school/government email.`)
     valid = false
@@ -765,15 +814,8 @@ function validateStudentFields(prefix) {
   return valid
 }
 
-function validateAddForm(e) {
-  if (!validateStudentFields('add')) { e.preventDefault(); return false }
-  return true
-}
-
-function validateEditForm(e) {
-  if (!validateStudentFields('edit')) { e.preventDefault(); return false }
-  return true
-}
+function validateAddForm(e)  { if (!validateStudentFields('add'))  { e.preventDefault(); return false } return true }
+function validateEditForm(e) { if (!validateStudentFields('edit')) { e.preventDefault(); return false } return true }
 
 ;['last_name','first_name','middle_name','birthday','contact_number','email'].forEach(field => {
   ;['add','edit'].forEach(prefix => {
@@ -785,7 +827,7 @@ function validateEditForm(e) {
 // ══════════════════════════════════════════════════
 // MODAL HELPERS
 // ══════════════════════════════════════════════════
-const ALL_MODALS = ['addStudentModal','importStudentModal','viewStudentModal','editStudentModal','alertModal','confirmModal']
+const ALL_MODALS = ['addStudentModal','importStudentModal','viewStudentModal','editStudentModal','assignSectionModal','alertModal','confirmModal']
 
 function lockBodyScroll()   { document.documentElement.classList.add('modal-open'); document.body.classList.add('modal-open') }
 function unlockBodyScroll() {
@@ -811,7 +853,9 @@ function closeModal(id) {
 function openAddStudentModal()  { clearAllErrors('add'); openModal('addStudentModal') }
 function closeAddStudentModal() { closeModal('addStudentModal') }
 
+// ── View modal — now includes section + schedule ──────────────────────────────
 function openViewStudentModal(student) {
+  // Basic info
   document.getElementById('view_uid').textContent            = student.uid || '—'
   document.getElementById('view_created_at').textContent     = student.created_at || '—'
   document.getElementById('view_last_name').textContent      = student.last_name || '—'
@@ -821,6 +865,14 @@ function openViewStudentModal(student) {
   document.getElementById('view_birthday').textContent       = student.birthday || '—'
   document.getElementById('view_contact_number').textContent = student.contact_number || '—'
   document.getElementById('view_email').textContent          = student.email || '—'
+  // Section / schedule info
+  document.getElementById('view_section_name').textContent   = student.section_name || '—'
+  document.getElementById('view_year_level').textContent     = student.year_level || '—'
+  document.getElementById('view_teacher_name').textContent   = student.teacher_name || '—'
+  document.getElementById('view_schedule').textContent       = student.schedule || '—'
+
+  // Store student id so live updates can refresh the view data
+  document.getElementById('viewStudentModal').dataset.studentId = student.id
   openModal('viewStudentModal')
 }
 function closeViewStudentModal() { closeModal('viewStudentModal') }
@@ -850,29 +902,246 @@ function handleImportFileChange(input) {
   label.classList.toggle('text-gray-500', !input.files[0])
 }
 
-async function runImportFromModal() {
-  const input = document.getElementById('importFileInput')
-  if (!input.files[0]) {
-    showAlert('Please choose a file first.', 'warning', 'No File Selected')
-    return
-  }
-  const file = input.files[0]
-  const reader = new FileReader()
-  const isExcel = /\.(xlsx|xls)$/i.test(file.name)
-  if (isExcel) {
-    reader.onload = ev => {
-      const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' })
-      processImportedSheet(wb, file.name)
+// ══════════════════════════════════════════════════
+// ASSIGN SECTION MODAL
+// ══════════════════════════════════════════════════
+
+let _assignStudentId    = null   // current student being assigned
+let _assignSectionId    = null   // currently selected section id in the modal
+let _assignSectionCache = null   // cached sections from API
+
+async function openAssignSectionModal(studentId, currentSectionId) {
+  _assignStudentId = studentId
+  _assignSectionId = currentSectionId || null
+
+  // Reset UI
+  document.getElementById('assignSectionLoading').classList.remove('hidden')
+  document.getElementById('assignSectionList').classList.add('hidden')
+  document.getElementById('assignSectionEmpty').classList.add('hidden')
+  document.getElementById('assignSchedulePreview').classList.add('hidden')
+  document.getElementById('assignSectionSaveBtn').disabled = true
+
+  openModal('assignSectionModal')
+
+  try {
+    // Use cached sections if available
+    if (!_assignSectionCache) {
+      const res  = await fetch("{{ url_for('sregister.sections_list') }}")
+      const data = await res.json()
+      if (!data.ok) throw new Error(data.message || 'Failed to load sections.')
+      _assignSectionCache = data.sections
     }
-    reader.readAsArrayBuffer(file)
-  } else {
-    reader.onload = ev => {
-      const wb = XLSX.read(ev.target.result, { type: 'string' })
-      processImportedSheet(wb, file.name)
-    }
-    reader.readAsText(file)
+
+    renderAssignSectionList(_assignSectionCache, currentSectionId)
+  } catch (err) {
+    document.getElementById('assignSectionLoading').classList.add('hidden')
+    document.getElementById('assignSectionEmpty').textContent = 'Error loading sections: ' + err.message
+    document.getElementById('assignSectionEmpty').classList.remove('hidden')
   }
 }
+
+function renderAssignSectionList(sections, currentSectionId) {
+  document.getElementById('assignSectionLoading').classList.add('hidden')
+
+  if (!sections || sections.length === 0) {
+    document.getElementById('assignSectionEmpty').classList.remove('hidden')
+    return
+  }
+
+  const list = document.getElementById('assignSectionList')
+  list.innerHTML = ''
+
+  sections.forEach(sec => {
+    const isSelected = String(sec.id) === String(currentSectionId)
+    const card = document.createElement('button')
+    card.type = 'button'
+    card.dataset.sectionId = sec.id
+    card.className = [
+      'w-full text-left px-5 py-4 rounded-2xl border-2 transition-all',
+      isSelected
+        ? 'border-violet-500 bg-violet-50'
+        : 'border-gray-200 bg-white hover:border-violet-300 hover:bg-violet-50/50'
+    ].join(' ')
+
+    card.innerHTML = `
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="font-semibold text-gray-900 text-sm">${sec.section_name || '—'}</p>
+          <p class="text-xs text-gray-500 mt-0.5">Year ${sec.year_level || '—'} · ${sec.teacher_name || 'No adviser'}</p>
+        </div>
+        <span class="check-icon flex-shrink-0 w-5 h-5 rounded-full border-2 ${isSelected ? 'bg-violet-500 border-violet-500' : 'border-gray-300'} flex items-center justify-center">
+          ${isSelected ? '<svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>' : ''}
+        </span>
+      </div>
+      ${sec.schedule ? `<p class="text-xs text-gray-400 mt-2 leading-5">${sec.schedule}</p>` : ''}
+    `
+
+    card.addEventListener('click', () => selectAssignSection(sec, sections))
+    list.appendChild(card)
+  })
+
+  list.classList.remove('hidden')
+
+  // Show schedule preview for current selection
+  if (currentSectionId) {
+    const cur = sections.find(s => String(s.id) === String(currentSectionId))
+    if (cur) showAssignSchedulePreview(cur.schedule)
+  }
+
+  // Enable save if a section is already selected
+  document.getElementById('assignSectionSaveBtn').disabled = !currentSectionId
+}
+
+function selectAssignSection(section, allSections) {
+  _assignSectionId = section.id
+
+  // Update all card styles
+  const list = document.getElementById('assignSectionList')
+  list.querySelectorAll('button[data-section-id]').forEach(card => {
+    const isThis = String(card.dataset.sectionId) === String(section.id)
+    card.className = [
+      'w-full text-left px-5 py-4 rounded-2xl border-2 transition-all',
+      isThis ? 'border-violet-500 bg-violet-50' : 'border-gray-200 bg-white hover:border-violet-300 hover:bg-violet-50/50'
+    ].join(' ')
+    const icon = card.querySelector('.check-icon')
+    if (icon) {
+      icon.className = `check-icon flex-shrink-0 w-5 h-5 rounded-full border-2 ${isThis ? 'bg-violet-500 border-violet-500' : 'border-gray-300'} flex items-center justify-center`
+      icon.innerHTML = isThis ? '<svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>' : ''
+    }
+  })
+
+  showAssignSchedulePreview(section.schedule)
+  document.getElementById('assignSectionSaveBtn').disabled = false
+}
+
+function showAssignSchedulePreview(schedule) {
+  const preview = document.getElementById('assignSchedulePreview')
+  const text    = document.getElementById('assignScheduleText')
+  if (schedule) {
+    text.textContent = schedule
+    preview.classList.remove('hidden')
+  } else {
+    preview.classList.add('hidden')
+  }
+}
+
+async function saveAssignSection() {
+  if (!_assignStudentId || !_assignSectionId) return
+
+  const btn = document.getElementById('assignSectionSaveBtn')
+  btn.disabled = true
+  btn.textContent = 'Saving…'
+
+  try {
+    const res  = await fetch(`/superadmin/assign-section/${_assignStudentId}`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ section_id: _assignSectionId })
+    })
+    const data = await res.json()
+
+    if (!data.ok) throw new Error(data.message || 'Failed to assign section.')
+
+    // ── Live-update the table row without a page reload ──────────────────
+    const row = document.getElementById(`student-row-${_assignStudentId}`)
+    if (row) {
+      const secCell  = document.getElementById(`cell-section-${_assignStudentId}`)
+      const yearCell = document.getElementById(`cell-year-${_assignStudentId}`)
+      const schCell  = document.getElementById(`cell-schedule-${_assignStudentId}`)
+
+      if (secCell)  secCell.textContent  = data.section_name || '—'
+      if (yearCell) yearCell.textContent = data.year_level   || '—'
+      if (schCell) {
+        const div = schCell.querySelector('.schedule-cell') || schCell
+        div.textContent = data.schedule || '—'
+      }
+    }
+
+    // ── If view modal is open for this student, update it too ────────────
+    const viewModal = document.getElementById('viewStudentModal')
+    if (viewModal && !viewModal.classList.contains('hidden') &&
+        viewModal.dataset.studentId == _assignStudentId) {
+      document.getElementById('view_section_name').textContent = data.section_name || '—'
+      document.getElementById('view_year_level').textContent   = data.year_level   || '—'
+      document.getElementById('view_teacher_name').textContent = data.teacher_name || '—'
+      document.getElementById('view_schedule').textContent     = data.schedule     || '—'
+    }
+
+    // ── Update the Section button onclick to reflect new section_id ──────
+    const sectionBtn = row ? row.querySelector(`button[onclick*="openAssignSectionModal"]`) : null
+    if (sectionBtn) {
+      sectionBtn.setAttribute('onclick', `openAssignSectionModal(${_assignStudentId}, ${_assignSectionId})`)
+    }
+
+    closeModal('assignSectionModal')
+    showAlert(`Section assigned successfully!\n\nSection: ${data.section_name}\nSchedule auto-filled.`, 'success', 'Section Assigned')
+
+  } catch (err) {
+    showAlert(err.message || 'Failed to assign section.', 'error', 'Error')
+  } finally {
+    btn.disabled    = false
+    btn.textContent = 'Save'
+  }
+}
+
+async function clearAssignSection() {
+  if (!_assignStudentId) return
+  const confirmed = await showConfirm(
+    'Remove the section assignment for this student?\nTheir schedule will also be cleared.',
+    'Clear Section',
+    'Clear',
+    'bg-red-500 hover:bg-red-600'
+  )
+  if (!confirmed) return
+
+  try {
+    const res  = await fetch(`/superadmin/assign-section/${_assignStudentId}`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ section_id: null })
+    })
+    const data = await res.json()
+    if (!data.ok) throw new Error(data.message || 'Failed to clear section.')
+
+    // Live-update table cells
+    const secCell  = document.getElementById(`cell-section-${_assignStudentId}`)
+    const yearCell = document.getElementById(`cell-year-${_assignStudentId}`)
+    const schCell  = document.getElementById(`cell-schedule-${_assignStudentId}`)
+    if (secCell)  secCell.textContent  = '—'
+    if (yearCell) yearCell.textContent = '—'
+    if (schCell) {
+      const div = schCell.querySelector('.schedule-cell') || schCell
+      div.textContent = '—'
+    }
+
+    // Update view modal if open
+    const viewModal = document.getElementById('viewStudentModal')
+    if (viewModal && !viewModal.classList.contains('hidden') &&
+        viewModal.dataset.studentId == _assignStudentId) {
+      document.getElementById('view_section_name').textContent = '—'
+      document.getElementById('view_year_level').textContent   = '—'
+      document.getElementById('view_teacher_name').textContent = '—'
+      document.getElementById('view_schedule').textContent     = '—'
+    }
+
+    // Reset Section button onclick
+    const row = document.getElementById(`student-row-${_assignStudentId}`)
+    const sectionBtn = row ? row.querySelector(`button[onclick*="openAssignSectionModal"]`) : null
+    if (sectionBtn) sectionBtn.setAttribute('onclick', `openAssignSectionModal(${_assignStudentId}, '')`)
+
+    _assignSectionId = null
+    _assignSectionCache = null  // invalidate cache so next open re-fetches
+    closeModal('assignSectionModal')
+    showAlert('Section cleared successfully.', 'success', 'Cleared')
+
+  } catch (err) {
+    showAlert(err.message || 'Failed to clear section.', 'error', 'Error')
+  }
+}
+
+// ══════════════════════════════════════════════════
+// TABLE UTILITIES
+// ══════════════════════════════════════════════════
 
 function filterTable() {
   const q = document.getElementById('searchInput').value.toLowerCase().trim()
@@ -899,6 +1168,31 @@ function exportToCSV() {
   URL.revokeObjectURL(url)
 }
 
+// ══════════════════════════════════════════════════
+// IMPORT
+// ══════════════════════════════════════════════════
+
+async function runImportFromModal() {
+  const input = document.getElementById('importFileInput')
+  if (!input.files[0]) { showAlert('Please choose a file first.', 'warning', 'No File Selected'); return }
+  const file = input.files[0]
+  const reader = new FileReader()
+  const isExcel = /\.(xlsx|xls)$/i.test(file.name)
+  if (isExcel) {
+    reader.onload = ev => {
+      const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' })
+      processImportedSheet(wb, file.name)
+    }
+    reader.readAsArrayBuffer(file)
+  } else {
+    reader.onload = ev => {
+      const wb = XLSX.read(ev.target.result, { type: 'string' })
+      processImportedSheet(wb, file.name)
+    }
+    reader.readAsText(file)
+  }
+}
+
 function excelSerialToDate(serial) {
   const d = new Date(Math.floor(serial - 25569) * 86400 * 1000)
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`
@@ -922,10 +1216,7 @@ function processImportedSheet(wb, filename) {
 }
 
 async function parseAndImport(rows, filename) {
-  if (rows.length < 2) {
-    showAlert('No data found in the file.', 'error', 'Empty File')
-    return
-  }
+  if (rows.length < 2) { showAlert('No data found in the file.', 'error', 'Empty File'); return }
   const headers  = rows[0].map(h => (h || '').toString().trim().toLowerCase())
   const students = []
 
@@ -935,33 +1226,27 @@ async function parseAndImport(rows, filename) {
     headers.forEach((header, i) => {
       const value = (row[i] ?? '').toString().trim()
       if (!value) return
-      if      (header.includes('last'))                                                          student.last_name      = value
-      else if (header.includes('first'))                                                         student.first_name     = value
-      else if (header.includes('middle'))                                                        student.middle_name    = value
-      else if (header.includes('extension') || header.includes('ext'))                          student.extension      = value
-      else if (header.includes('birth'))                                                         student.birthday       = normalizeBirthday(value)
+      if      (header.includes('last'))                                                              student.last_name      = value
+      else if (header.includes('first'))                                                             student.first_name     = value
+      else if (header.includes('middle'))                                                            student.middle_name    = value
+      else if (header.includes('extension') || header.includes('ext'))                              student.extension      = value
+      else if (header.includes('birth'))                                                             student.birthday       = normalizeBirthday(value)
       else if (header.includes('contact') || header.includes('phone') || header.includes('number')) student.contact_number = value
-      else if (header.includes('email'))                                                         student.email          = value
+      else if (header.includes('email'))                                                             student.email          = value
     })
     if (student.last_name && student.first_name && student.birthday && student.contact_number && student.email)
       students.push(student)
   }
 
   if (students.length === 0) {
-    showAlert(
-      'No valid student rows found.\n\nMake sure your file has columns like:\nlast_name, first_name, birthday, contact_number, email\n\nOptional: middle_name, extension',
-      'error', 'No Valid Rows'
-    )
+    showAlert('No valid student rows found.\n\nMake sure your file has columns like:\nlast_name, first_name, birthday, contact_number, email\n\nOptional: middle_name, extension', 'error', 'No Valid Rows')
     return
   }
 
   const confirmed = await showConfirm(
     `Found ${students.length} student(s) in "${filename}".\n\nImport them now?`,
-    'Confirm Import',
-    'Import Now',
-    'bg-emerald-600 hover:bg-emerald-700'
+    'Confirm Import', 'Import Now', 'bg-emerald-600 hover:bg-emerald-700'
   )
-
   if (!confirmed) return
 
   closeModal('importStudentModal')
@@ -983,7 +1268,9 @@ async function parseAndImport(rows, filename) {
   }
 }
 
-// Close on backdrop click / Escape
+// ══════════════════════════════════════════════════
+// CLOSE ON BACKDROP / ESC
+// ══════════════════════════════════════════════════
 ALL_MODALS.forEach(id => {
   document.getElementById(id)?.addEventListener('click', function(e) {
     if (e.target === this) {

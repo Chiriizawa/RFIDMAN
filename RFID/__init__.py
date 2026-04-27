@@ -13,6 +13,7 @@ from RFID.superadmin.teacher import teacher_bp
 from RFID.superadmin.section import section_bp
 from RFID.user.user import rfid_bp, set_rfid_data, set_db_config, init_db, start_serial_reader
 from RFID.superadmin.schedule import schedule_bp
+from RFID.superadmin.report import report_bp
 
 
 def create_app():
@@ -49,6 +50,7 @@ def create_app():
     app.register_blueprint(sadmin,      url_prefix='/superadmin')
     app.register_blueprint(sregister,   url_prefix='/superadmin')
     app.register_blueprint(teacher_bp,  url_prefix='/superadmin')
+    app.register_blueprint(report_bp,      url_prefix='/superadmin')
     app.register_blueprint(section_bp,  url_prefix='/superadmin')
     app.register_blueprint(schedule_bp, url_prefix='/superadmin')
     app.register_blueprint(rfid_bp,     url_prefix='/user')

@@ -65,7 +65,7 @@ def normalize_birthday(value):
 
 
 def validate_student_fields(last_name, first_name, middle_name, extension,
-                             birthday_raw, contact_number, email):
+                            birthday_raw, contact_number, email):
     """
     Returns a list of error strings. Empty list = all valid.
     """
@@ -170,6 +170,25 @@ def get_db_connection():
 
 
 # ─────────────────────────────────────────────
+# SCHEDULE SUBQUERY HELPER
+# Aggregates all schedule rows for a section into one multi-line string.
+# Format per row: "Monday | General Chemistry 1 | 7:00-8:00 AM"
+# ─────────────────────────────────────────────
+
+SCHEDULE_SUBQUERY = """
+    (
+        SELECT STRING_AGG(
+            sch.day || ' | ' || sch.subject || ' | ' || sch.time,
+            E'\\n'
+            ORDER BY sch.day, sch.time
+        )
+        FROM schedules sch
+        WHERE sch.section_id = sec.id
+    )
+"""
+
+
+# ─────────────────────────────────────────────
 # ROUTES
 # ─────────────────────────────────────────────
 
@@ -198,8 +217,8 @@ def student():
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        # Students with existing section info (for table display only)
-        cur.execute("""
+        # ── Students with section + auto-resolved schedule from schedules table ──
+        cur.execute(f"""
             SELECT
                 s.id,
                 s.uid,
@@ -210,11 +229,12 @@ def student():
                 s.birthday,
                 s.contact_number,
                 s.email,
-                s.schedule,
                 s.created_at,
                 s.section_id,
                 sec.section_name,
                 sec.year_level,
+                -- Auto-fill schedule by aggregating from schedules table
+                {SCHEDULE_SUBQUERY} AS schedule,
                 CASE
                     WHEN t.id IS NOT NULL THEN
                         TRIM(
@@ -235,7 +255,7 @@ def student():
         """)
         students = cur.fetchall()
 
-        # Available UIDs for add form
+        # ── Available UIDs for add form ──────────────────────────────────────
         cur.execute("""
             SELECT rc.uid
             FROM rfid_cards rc
@@ -270,7 +290,6 @@ def add_student():
     contact_number = request.form.get('contact_number', '').strip()
     email          = request.form.get('email', '').strip()
 
-    # ── Strong validation ─────────────────────────
     errors = validate_student_fields(
         last_name, first_name, middle_name, extension,
         birthday_raw, contact_number, email
@@ -337,7 +356,7 @@ def add_student():
                 flash("This UID is already linked to another student.", "error")
                 return redirect(url_for('sregister.student'))
 
-        # INSERT - no section / schedule
+        # INSERT — no section at creation; schedule comes from schedules table via section
         cur.execute("""
             INSERT INTO students
                 (uid, last_name, first_name, middle_name, extension,
@@ -370,7 +389,6 @@ def update_student(student_id):
     contact_number = request.form.get('contact_number', '').strip()
     email          = request.form.get('email', '').strip()
 
-    # ── Strong validation ─────────────────────────
     errors = validate_student_fields(
         last_name, first_name, middle_name, extension,
         birthday_raw, contact_number, email
@@ -395,17 +413,13 @@ def update_student(student_id):
             return redirect(url_for('sregister.student'))
 
         # Duplicate email check (exclude self)
-        cur.execute("""
-            SELECT id FROM students WHERE email = %s AND id <> %s
-        """, (email, student_id))
+        cur.execute("SELECT id FROM students WHERE email = %s AND id <> %s", (email, student_id))
         if cur.fetchone():
             flash("This email is already registered to another student.", "error")
             return redirect(url_for('sregister.student'))
 
         # Duplicate contact number check (exclude self)
-        cur.execute("""
-            SELECT id FROM students WHERE contact_number = %s AND id <> %s
-        """, (contact_number, student_id))
+        cur.execute("SELECT id FROM students WHERE contact_number = %s AND id <> %s", (contact_number, student_id))
         if cur.fetchone():
             flash("This contact number is already registered to another student.", "error")
             return redirect(url_for('sregister.student'))
@@ -452,10 +466,162 @@ def update_student(student_id):
         if conn: conn.close()
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# ROUTE: Assign / unassign a student to a section.
+# Schedule is read live from the schedules table — no schedule column needed
+# on students. section_id on the student row is enough.
+# ─────────────────────────────────────────────────────────────────────────────
+
+@sregister.route('/assign-section/<int:student_id>', methods=['POST'])
+@login_required
+def assign_section(student_id):
+    """
+    Assign (or clear) a student's section.
+
+    Accepts JSON  { "section_id": <int|null> }
+    or form data  section_id=<int|"">
+
+    On success returns JSON { "ok": true, "schedule": "...", "section_name": "...",
+                              "year_level": "...", "teacher_name": "..." }
+    """
+    # Support both JSON and form-encoded bodies
+    if request.is_json:
+        payload    = request.get_json(silent=True) or {}
+        section_id = payload.get('section_id') or None
+    else:
+        raw = request.form.get('section_id', '').strip()
+        section_id = int(raw) if raw.isdigit() else None
+
+    conn = None
+    cur  = None
+
+    try:
+        conn = get_db_connection()
+        cur  = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Verify student exists
+        cur.execute("SELECT id FROM students WHERE id = %s", (student_id,))
+        if not cur.fetchone():
+            return jsonify({'ok': False, 'message': 'Student not found.'}), 404
+
+        if section_id:
+            # Fetch the section + aggregate schedule from schedules table
+            cur.execute(f"""
+                SELECT
+                    sec.id,
+                    sec.section_name,
+                    sec.year_level,
+                    {SCHEDULE_SUBQUERY} AS schedule,
+                    CASE
+                        WHEN t.id IS NOT NULL THEN
+                            TRIM(
+                                COALESCE(t.last_name, '') || ', ' ||
+                                COALESCE(t.first_name, '') ||
+                                CASE
+                                    WHEN t.middle_name IS NOT NULL AND t.middle_name <> ''
+                                    THEN ' ' || t.middle_name
+                                    ELSE ''
+                                END
+                            )
+                        ELSE NULL
+                    END AS teacher_name
+                FROM sections sec
+                LEFT JOIN teachers t ON sec.teacher_id = t.id
+                WHERE sec.id = %s
+            """, (section_id,))
+            section = cur.fetchone()
+
+            if not section:
+                return jsonify({'ok': False, 'message': 'Section not found.'}), 404
+
+            # Update student: set section_id only (schedule is derived live)
+            cur.execute("""
+                UPDATE students
+                SET section_id = %s
+                WHERE id = %s
+            """, (section_id, student_id))
+
+            conn.commit()
+            return jsonify({
+                'ok':           True,
+                'section_id':   section_id,
+                'section_name': section['section_name'] or '—',
+                'year_level':   section['year_level']   or '—',
+                'teacher_name': section['teacher_name'] or '—',
+                'schedule':     section['schedule']     or '—',
+            })
+
+        else:
+            # Clear section assignment
+            cur.execute("""
+                UPDATE students
+                SET section_id = NULL
+                WHERE id = %s
+            """, (student_id,))
+            conn.commit()
+            return jsonify({
+                'ok':           True,
+                'section_id':   None,
+                'section_name': '—',
+                'year_level':   '—',
+                'teacher_name': '—',
+                'schedule':     '—',
+            })
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return jsonify({'ok': False, 'message': str(e)}), 500
+
+    finally:
+        if cur:  cur.close()
+        if conn: conn.close()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ROUTE: Return all sections as JSON (used by the Assign Section modal)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@sregister.route('/sections-list', methods=['GET'])
+@login_required
+def sections_list():
+    try:
+        conn = get_db_connection()
+        cur  = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(f"""
+            SELECT
+                sec.id,
+                sec.section_name,
+                sec.year_level,
+                {SCHEDULE_SUBQUERY} AS schedule,
+                CASE
+                    WHEN t.id IS NOT NULL THEN
+                        TRIM(
+                            COALESCE(t.last_name, '') || ', ' ||
+                            COALESCE(t.first_name, '') ||
+                            CASE
+                                WHEN t.middle_name IS NOT NULL AND t.middle_name <> ''
+                                THEN ' ' || t.middle_name
+                                ELSE ''
+                            END
+                        )
+                    ELSE NULL
+                END AS teacher_name
+            FROM sections sec
+            LEFT JOIN teachers t ON sec.teacher_id = t.id
+            ORDER BY sec.section_name ASC
+        """)
+        sections = cur.fetchall()
+        cur.close()
+        conn.close()
+        return jsonify({'ok': True, 'sections': sections})
+    except Exception as e:
+        return jsonify({'ok': False, 'message': str(e)}), 500
+
+
 @sregister.route('/import-excel', methods=['POST'])
 @login_required
 def import_excel():
-    from flask import jsonify
     data     = request.get_json()
     students = data.get('students', [])
 
@@ -575,14 +741,14 @@ def import_excel():
                     break
                 uid = uid_row[0]
 
-                # INSERT - basic fields only
+                # INSERT — section assigned separately via assign-section route
                 cur.execute("""
                     INSERT INTO students
                         (uid, last_name, first_name, middle_name, extension,
-                        birthday, contact_number, email)
+                         birthday, contact_number, email)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """, (uid, last_name, first_name, middle_name, extension,
-                    birthday, contact, email))
+                      birthday, contact, email))
 
                 imported += 1
 

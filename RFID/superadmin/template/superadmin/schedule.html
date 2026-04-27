@@ -11,22 +11,13 @@
     <!-- LEFT: actions -->
     <div class="flex items-center gap-3 flex-wrap">
 
-      <!-- Add New Schedule -->
-      <button type="button" onclick="openModal('addScheduleModal')"
+      <!-- Bulk Add Schedule — BLUE -->
+      <button type="button" onclick="openModal('bulkScheduleModal')"
               class="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg text-white font-medium px-6 py-3 rounded-3xl">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
         </svg>
-        Add New Schedule
-      </button>
-
-      <!-- Import Excel -->
-      <button type="button" onclick="openModal('importModal')"
-              class="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 transition-all shadow-md hover:shadow-lg text-white font-medium px-6 py-3 rounded-3xl">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-        </svg>
-        Import Excel
+        Add Schedule
       </button>
 
       <!-- Manage Rooms -->
@@ -97,7 +88,6 @@
               <td class="py-5 px-4 align-top">
                 <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-2xl text-xs font-semibold">{{ s.day }}</span>
               </td>
-              {# Support both time (combined) and time_in/time_out (split) #}
               <td class="py-5 px-4 text-gray-700 font-medium align-top tabular-nums">
                 {% if s.time %}
                   {{ s.time }}
@@ -110,7 +100,6 @@
               <td class="py-5 px-4 font-semibold text-gray-900 align-top">{{ s.subject }}</td>
               <td class="py-5 px-4 text-gray-600 align-top font-medium">{{ s.section_name or '—' }}</td>
               <td class="py-5 px-4 text-gray-600 align-top">{{ s.teacher or '—' }}</td>
-              {# FIX: DB column is room_name, not name #}
               <td class="py-5 px-4 text-gray-600 align-top">{{ s.room_name or '—' }}</td>
               <td class="py-5 px-4 align-top">
                 <div class="flex flex-wrap items-center gap-2">
@@ -175,7 +164,7 @@
       <div class="py-20 text-center">
         <div class="mx-auto w-24 h-24 bg-blue-50 rounded-3xl flex items-center justify-center text-6xl mb-6">📅</div>
         <h3 class="text-2xl font-semibold text-gray-900 mb-2">No schedules yet</h3>
-        <p class="text-gray-500 max-w-xs mx-auto">Add a new schedule or import from Excel to get started.</p>
+        <p class="text-gray-500 max-w-xs mx-auto">Add a new schedule or use Bulk Add to get started.</p>
       </div>
       {% endif %}
     </div>
@@ -185,7 +174,6 @@
 
 <!-- ══════════════════════════════════
      FLASH TOAST CONTAINER
-     Fixed top-right, stacks downward — matches the login page style
 ══════════════════════════════════ -->
 <div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none">
   {% with messages = get_flashed_messages(with_categories=true) %}
@@ -196,8 +184,6 @@
                   {% if category == 'success' %}bg-white border-green-100 text-gray-800
                   {% elif category == 'error' %}bg-white border-red-200 text-gray-800
                   {% else %}bg-white border-blue-100 text-gray-800{% endif %}">
-
-        <!-- Icon -->
         {% if category == 'success' %}
         <div class="flex-shrink-0 w-8 h-8 rounded-xl bg-green-500 flex items-center justify-center">
           <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -217,18 +203,12 @@
           </svg>
         </div>
         {% endif %}
-
-        <!-- Text -->
         <div class="flex-1 pt-0.5">
           <p class="font-semibold text-gray-900 text-xs uppercase tracking-wide mb-0.5">
-            {% if category == 'success' %}Success
-            {% elif category == 'error' %}Error
-            {% else %}Notice{% endif %}
+            {% if category == 'success' %}Success{% elif category == 'error' %}Error{% else %}Notice{% endif %}
           </p>
           <p class="text-gray-600 text-xs leading-relaxed">{{ message }}</p>
         </div>
-
-        <!-- Close -->
         <button onclick="dismissToast(this.closest('.toast-item'))"
                 class="flex-shrink-0 w-6 h-6 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -243,47 +223,36 @@
 
 
 <!-- ══════════════════════════════════
-     ADD SCHEDULE MODAL
+     BULK ADD SCHEDULE MODAL — FULLY BLUE
 ══════════════════════════════════ -->
-<div id="addScheduleModal" class="modal-overlay hidden">
-  <div class="modal-panel modal-panel-lg animate-fadeIn">
+<div id="bulkScheduleModal" class="modal-overlay hidden">
+  <div class="modal-panel modal-panel-xl animate-fadeIn">
     <div class="modal-header bg-gradient-to-r from-blue-600 to-blue-700">
       <div>
-        <h2 class="text-white text-xl font-semibold">Add New Schedule</h2>
-        <p class="text-blue-200 text-sm mt-0.5">Fill in the schedule details below</p>
+        <h2 class="text-white text-xl font-semibold">Bulk Add Schedule</h2>
+        <p class="text-blue-200 text-sm mt-0.5">Add one subject across multiple days with individual time slots</p>
       </div>
-      <button type="button" onclick="closeModal('addScheduleModal')" class="modal-close-btn">
+      <button type="button" onclick="closeModal('bulkScheduleModal')" class="modal-close-btn">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
       </button>
     </div>
     <div class="modal-body">
-      <form id="addScheduleForm" method="POST" action="{{ url_for('schedule.add_schedule') }}" class="p-8">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+      <form id="bulkScheduleForm" method="POST" action="{{ url_for('schedule.bulk_add_schedule') }}" class="p-8" novalidate>
 
-          <div>
-            <label class="form-label">Day <span class="text-red-400">*</span></label>
-            <select name="day" required class="form-select">
-              <option value="">Select day</option>
-              <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
-              <option>Thursday</option><option>Friday</option><option>Saturday</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="form-label">Time <span class="text-red-400">*</span></label>
-            <input type="text" name="time" required class="form-input" placeholder="e.g. 7:00-8:30 AM">
-          </div>
+        <!-- ── Shared fields ── -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8 pb-8 border-b-2 border-blue-100">
 
           <div>
             <label class="form-label">Subject <span class="text-red-400">*</span></label>
-            <input type="text" name="subject" required class="form-input" placeholder="e.g. IT3217">
+            <input type="text" id="bulk_subject" name="subject" class="form-input" placeholder="e.g. Mathematics" autocomplete="off">
+            <p class="field-error hidden" id="err_bulk_subject"></p>
           </div>
 
           <div>
             <label class="form-label">Section <span class="text-red-400">*</span></label>
-            <select name="section_id" required class="form-select">
+            <select id="bulk_section_id" name="section_id" class="form-select">
               <option value="">Select section</option>
               {% for sec in sections %}
               <option value="{{ sec.id }}">
@@ -291,37 +260,105 @@
               </option>
               {% endfor %}
             </select>
+            <p class="field-error hidden" id="err_bulk_section"></p>
           </div>
 
           <div>
             <label class="form-label">Teacher</label>
-            <select name="teacher_id" class="form-select">
+            <select id="bulk_teacher_id" name="teacher_id" class="form-select">
               <option value="">Select teacher (optional)</option>
               {% for t in teachers %}
               <option value="{{ t.id }}">{{ t.name }}</option>
               {% endfor %}
             </select>
-          </div>
-
-          <div>
-            <label class="form-label">Room <span class="text-red-400">*</span></label>
-            <select name="room_id" required class="form-select">
-              <option value="">Select room</option>
-              {% for r in rooms %}
-              {# FIX: use r.room_name (DB column), not r.name #}
-              <option value="{{ r.id }}">{{ r.room_name }}</option>
-              {% endfor %}
-            </select>
+            <p class="field-error hidden" id="err_bulk_teacher"></p>
           </div>
 
         </div>
+
+        <!-- ── Day/Time rows ── -->
+        <div class="mb-5 flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-semibold text-gray-800">Day &amp; Time Slots</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Select each day and assign its specific time and room. Format: <strong>7:00 AM - 8:30 AM</strong></p>
+          </div>
+          <button type="button" onclick="addBulkRow()"
+                  class="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 border border-blue-200 hover:border-blue-400 hover:bg-blue-50 text-xs font-semibold px-4 py-2 rounded-2xl transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/>
+            </svg>
+            Add Day
+          </button>
+        </div>
+
+        <div id="bulkRowsContainer" class="space-y-3">
+          <!-- Rows injected by JS; first 1 row shown by default -->
+        </div>
+
+        <!-- Hidden template for a day/time row — BLUE -->
+        <template id="bulkRowTemplate">
+          <div class="bulk-row grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_auto] gap-3 items-start bg-blue-50/60 border border-blue-100 rounded-2xl p-4">
+
+            <div>
+              <label class="form-label text-blue-800">Day <span class="text-red-400">*</span></label>
+              <select name="days[]" class="form-select">
+                <option value="">Select day</option>
+                <option>Monday</option>
+                <option>Tuesday</option>
+                <option>Wednesday</option>
+                <option>Thursday</option>
+                <option>Friday</option>
+                <option>Saturday</option>
+              </select>
+              <p class="field-error hidden"></p>
+            </div>
+
+            <div>
+              <label class="form-label text-blue-800">Time <span class="text-red-400">*</span></label>
+              <input type="text" name="times[]" class="form-input" placeholder="e.g. 7:00 AM - 8:30 AM" autocomplete="off">
+              <p class="field-error hidden"></p>
+            </div>
+
+            <div>
+              <label class="form-label text-blue-800">Room <span class="text-red-400">*</span></label>
+              <select name="room_ids[]" class="form-select">
+                <option value="">Select room</option>
+                {% for r in rooms %}
+                <option value="{{ r.id }}">{{ r.room_name }}</option>
+                {% endfor %}
+              </select>
+              <p class="field-error hidden"></p>
+            </div>
+
+            <div class="flex justify-end pt-7">
+              <button type="button" onclick="removeBulkRow(this)"
+                      class="remove-row-btn w-9 h-9 rounded-xl bg-red-50 hover:bg-red-100 text-red-400 hover:text-red-600 flex items-center justify-center transition-colors"
+                      title="Remove this day">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+
+          </div>
+        </template>
+
+        <!-- No-days warning -->
+        <div id="noDaysWarning" class="hidden text-center py-8 text-gray-400 text-sm">
+          <div class="text-3xl mb-2">📋</div>
+          No day slots added yet. Click <strong>Add Day</strong> to start.
+        </div>
+
       </form>
     </div>
     <div class="modal-footer">
-      <button type="button" onclick="closeModal('addScheduleModal')"
+      <div class="flex-1 text-xs text-gray-400 hidden sm:block" id="bulkRowCount">0 day(s) selected</div>
+      <button type="button" onclick="closeModal('bulkScheduleModal')"
               class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-800 font-medium text-sm transition-colors">Cancel</button>
-      <button type="submit" form="addScheduleForm"
-              class="px-7 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors">Save Schedule</button>
+      <button type="button" onclick="submitBulkForm()"
+              class="px-7 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors">
+        Save All Schedules
+      </button>
     </div>
   </div>
 </div>
@@ -378,31 +415,34 @@
       </button>
     </div>
     <div class="modal-body">
-      <form id="editScheduleForm" method="POST" class="p-8">
+      <form id="editScheduleForm" method="POST" class="p-8" novalidate>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
 
           <div>
             <label class="form-label">Day <span class="text-red-400">*</span></label>
-            <select id="edit_day" name="day" required class="form-select">
+            <select id="edit_day" name="day" class="form-select">
               <option value="">Select day</option>
               <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
               <option>Thursday</option><option>Friday</option><option>Saturday</option>
             </select>
+            <p class="field-error hidden" id="err_edit_day"></p>
           </div>
 
           <div>
             <label class="form-label">Time <span class="text-red-400">*</span></label>
-            <input type="text" id="edit_time" name="time" required class="form-input" placeholder="e.g. 7:00-8:30 AM">
+            <input type="text" id="edit_time" name="time" class="form-input" placeholder="e.g. 7:00 AM - 8:30 AM" autocomplete="off">
+            <p class="field-error hidden" id="err_edit_time"></p>
           </div>
 
           <div>
             <label class="form-label">Subject <span class="text-red-400">*</span></label>
-            <input type="text" id="edit_subject" name="subject" required class="form-input" placeholder="e.g. IT3217">
+            <input type="text" id="edit_subject" name="subject" class="form-input" placeholder="e.g. IT3217" autocomplete="off">
+            <p class="field-error hidden" id="err_edit_subject"></p>
           </div>
 
           <div>
             <label class="form-label">Section <span class="text-red-400">*</span></label>
-            <select id="edit_section_id" name="section_id" required class="form-select">
+            <select id="edit_section_id" name="section_id" class="form-select">
               <option value="">Select section</option>
               {% for sec in sections %}
               <option value="{{ sec.id }}">
@@ -410,6 +450,7 @@
               </option>
               {% endfor %}
             </select>
+            <p class="field-error hidden" id="err_edit_section"></p>
           </div>
 
           <div>
@@ -420,17 +461,18 @@
               <option value="{{ t.id }}">{{ t.name }}</option>
               {% endfor %}
             </select>
+            <p class="field-error hidden" id="err_edit_teacher"></p>
           </div>
 
           <div class="sm:col-span-2">
             <label class="form-label">Room <span class="text-red-400">*</span></label>
-            <select id="edit_room_id" name="room_id" required class="form-select">
+            <select id="edit_room_id" name="room_id" class="form-select">
               <option value="">Select room</option>
               {% for r in rooms %}
-              {# FIX: use r.room_name (DB column), not r.name #}
               <option value="{{ r.id }}">{{ r.room_name }}</option>
               {% endfor %}
             </select>
+            <p class="field-error hidden" id="err_edit_room"></p>
           </div>
 
         </div>
@@ -439,54 +481,8 @@
     <div class="modal-footer">
       <button type="button" onclick="closeModal('editScheduleModal')"
               class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-800 font-medium text-sm transition-colors">Cancel</button>
-      <button type="submit" form="editScheduleForm"
+      <button type="button" onclick="submitEditForm()"
               class="px-7 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-500 text-white font-medium text-sm shadow-sm transition-colors">Update Schedule</button>
-    </div>
-  </div>
-</div>
-
-
-<!-- ══════════════════════════════════
-     IMPORT MODAL
-══════════════════════════════════ -->
-<div id="importModal" class="modal-overlay hidden">
-  <div class="modal-panel modal-panel-md animate-fadeIn">
-    <div class="modal-header bg-gradient-to-r from-emerald-500 to-emerald-600">
-      <div>
-        <h2 class="text-white text-xl font-semibold">Import from Excel</h2>
-        <p class="text-emerald-100 text-sm mt-0.5">Bulk upload schedules via .xlsx file</p>
-      </div>
-      <button type="button" onclick="closeModal('importModal')" class="modal-close-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
-    </div>
-    <div class="modal-body p-8">
-      <form id="importForm" method="POST" action="{{ url_for('schedule.import_schedule') }}" enctype="multipart/form-data">
-        <div class="mb-5">
-          <label class="form-label">Choose Excel File <span class="text-red-400">*</span></label>
-          <input type="file" name="file" accept=".xlsx" required
-                 class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm bg-gray-50
-                        file:mr-4 file:py-1.5 file:px-4 file:rounded-xl file:border-0
-                        file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-        </div>
-        <div class="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 flex items-start gap-3">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-          <div>
-            Required columns: <strong>day, time_in, time_out, subject, section_name, room_name</strong><br>
-            <span class="text-gray-400 mt-1 block">section_name must match an existing section. Rooms are auto-created if missing.</span>
-          </div>
-        </div>
-      </form>
-    </div>
-    <div class="modal-footer">
-      <button type="button" onclick="closeModal('importModal')"
-              class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors">Cancel</button>
-      <button type="submit" form="importForm"
-              class="px-7 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm shadow-sm transition-colors">Import</button>
     </div>
   </div>
 </div>
@@ -511,13 +507,17 @@
     <div class="modal-body p-8">
 
       <!-- Add Room Form -->
-      <form method="POST" action="{{ url_for('schedule.add_room') }}" class="flex gap-3 mb-6">
-        <input type="text" name="room_name" required placeholder="e.g. Room 301"
-               class="flex-1 form-input">
-        <button type="submit"
-                class="px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors whitespace-nowrap">
-          + Add Room
-        </button>
+      <form id="addRoomForm" method="POST" action="{{ url_for('schedule.add_room') }}" class="flex flex-col gap-1 mb-6" novalidate>
+        <div class="flex gap-3">
+          <div class="flex-1">
+            <input type="text" id="room_name_input" name="room_name" placeholder="e.g. Room 301" class="form-input w-full" autocomplete="off">
+            <p class="field-error hidden" id="err_room_name"></p>
+          </div>
+          <button type="button" onclick="submitAddRoom()"
+                  class="px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors whitespace-nowrap self-start">
+            + Add Room
+          </button>
+        </div>
       </form>
 
       <!-- Rooms List -->
@@ -530,7 +530,6 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
               </svg>
             </div>
-            {# FIX: use r.room_name (DB column), not r.name #}
             <span class="text-sm font-medium text-gray-800">{{ r.room_name }}</span>
           </div>
           <form method="POST" action="{{ url_for('schedule.delete_room', room_id=r.id) }}"
@@ -545,9 +544,7 @@
           </form>
         </div>
         {% else %}
-        <div class="text-center py-8 text-gray-400 text-sm">
-          No rooms added yet.
-        </div>
+        <div class="text-center py-8 text-gray-400 text-sm">No rooms added yet.</div>
         {% endfor %}
       </div>
 
@@ -564,7 +561,7 @@
      SCRIPTS
 ══════════════════════════════════ -->
 <script>
-const MODAL_IDS = ['addScheduleModal','viewScheduleModal','editScheduleModal','importModal','roomsModal']
+const MODAL_IDS = ['bulkScheduleModal','viewScheduleModal','editScheduleModal','roomsModal']
 
 /* ── Search filter ── */
 function filterTable() {
@@ -575,13 +572,6 @@ function filterTable() {
 }
 
 /* ── Modal helpers ── */
-function moveModalsToBody() {
-  MODAL_IDS.forEach(id => {
-    const el = document.getElementById(id)
-    if (el && el.parentElement !== document.body) document.body.appendChild(el)
-  })
-}
-
 function lockScroll()   { document.documentElement.classList.add('modal-open'); document.body.classList.add('modal-open') }
 function unlockScroll() {
   const anyOpen = MODAL_IDS.some(id => document.getElementById(id)?.classList.contains('is-open'))
@@ -622,6 +612,8 @@ function openEditScheduleModal(s) {
   document.getElementById('edit_section_id').value = s.section_id || ''
   document.getElementById('edit_teacher_id').value = s.teacher_id || ''
   document.getElementById('edit_room_id').value    = s.room_id    || ''
+  // Clear any previous errors
+  clearAllErrors('editScheduleForm')
   openModal('editScheduleModal')
 }
 
@@ -635,22 +627,372 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') MODAL_IDS.forEach(closeModal)
 })
 
-document.addEventListener('DOMContentLoaded', moveModalsToBody)
+/* ══════════════════════════════════
+   VALIDATION HELPERS
+══════════════════════════════════ */
 
-/* ── Toast notifications ── */
+/**
+ * Parse a time string like "7:00 AM - 8:30 AM" or "7:00-8:30 AM" or "7:00AM-8:30AM"
+ * Returns { start: minutes_from_midnight, end: minutes_from_midnight } or null
+ */
+function parseTimeRange(str) {
+  if (!str) return null
+  str = str.trim()
+
+  // Normalise separator: support "7:00 AM - 8:30 AM", "7:00AM-8:30AM", "7:00 - 8:30 AM" etc.
+  // Split on " - " or "-" that is surrounded by time characters
+  const parts = str.split(/\s*[-–]\s*/)
+  if (parts.length < 2) return null
+
+  const start = parseTime(parts[0].trim())
+  const end   = parseTime(parts[1].trim())
+  if (start === null || end === null) return null
+  if (end <= start) return null   // end must be after start
+  return { start, end }
+}
+
+function parseTime(t) {
+  // Supports "7:00 AM", "7:00AM", "7:00", "07:00"
+  t = t.trim().toUpperCase()
+  const m = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/)
+  if (!m) return null
+  let h = parseInt(m[1], 10)
+  const min = parseInt(m[2], 10)
+  const period = m[3]
+  if (period === 'PM' && h !== 12) h += 12
+  if (period === 'AM' && h === 12) h = 0
+  if (h < 0 || h > 23 || min < 0 || min > 59) return null
+  return h * 60 + min
+}
+
+function timesOverlap(a, b) {
+  // a and b are { start, end }; returns true if they overlap
+  return a.start < b.end && b.start < a.end
+}
+
+function showFieldError(el, msg) {
+  el.classList.add('input-error')
+  const errEl = el.closest('div')?.querySelector('.field-error')
+  if (errEl) {
+    errEl.textContent = msg
+    errEl.classList.remove('hidden')
+  }
+}
+
+function clearFieldError(el) {
+  el.classList.remove('input-error')
+  const errEl = el.closest('div')?.querySelector('.field-error')
+  if (errEl) {
+    errEl.textContent = ''
+    errEl.classList.add('hidden')
+  }
+}
+
+function clearAllErrors(formId) {
+  const form = document.getElementById(formId)
+  if (!form) return
+  form.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'))
+  form.querySelectorAll('.field-error').forEach(el => { el.textContent = ''; el.classList.add('hidden') })
+}
+
+function showError(elId, msg) {
+  const el = document.getElementById(elId)
+  if (!el) return
+  el.textContent = msg
+  el.classList.remove('hidden')
+}
+
+function clearError(elId) {
+  const el = document.getElementById(elId)
+  if (!el) return
+  el.textContent = ''
+  el.classList.add('hidden')
+}
+
+/* ══════════════════════════════════
+   BULK SCHEDULE VALIDATION & SUBMIT
+══════════════════════════════════ */
+
+function validateBulkForm() {
+  let valid = true
+  clearAllErrors('bulkScheduleForm')
+
+  // Subject
+  const subjectEl = document.getElementById('bulk_subject')
+  if (!subjectEl.value.trim()) {
+    showFieldError(subjectEl, 'Subject is required.')
+    showError('err_bulk_subject', 'Subject is required.')
+    valid = false
+  } else if (subjectEl.value.trim().length < 2) {
+    showFieldError(subjectEl, 'Subject must be at least 2 characters.')
+    showError('err_bulk_subject', 'Subject must be at least 2 characters.')
+    valid = false
+  }
+
+  // Section
+  const sectionEl = document.getElementById('bulk_section_id')
+  if (!sectionEl.value) {
+    showFieldError(sectionEl, 'Please select a section.')
+    showError('err_bulk_section', 'Please select a section.')
+    valid = false
+  }
+
+  // Rows
+  const rows = document.querySelectorAll('#bulkRowsContainer .bulk-row')
+  if (rows.length === 0) {
+    document.getElementById('noDaysWarning').classList.remove('hidden')
+    valid = false
+  }
+
+  // Track parsed times per teacher per day to detect conflicts across rows
+  // Structure: { teacherId_day: [{ start, end, rowIndex }] }
+  const teacherScheduleMap = {}
+  const teacherId = document.getElementById('bulk_teacher_id').value
+
+  rows.forEach((row, i) => {
+    const dayEl  = row.querySelector('select[name="days[]"]')
+    const timeEl = row.querySelector('input[name="times[]"]')
+    const roomEl = row.querySelector('select[name="room_ids[]"]')
+
+    let rowValid = true
+
+    if (!dayEl.value) {
+      showFieldError(dayEl, 'Please select a day.')
+      rowValid = false; valid = false
+    }
+
+    const timeStr = timeEl.value.trim()
+    if (!timeStr) {
+      showFieldError(timeEl, 'Time is required.')
+      rowValid = false; valid = false
+    } else {
+      const parsed = parseTimeRange(timeStr)
+      if (!parsed) {
+        showFieldError(timeEl, 'Invalid format. Use: 7:00 AM - 8:30 AM')
+        rowValid = false; valid = false
+      } else {
+        // Check conflict within the same form rows (same teacher, same day)
+        if (teacherId && dayEl.value) {
+          const key = `${teacherId}_${dayEl.value}`
+          if (!teacherScheduleMap[key]) teacherScheduleMap[key] = []
+
+          for (const existing of teacherScheduleMap[key]) {
+            if (timesOverlap(parsed, existing.range)) {
+              showFieldError(timeEl, `Time conflict with Row ${existing.rowIndex + 1} on ${dayEl.value}.`)
+              valid = false; rowValid = false
+              break
+            }
+          }
+          if (rowValid) {
+            teacherScheduleMap[key].push({ range: parsed, rowIndex: i })
+          }
+        }
+
+        // Check duplicate day in same form
+        if (rowValid && dayEl.value) {
+          rows.forEach((otherRow, j) => {
+            if (j >= i) return
+            const otherDay = otherRow.querySelector('select[name="days[]"]').value
+            const otherTime = otherRow.querySelector('input[name="times[]"]').value.trim()
+            const otherRoom = otherRow.querySelector('select[name="room_ids[]"]').value
+            if (otherDay === dayEl.value && otherTime === timeStr && otherRoom === roomEl.value) {
+              showFieldError(dayEl, `Duplicate entry: same Day, Time, and Room as Row ${j + 1}.`)
+              valid = false
+            }
+          })
+        }
+      }
+    }
+
+    if (!roomEl.value) {
+      showFieldError(roomEl, 'Please select a room.')
+      valid = false
+    }
+  })
+
+  return valid
+}
+
+function submitBulkForm() {
+  if (validateBulkForm()) {
+    document.getElementById('bulkScheduleForm').submit()
+  }
+}
+
+/* ══════════════════════════════════
+   EDIT SCHEDULE VALIDATION & SUBMIT
+══════════════════════════════════ */
+
+function validateEditForm() {
+  let valid = true
+  clearAllErrors('editScheduleForm')
+
+  const dayEl     = document.getElementById('edit_day')
+  const timeEl    = document.getElementById('edit_time')
+  const subjectEl = document.getElementById('edit_subject')
+  const sectionEl = document.getElementById('edit_section_id')
+  const roomEl    = document.getElementById('edit_room_id')
+
+  if (!dayEl.value) {
+    showFieldError(dayEl, 'Please select a day.')
+    showError('err_edit_day', 'Please select a day.')
+    valid = false
+  }
+
+  const timeStr = timeEl.value.trim()
+  if (!timeStr) {
+    showFieldError(timeEl, 'Time is required.')
+    showError('err_edit_time', 'Time is required.')
+    valid = false
+  } else {
+    const parsed = parseTimeRange(timeStr)
+    if (!parsed) {
+      showFieldError(timeEl, 'Invalid format. Use: 7:00 AM - 8:30 AM')
+      showError('err_edit_time', 'Invalid time format. Use: 7:00 AM - 8:30 AM')
+      valid = false
+    }
+  }
+
+  if (!subjectEl.value.trim()) {
+    showFieldError(subjectEl, 'Subject is required.')
+    showError('err_edit_subject', 'Subject is required.')
+    valid = false
+  } else if (subjectEl.value.trim().length < 2) {
+    showFieldError(subjectEl, 'Subject must be at least 2 characters.')
+    showError('err_edit_subject', 'Subject must be at least 2 characters.')
+    valid = false
+  }
+
+  if (!sectionEl.value) {
+    showFieldError(sectionEl, 'Please select a section.')
+    showError('err_edit_section', 'Please select a section.')
+    valid = false
+  }
+
+  if (!roomEl.value) {
+    showFieldError(roomEl, 'Please select a room.')
+    showError('err_edit_room', 'Please select a room.')
+    valid = false
+  }
+
+  return valid
+}
+
+function submitEditForm() {
+  if (validateEditForm()) {
+    document.getElementById('editScheduleForm').submit()
+  }
+}
+
+/* ══════════════════════════════════
+   ADD ROOM VALIDATION
+══════════════════════════════════ */
+
+function submitAddRoom() {
+  const input = document.getElementById('room_name_input')
+  const errEl = document.getElementById('err_room_name')
+  clearFieldError(input)
+
+  const val = input.value.trim()
+  if (!val) {
+    showFieldError(input, 'Room name is required.')
+    showError('err_room_name', 'Room name is required.')
+    return
+  }
+  if (val.length < 2) {
+    showFieldError(input, 'Room name must be at least 2 characters.')
+    showError('err_room_name', 'Room name must be at least 2 characters.')
+    return
+  }
+  if (val.length > 60) {
+    showFieldError(input, 'Room name must not exceed 60 characters.')
+    showError('err_room_name', 'Room name must not exceed 60 characters.')
+    return
+  }
+  document.getElementById('addRoomForm').submit()
+}
+
+/* ── Live error clear on input ── */
+document.addEventListener('input', function(e) {
+  if (e.target.matches('.form-input, .form-select')) {
+    clearFieldError(e.target)
+  }
+})
+document.addEventListener('change', function(e) {
+  if (e.target.matches('.form-select')) {
+    clearFieldError(e.target)
+  }
+})
+
+/* ── Bulk schedule rows ── */
+function updateBulkRowCount() {
+  const count = document.querySelectorAll('#bulkRowsContainer .bulk-row').length
+  const counter = document.getElementById('bulkRowCount')
+  const warning = document.getElementById('noDaysWarning')
+  if (counter) counter.textContent = `${count} day(s) selected`
+  if (warning) warning.classList.toggle('hidden', count > 0)
+}
+
+function addBulkRow() {
+  const template = document.getElementById('bulkRowTemplate')
+  const container = document.getElementById('bulkRowsContainer')
+  const clone = template.content.cloneNode(true)
+
+  const row = clone.querySelector('.bulk-row')
+  row.style.opacity = '0'
+  row.style.transform = 'translateY(-8px)'
+  container.appendChild(clone)
+
+  requestAnimationFrame(() => {
+    const newRow = container.lastElementChild
+    newRow.style.transition = 'opacity .2s ease, transform .2s ease'
+    newRow.style.opacity = '1'
+    newRow.style.transform = 'translateY(0)'
+  })
+
+  updateBulkRowCount()
+}
+
+function removeBulkRow(btn) {
+  const row = btn.closest('.bulk-row')
+  const container = document.getElementById('bulkRowsContainer')
+
+  const rows = container.querySelectorAll('.bulk-row')
+  if (rows.length <= 1) {
+    // Flash red border but don't remove last row
+    row.style.transition = 'border-color .15s ease'
+    row.style.borderColor = '#fca5a5'
+    setTimeout(() => { row.style.borderColor = '' }, 600)
+    return
+  }
+
+  row.style.transition = 'opacity .18s ease, transform .18s ease'
+  row.style.opacity = '0'
+  row.style.transform = 'translateX(20px)'
+  setTimeout(() => { row.remove(); updateBulkRowCount() }, 190)
+}
+
+/* Init */
+document.addEventListener('DOMContentLoaded', () => {
+  addBulkRow()
+
+  MODAL_IDS.forEach(id => {
+    const el = document.getElementById(id)
+    if (el && el.parentElement !== document.body) document.body.appendChild(el)
+  })
+
+  document.querySelectorAll('.toast-item').forEach((toast, i) => {
+    setTimeout(() => dismissToast(toast), 5000 + i * 300)
+  })
+})
+
+/* Toast */
 function dismissToast(el) {
   el.style.transition = 'opacity .25s, transform .25s'
   el.style.opacity = '0'
   el.style.transform = 'translateX(20px)'
   setTimeout(() => el.remove(), 260)
 }
-
-/* Auto-dismiss toasts after 5 seconds */
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.toast-item').forEach((toast, i) => {
-    setTimeout(() => dismissToast(toast), 5000 + i * 300)
-  })
-})
 </script>
 
 
@@ -663,21 +1005,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   html.modal-open, body.modal-open { overflow: hidden !important; }
 
-  /* ── Toast slide-in ── */
-  #toastContainer { min-width: 0; }
-  .toast-item {
-    animation: toastSlideIn .3s cubic-bezier(.22,1,.36,1) both;
-  }
+  .toast-item { animation: toastSlideIn .3s cubic-bezier(.22,1,.36,1) both; }
   @keyframes toastSlideIn {
     from { opacity: 0; transform: translateX(40px); }
     to   { opacity: 1; transform: translateX(0); }
   }
 
-  /* ── Form controls ── */
   .form-label {
     display: block; font-size: .8125rem; font-weight: 600;
-    color: #1f2937; margin-bottom: .6rem;
-    letter-spacing: .02em;
+    color: #1f2937; margin-bottom: .6rem; letter-spacing: .02em;
   }
   .form-input {
     display: block; width: 100%; padding: .875rem 1rem;
@@ -685,12 +1021,36 @@ document.addEventListener('DOMContentLoaded', () => {
     border: 1.5px solid #e0e7ff; border-radius: 1rem;
     outline: none; transition: border-color .2s, box-shadow .2s, background .2s;
   }
-  .form-input:focus { 
-    border-color: #3b82f6; 
-    box-shadow: 0 0 0 3px rgba(59,130,246,.12); 
+  .form-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59,130,246,.12);
     background: #f0f9ff;
   }
   .form-input::placeholder { color: #9ca3af; }
+
+  /* Error state for inputs */
+  .form-input.input-error {
+    border-color: #f87171 !important;
+    box-shadow: 0 0 0 3px rgba(248,113,113,.15) !important;
+    background: #fff5f5 !important;
+  }
+  .form-select.input-error {
+    border-color: #f87171 !important;
+    box-shadow: 0 0 0 3px rgba(248,113,113,.15) !important;
+    background-color: #fff5f5 !important;
+  }
+
+  /* Inline error message */
+  .field-error {
+    display: block; font-size: .75rem; color: #dc2626;
+    margin-top: .35rem; margin-left: .25rem;
+    font-weight: 500; letter-spacing: .01em;
+    animation: errorFadeIn .18s ease;
+  }
+  @keyframes errorFadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
 
   .form-select {
     display: block; width: 100%;
@@ -700,13 +1060,12 @@ document.addEventListener('DOMContentLoaded', () => {
     outline: none; appearance: none; -webkit-appearance: none;
     transition: border-color .2s, box-shadow .2s, background .2s;
   }
-  .form-select:focus { 
-    border-color: #3b82f6; 
+  .form-select:focus {
+    border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59,130,246,.12);
     background-color: #f0f9ff;
   }
 
-  /* ── View modal fields ── */
   .view-label {
     display: block; font-size: .7rem; font-weight: 600;
     text-transform: uppercase; letter-spacing: .06em;
@@ -718,7 +1077,6 @@ document.addEventListener('DOMContentLoaded', () => {
     font-size: .875rem; color: #1f2937; min-height: 2.75rem;
   }
 
-  /* ── Modal overlay ── */
   .modal-overlay {
     position: fixed; inset: 0; z-index: 2147483000;
     display: flex; align-items: flex-start; justify-content: center;
@@ -740,6 +1098,7 @@ document.addEventListener('DOMContentLoaded', () => {
     transition: transform .18s ease;
   }
   .modal-overlay.is-open .modal-panel { transform: translateY(0) scale(1); }
+  .modal-panel-xl { max-width: 860px; }
   .modal-panel-lg { max-width: 700px; }
   .modal-panel-md { max-width: 560px; }
 
@@ -767,6 +1126,17 @@ document.addEventListener('DOMContentLoaded', () => {
     to   { opacity: 1; transform: scale(1) translateY(0); }
   }
   .animate-fadeIn { animation: fadeIn .2s ease-out; }
+
+  /* ── Bulk row inputs — BLUE VERSION ── */
+  .bulk-row .form-input  { border-color: #bfdbfe; }
+  .bulk-row .form-select { border-color: #bfdbfe; }
+  .bulk-row .form-input:focus,
+  .bulk-row .form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+    background: #eff6ff;
+  }
+  .bulk-row .form-label { color: #1e40af; }
 
   @media (max-width: 640px) {
     .modal-overlay { padding: 12px; align-items: stretch; }
