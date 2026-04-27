@@ -4,8 +4,8 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 import os
+import re
 import smtplib
-import secrets
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from werkzeug.security import generate_password_hash
@@ -27,6 +27,93 @@ def login_required(f):
             return redirect(url_for("sadmin.login"))
         return f(*args, **kwargs)
     return decorated_function
+
+
+# ─────────────────────────────────────────────
+# CONSTANTS & VALIDATION (same style as student validation)
+# ─────────────────────────────────────────────
+
+VALID_EXTENSIONS = {'', 'Jr.', 'Sr.', 'II', 'III', 'IV', 'V'}
+
+ALLOWED_DOMAINS = {
+    'gmail.com', 'yahoo.com', 'yahoo.com.ph',
+    'outlook.com', 'hotmail.com', 'live.com',
+    'icloud.com', 'me.com', 'mac.com',
+    'protonmail.com', 'proton.me',
+    'aol.com', 'zoho.com',
+    'deped.gov.ph', 'ched.gov.ph', 'edu.ph', 'school.edu.ph',
+    'up.edu.ph', 'dlsu.edu.ph', 'ateneo.edu.ph', 'ust.edu.ph',
+    'admu.edu.ph', 'mapua.edu.ph', 'pup.edu.ph', 'tip.edu.ph',
+    'feu.edu.ph', 'nu.edu.ph', 'ceu.edu.ph', 'slu.edu.ph',
+    'au.edu.ph', 'usc.edu.ph', 'usjr.edu.ph', 'cpu.edu.ph',
+    'wvsu.edu.ph', 'vsu.edu.ph',
+}
+
+
+def is_valid_email_domain(addr):
+    if '@' not in addr:
+        return False
+    domain = addr.lower().split('@')[-1]
+    # STRICT VALIDATION: Only domains in the ALLOWED_DOMAINS list are accepted
+    # This makes 1234@ggmail.com INVALID
+    return domain in ALLOWED_DOMAINS
+
+
+def validate_teacher_fields(last_name, first_name, middle_name, extension,
+                            contact_number, email):
+    """
+    Returns a list of error strings. Empty list = all valid.
+    Same validation style as students.
+    """
+    errors = []
+
+    # ── Last Name ─────────────────────────────────
+    if not last_name:
+        errors.append("Last name is required.")
+    elif not re.match(r"^[a-zA-ZÀ-ÿ\s'\-]+$", last_name):
+        errors.append("Last name must contain letters only.")
+    elif len(last_name) < 3:
+        errors.append("Last name must be at least 3 characters.")
+
+    # ── First Name ────────────────────────────────
+    if not first_name:
+        errors.append("First name is required.")
+    elif not re.match(r"^[a-zA-ZÀ-ÿ\s'\-]+$", first_name):
+        errors.append("First name must contain letters only.")
+    elif len(first_name) < 3:
+        errors.append("First name must be at least 3 characters.")
+
+    # ── Middle Name (optional, min 2 if provided) ─
+    if middle_name:
+        if not re.match(r"^[a-zA-ZÀ-ÿ\s'\-]+$", middle_name):
+            errors.append("Middle name must contain letters only.")
+        elif len(middle_name) < 2:
+            errors.append("Middle name must be at least 2 characters.")
+
+    # ── Extension ─────────────────────────────────
+    if extension and extension not in VALID_EXTENSIONS:
+        errors.append("Extension must be one of: Jr., Sr., II, III, IV, V.")
+
+    # ── Contact Number ────────────────────────────
+    if not contact_number:
+        errors.append("Contact number is required.")
+    elif not contact_number.isdigit():
+        errors.append("Contact number must contain digits only.")
+    elif len(contact_number) != 11:
+        errors.append(f"Contact number must be exactly 11 digits (got {len(contact_number)}).")
+    elif not contact_number.startswith('09'):
+        errors.append("Contact number must start with 09.")
+
+    # ── Email ─────────────────────────────────────
+    if not email:
+        errors.append("Email address is required.")
+    elif not re.match(r'^[^\s@]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$', email):
+        errors.append("Please enter a valid email address.")
+    elif not is_valid_email_domain(email):
+        domain_part = email.split('@')[-1] if '@' in email else ''
+        errors.append(f'"{domain_part}" is not an accepted email domain. Use Gmail, Yahoo, Outlook, iCloud, or a valid school/government email.')
+
+    return errors
 
 
 # ─────────────────────────────────────────────
@@ -239,10 +326,15 @@ def add_teacher():
     extension = request.form.get("extension", "").strip()
     contact_number = request.form.get("contact_number", "").strip()
     email = request.form.get("email", "").strip()
-    teacher_id = request.form.get("teacher_id", "").strip()
 
-    if not last_name or not first_name or not contact_number or not email or not teacher_id:
-        flash("Last Name, First Name, Contact Number, Email, and Teacher ID are required.", "error")
+    # New validation (same style as students)
+    errors = validate_teacher_fields(
+        last_name, first_name, middle_name, extension,
+        contact_number, email
+    )
+    if errors:
+        for err in errors:
+            flash(err, "error")
         return redirect(url_for("teacher_bp.teachers"))
 
     conn = None
@@ -252,9 +344,25 @@ def add_teacher():
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
+        # Duplicate email check
+        cur.execute("SELECT id FROM teachers WHERE email = %s", (email,))
+        if cur.fetchone():
+            cur.close()
+            conn.close()
+            flash("This email is already registered.", "error")
+            return redirect(url_for("teacher_bp.teachers"))
+
+        # Duplicate contact number check
+        cur.execute("SELECT id FROM teachers WHERE contact_number = %s", (contact_number,))
+        if cur.fetchone():
+            cur.close()
+            conn.close()
+            flash("This contact number is already registered.", "error")
+            return redirect(url_for("teacher_bp.teachers"))
+
+        # INSERT (teacher_id removed as it was not present in the form)
         cur.execute("""
             INSERT INTO teachers (
-                teacher_id,
                 last_name,
                 first_name,
                 middle_name,
@@ -262,10 +370,9 @@ def add_teacher():
                 contact_number,
                 email
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING id
         """, (
-            teacher_id,
             last_name,
             first_name,
             middle_name if middle_name else None,
@@ -281,67 +388,6 @@ def add_teacher():
         if conn:
             conn.rollback()
         flash(f"Error adding teacher: {str(e)}", "error")
-
-    finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
-
-    return redirect(url_for("teacher_bp.teachers"))
-
-
-@teacher_bp.route("/teachers/send-create-password/<int:teacher_id>")
-@login_required
-def send_create_password(teacher_id):
-    conn = None
-    cur = None
-
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-
-        cur.execute("""
-            SELECT t.id,
-                   t.first_name,
-                   t.last_name,
-                   t.email,
-                   ta.id AS account_id
-            FROM teachers t
-            JOIN teacher_accounts ta ON ta.teacher_id = t.id
-            WHERE t.id = %s
-        """, (teacher_id,))
-        teacher = cur.fetchone()
-
-        if not teacher:
-            flash("Teacher account not found.", "error")
-            return redirect(url_for("teacher_bp.teachers"))
-
-        reset_token = secrets.token_urlsafe(32)
-
-        cur.execute("""
-            UPDATE teacher_accounts
-            SET reset_token = %s
-            WHERE teacher_id = %s
-        """, (reset_token, teacher_id))
-
-        conn.commit()
-
-        reset_link = request.host_url.rstrip("/") + url_for("teacher_bp.create_password", token=reset_token)
-
-        send_teacher_create_password_email(
-            to_email=teacher["email"],
-            first_name=teacher["first_name"],
-            last_name=teacher["last_name"],
-            reset_link=reset_link
-        )
-
-        flash("Create password email sent successfully.", "success")
-
-    except Exception as e:
-        if conn:
-            conn.rollback()
-        flash(f"Error sending create password email: {str(e)}", "error")
 
     finally:
         if cur:

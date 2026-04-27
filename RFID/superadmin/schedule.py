@@ -4,8 +4,8 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 import os
-import io
-import openpyxl
+import re
+from datetime import datetime, time as dtime
 
 load_dotenv()
 
@@ -35,6 +35,190 @@ def get_db_connection():
     if not database_url:
         raise Exception("❌ DATABASE_URL not found in .env")
     return psycopg2.connect(database_url.strip(), sslmode="require")
+
+
+# ─────────────────────────────────────────────
+# TIME PARSING & CONFLICT HELPERS
+# ─────────────────────────────────────────────
+
+TIME_FORMATS = [
+    "%I:%M %p",   # 7:00 AM
+    "%I:%M%p",    # 7:00AM
+    "%H:%M",      # 07:00 (24-hr)
+    "%I %p",      # 7 AM
+]
+
+
+def parse_time_str(raw: str):
+    """
+    Parse a single time string like "7:00 AM" or "07:00".
+    Returns a datetime.time object or None.
+    """
+    raw = raw.strip().upper()
+    for fmt in TIME_FORMATS:
+        try:
+            return datetime.strptime(raw, fmt).time()
+        except ValueError:
+            continue
+    return None
+
+
+def parse_time_range(time_str: str):
+    """
+    Parse "7:00 AM - 8:30 AM" (or variants) into (start_time, end_time).
+    Supports separators: ' - ', ' – ', '-', '–', ' to '.
+    Returns (dtime, dtime) tuple or (None, None) on failure.
+    """
+    if not time_str:
+        return None, None
+
+    time_str = time_str.strip()
+
+    # Try various separators
+    for sep in [' - ', ' – ', ' to ', '-', '–']:
+        if sep in time_str:
+            parts = time_str.split(sep, 1)
+            start = parse_time_str(parts[0].strip())
+            end   = parse_time_str(parts[1].strip())
+            if start and end and end > start:
+                return start, end
+            break
+
+    return None, None
+
+
+def times_overlap(start1: dtime, end1: dtime, start2: dtime, end2: dtime) -> bool:
+    """
+    Returns True if two time ranges overlap (exclusive endpoints).
+    [start1, end1) overlaps [start2, end2) when start1 < end2 AND start2 < end1
+    """
+    return start1 < end2 and start2 < end1
+
+
+def check_teacher_conflict_db(cur, teacher_id: int, day: str, new_start: dtime,
+                               new_end: dtime, exclude_schedule_id: int = None) -> dict | None:
+    """
+    Check if teacher_id already has a schedule on `day` that overlaps
+    the new_start–new_end range.
+
+    Returns a conflict dict with details if conflict found, else None.
+    """
+    if not teacher_id:
+        return None
+
+    query = """
+        SELECT sc.id, sc.day, sc.time, sc.subject,
+               s.section_name,
+               r.room_name
+        FROM schedules sc
+        LEFT JOIN sections s ON sc.section_id = s.id
+        LEFT JOIN rooms    r ON sc.room_id    = r.id
+        WHERE sc.teacher_id = %s
+          AND sc.day        = %s
+    """
+    params = [teacher_id, day]
+
+    if exclude_schedule_id:
+        query += " AND sc.id != %s"
+        params.append(exclude_schedule_id)
+
+    cur.execute(query, params)
+    existing = cur.fetchall()
+
+    for sched in existing:
+        existing_start, existing_end = parse_time_range(sched["time"] or "")
+        if existing_start is None:
+            continue
+        if times_overlap(new_start, new_end, existing_start, existing_end):
+            return {
+                "subject":  sched["subject"],
+                "section":  sched["section_name"] or "—",
+                "room":     sched["room_name"] or "—",
+                "time":     sched["time"],
+                "day":      sched["day"],
+            }
+
+    return None
+
+
+def check_room_conflict_db(cur, room_id: int, day: str, new_start: dtime,
+                            new_end: dtime, exclude_schedule_id: int = None) -> dict | None:
+    """
+    Check if a room is already occupied during the new time slot on the given day.
+    Returns conflict details or None.
+    """
+    if not room_id:
+        return None
+
+    query = """
+        SELECT sc.id, sc.day, sc.time, sc.subject,
+               s.section_name,
+               CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) AS teacher
+        FROM schedules sc
+        LEFT JOIN sections s ON sc.section_id = s.id
+        LEFT JOIN teachers t ON sc.teacher_id = t.id
+        WHERE sc.room_id = %s
+          AND sc.day     = %s
+    """
+    params = [room_id, day]
+
+    if exclude_schedule_id:
+        query += " AND sc.id != %s"
+        params.append(exclude_schedule_id)
+
+    cur.execute(query, params)
+    existing = cur.fetchall()
+
+    for sched in existing:
+        existing_start, existing_end = parse_time_range(sched["time"] or "")
+        if existing_start is None:
+            continue
+        if times_overlap(new_start, new_end, existing_start, existing_end):
+            return {
+                "subject": sched["subject"],
+                "section": sched["section_name"] or "—",
+                "teacher": sched["teacher"] or "—",
+                "time":    sched["time"],
+                "day":     sched["day"],
+            }
+
+    return None
+
+
+# ─────────────────────────────────────────────
+# VALIDATION HELPERS
+# ─────────────────────────────────────────────
+
+def validate_required_fields(**fields) -> list[str]:
+    """Returns list of error messages for empty required fields."""
+    errors = []
+    for name, value in fields.items():
+        if not value:
+            errors.append(f"{name} is required.")
+    return errors
+
+
+def validate_time_format(time_str: str) -> tuple[dtime | None, dtime | None, str | None]:
+    """
+    Validates and parses a time range string.
+    Returns (start_time, end_time, error_message).
+    error_message is None if valid.
+    """
+    if not time_str or not time_str.strip():
+        return None, None, "Time is required."
+
+    start, end = parse_time_range(time_str.strip())
+
+    if start is None or end is None:
+        return None, None, (
+            "Invalid time format. Use: 7:00 AM - 8:30 AM  "
+            "(separate start and end with ' - ')."
+        )
+
+    if end <= start:
+        return None, None, "End time must be after start time."
+
+    return start, end, None
 
 
 # ─────────────────────────────────────────────
@@ -123,45 +307,187 @@ def schedule():
 
 
 # ─────────────────────────────────────────────
-# ADD SCHEDULE
+# BULK ADD SCHEDULE
 # ─────────────────────────────────────────────
 
-@schedule_bp.route("/schedule/add", methods=["POST"])
+@schedule_bp.route("/schedule/bulk-add", methods=["POST"])
 @login_required
-def add_schedule():
+def bulk_add_schedule():
     conn = None
     cur  = None
     try:
         conn = get_db_connection()
         cur  = conn.cursor(cursor_factory=RealDictCursor)
 
-        section_id = request.form.get("section_id", "").strip()
-        day        = request.form.get("day",        "").strip()
-        time       = request.form.get("time",       "").strip()   # single combined field
         subject    = request.form.get("subject",    "").strip()
-        room_id    = request.form.get("room_id",    "").strip()
+        section_id = request.form.get("section_id", "").strip()
         teacher_id = request.form.get("teacher_id", "").strip()
 
-        if not all([section_id, day, time, subject, room_id]):
-            flash("All fields are required.", "error")
+        # ── Validate shared fields ──────────────────────
+        errors = []
+
+        if not subject:
+            errors.append("Subject is required.")
+        elif len(subject) < 2:
+            errors.append("Subject must be at least 2 characters.")
+
+        if not section_id:
+            errors.append("Section is required.")
+
+        if errors:
+            for e in errors:
+                flash(e, "error")
             return redirect(url_for("schedule.schedule"))
 
-        # Convert teacher_id to int or None
-        if teacher_id == "":
-            teacher_id = None
-        else:
-            try:
-                teacher_id = int(teacher_id)
-            except ValueError:
-                teacher_id = None
+        teacher_id_int = int(teacher_id) if teacher_id else None
+        section_id_int = int(section_id)
 
-        cur.execute("""
-            INSERT INTO schedules (section_id, day, time, subject, room_id, teacher_id)
-            VALUES (%s, %s, %s, %s, %s, %s)
-        """, (section_id, day, time, subject, room_id, teacher_id))
+        days     = request.form.getlist("days[]")
+        times    = request.form.getlist("times[]")
+        room_ids = request.form.getlist("room_ids[]")
+
+        if not days:
+            flash("Please add at least one day slot.", "error")
+            return redirect(url_for("schedule.schedule"))
+
+        if not (len(days) == len(times) == len(room_ids)):
+            flash("Mismatched day/time/room data. Please try again.", "error")
+            return redirect(url_for("schedule.schedule"))
+
+        # ── Validate and check conflicts per row ────────
+        row_errors  = []
+        valid_rows  = []
+
+        # Keep track of times already validated in this batch (for intra-batch teacher conflicts)
+        # { teacher_id: { day: [(start, end, row_num)] } }
+        batch_teacher_times: dict[int, dict[str, list]] = {}
+        # { room_id: { day: [(start, end, row_num)] } }
+        batch_room_times: dict[int, dict[str, list]] = {}
+
+        for i, (day, time_str, room_id_str) in enumerate(zip(days, times, room_ids), start=1):
+            day        = day.strip()
+            time_str   = time_str.strip()
+            room_id_str = room_id_str.strip()
+
+            # Required fields check
+            if not day or not time_str or not room_id_str:
+                row_errors.append(f"Row {i}: Day, Time, and Room are all required.")
+                continue
+
+            # Time format validation
+            start_t, end_t, time_err = validate_time_format(time_str)
+            if time_err:
+                row_errors.append(f"Row {i} ({day}): {time_err}")
+                continue
+
+            room_id_int = int(room_id_str)
+
+            # ── Intra-batch teacher conflict check ──
+            if teacher_id_int:
+                batch_teacher_times.setdefault(teacher_id_int, {}).setdefault(day, [])
+                for (existing_start, existing_end, existing_row) in batch_teacher_times[teacher_id_int][day]:
+                    if times_overlap(start_t, end_t, existing_start, existing_end):
+                        row_errors.append(
+                            f"Row {i} ({day} {time_str}): Time conflict with Row {existing_row} "
+                            f"— same teacher cannot be in two places at the same time."
+                        )
+                        break
+                else:
+                    batch_teacher_times[teacher_id_int][day].append((start_t, end_t, i))
+
+            # ── Intra-batch room conflict check ──
+            batch_room_times.setdefault(room_id_int, {}).setdefault(day, [])
+            for (existing_start, existing_end, existing_row) in batch_room_times[room_id_int][day]:
+                if times_overlap(start_t, end_t, existing_start, existing_end):
+                    row_errors.append(
+                        f"Row {i} ({day} {time_str}): Room conflict with Row {existing_row} "
+                        f"— same room cannot be used by two schedules at the same time."
+                    )
+                    break
+            else:
+                batch_room_times[room_id_int][day].append((start_t, end_t, i))
+
+            # ── DB teacher conflict check ──
+            if teacher_id_int:
+                conflict = check_teacher_conflict_db(cur, teacher_id_int, day, start_t, end_t)
+                if conflict:
+                    row_errors.append(
+                        f"Row {i} ({day} {time_str}): Teacher conflict — the assigned teacher "
+                        f"already has '{conflict['subject']}' ({conflict['section']}) "
+                        f"in {conflict['room']} at {conflict['time']}."
+                    )
+                    continue
+
+            # ── DB room conflict check ──
+            room_conflict = check_room_conflict_db(cur, room_id_int, day, start_t, end_t)
+            if room_conflict:
+                row_errors.append(
+                    f"Row {i} ({day} {time_str}): Room conflict — the room is already used for "
+                    f"'{room_conflict['subject']}' ({room_conflict['section']}) "
+                    f"by {room_conflict['teacher']} at {room_conflict['time']}."
+                )
+                continue
+
+            valid_rows.append({
+                "day":        day,
+                "time":       time_str,
+                "room_id":    room_id_int,
+                "section_id": section_id_int,
+                "teacher_id": teacher_id_int,
+                "subject":    subject,
+            })
+
+        # ── If any row errors, abort everything ──
+        if row_errors:
+            for err in row_errors[:5]:   # show max 5 errors to avoid flooding
+                flash(err, "error")
+            if len(row_errors) > 5:
+                flash(f"…and {len(row_errors) - 5} more error(s). Please fix all rows and try again.", "error")
+            return redirect(url_for("schedule.schedule"))
+
+        if not valid_rows:
+            flash("No valid schedules to add. Please check your input.", "error")
+            return redirect(url_for("schedule.schedule"))
+
+        # ── Insert valid rows ──
+        inserted = 0
+        skipped  = 0
+
+        for row in valid_rows:
+            # Duplicate check
+            cur.execute("""
+                SELECT id FROM schedules
+                WHERE day        = %s
+                  AND time       = %s
+                  AND section_id = %s
+                  AND room_id    = %s
+            """, (row["day"], row["time"], row["section_id"], row["room_id"]))
+
+            if cur.fetchone():
+                skipped += 1
+                continue
+
+            cur.execute("""
+                INSERT INTO schedules (section_id, day, time, subject, room_id, teacher_id)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (
+                row["section_id"], row["day"], row["time"],
+                row["subject"],    row["room_id"], row["teacher_id"],
+            ))
+            inserted += 1
+
         conn.commit()
 
-        flash("Schedule added successfully.", "success")
+        if inserted > 0:
+            msg = f"✅ Successfully added {inserted} schedule(s) for '{subject}'."
+            if skipped:
+                msg += f" Skipped {skipped} duplicate(s)."
+            flash(msg, "success")
+        else:
+            flash(
+                f"No new schedules were added — all {skipped} row(s) already exist.",
+                "error",
+            )
 
     except Exception as e:
         if conn: conn.rollback()
@@ -186,26 +512,81 @@ def update_schedule(schedule_id):
         conn = get_db_connection()
         cur  = conn.cursor(cursor_factory=RealDictCursor)
 
-        section_id = request.form.get("section_id", "").strip()
-        day        = request.form.get("day",        "").strip()
-        time       = request.form.get("time",       "").strip()   # single combined field
-        subject    = request.form.get("subject",    "").strip()
-        room_id    = request.form.get("room_id",    "").strip()
-        teacher_id = request.form.get("teacher_id", "").strip()
+        section_id_str = request.form.get("section_id", "").strip()
+        day            = request.form.get("day",        "").strip()
+        time_str       = request.form.get("time",       "").strip()
+        subject        = request.form.get("subject",    "").strip()
+        room_id_str    = request.form.get("room_id",    "").strip()
+        teacher_id_str = request.form.get("teacher_id", "").strip()
 
-        if not all([section_id, day, time, subject, room_id]):
-            flash("All fields are required.", "error")
+        # ── Required field validation ──
+        errors = []
+
+        if not day:
+            errors.append("Day is required.")
+
+        if not subject:
+            errors.append("Subject is required.")
+        elif len(subject) < 2:
+            errors.append("Subject must be at least 2 characters.")
+
+        if not section_id_str:
+            errors.append("Section is required.")
+
+        if not room_id_str:
+            errors.append("Room is required.")
+
+        # ── Time format validation ──
+        start_t, end_t, time_err = validate_time_format(time_str)
+        if time_err:
+            errors.append(f"Time: {time_err}")
+
+        if errors:
+            for e in errors:
+                flash(e, "error")
             return redirect(url_for("schedule.schedule"))
 
-        # Convert teacher_id to int or None
-        if teacher_id == "":
-            teacher_id = None
-        else:
-            try:
-                teacher_id = int(teacher_id)
-            except ValueError:
-                teacher_id = None
+        try:
+            section_id = int(section_id_str)
+            room_id    = int(room_id_str)
+        except ValueError:
+            flash("Section and Room must be valid selections.", "error")
+            return redirect(url_for("schedule.schedule"))
 
+        teacher_id = int(teacher_id_str) if teacher_id_str else None
+
+        # ── Teacher conflict check (excluding current schedule) ──
+        if teacher_id:
+            conflict = check_teacher_conflict_db(
+                cur, teacher_id, day, start_t, end_t,
+                exclude_schedule_id=schedule_id
+            )
+            if conflict:
+                flash(
+                    f"Teacher conflict: the assigned teacher already has "
+                    f"'{conflict['subject']}' ({conflict['section']}) "
+                    f"in {conflict['room']} on {conflict['day']} at {conflict['time']}. "
+                    f"Please choose a different time or teacher.",
+                    "error",
+                )
+                return redirect(url_for("schedule.schedule"))
+
+        # ── Room conflict check (excluding current schedule) ──
+        room_conflict = check_room_conflict_db(
+            cur, room_id, day, start_t, end_t,
+            exclude_schedule_id=schedule_id
+        )
+        if room_conflict:
+            flash(
+                f"Room conflict: this room is already used for "
+                f"'{room_conflict['subject']}' ({room_conflict['section']}) "
+                f"by {room_conflict['teacher']} on {room_conflict['day']} at {room_conflict['time']}. "
+                f"Please select a different room or time.",
+                "error",
+            )
+            return redirect(url_for("schedule.schedule"))
+
+        # ── Perform update ──
         cur.execute("""
             UPDATE schedules
             SET section_id = %s,
@@ -215,9 +596,9 @@ def update_schedule(schedule_id):
                 room_id    = %s,
                 teacher_id = %s
             WHERE id = %s
-        """, (section_id, day, time, subject, room_id, teacher_id, schedule_id))
-        conn.commit()
+        """, (section_id, day, time_str, subject, room_id, teacher_id, schedule_id))
 
+        conn.commit()
         flash("Schedule updated successfully.", "success")
 
     except Exception as e:
@@ -273,10 +654,20 @@ def add_room():
 
         room_name = request.form.get("room_name", "").strip()
 
+        # ── Validation ──
         if not room_name:
             flash("Room name is required.", "error")
             return redirect(url_for("schedule.schedule"))
 
+        if len(room_name) < 2:
+            flash("Room name must be at least 2 characters.", "error")
+            return redirect(url_for("schedule.schedule"))
+
+        if len(room_name) > 60:
+            flash("Room name must not exceed 60 characters.", "error")
+            return redirect(url_for("schedule.schedule"))
+
+        # ── Duplicate check ──
         cur.execute(
             "SELECT id FROM rooms WHERE LOWER(room_name) = LOWER(%s)", (room_name,)
         )
@@ -327,150 +718,6 @@ def delete_room(room_id):
     except Exception as e:
         if conn: conn.rollback()
         flash(f"Database error: {str(e)}", "error")
-    finally:
-        if cur:  cur.close()
-        if conn: conn.close()
-
-    return redirect(url_for("schedule.schedule"))
-
-
-# ─────────────────────────────────────────────
-# IMPORT SCHEDULE (Excel)
-# ─────────────────────────────────────────────
-
-@schedule_bp.route("/schedule/import", methods=["POST"])
-@login_required
-def import_schedule():
-    file = request.files.get("file")
-
-    if not file or not file.filename.lower().endswith(".xlsx"):
-        flash("Please upload a valid .xlsx file.", "error")
-        return redirect(url_for("schedule.schedule"))
-
-    conn     = None
-    cur      = None
-    imported = 0
-    skipped  = 0
-    warnings = []
-
-    try:
-        wb = openpyxl.load_workbook(
-            io.BytesIO(file.read()), read_only=True, data_only=True
-        )
-        ws = wb.active
-
-        raw_headers = next(ws.iter_rows(min_row=1, max_row=1, values_only=True))
-        headers = [
-            str(h).strip().lower() if h is not None else ""
-            for h in raw_headers
-        ]
-
-        required_cols = {"day", "time", "subject", "section_name", "room_name"}
-        missing_cols  = required_cols - set(headers)
-        if missing_cols:
-            flash(f"Missing required columns: {', '.join(sorted(missing_cols))}", "error")
-            return redirect(url_for("schedule.schedule"))
-
-        idx = {h: i for i, h in enumerate(headers)}
-
-        valid_rows = []
-        for row_num, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
-            if all(cell is None or str(cell).strip() == "" for cell in row):
-                continue
-
-            day          = str(row[idx["day"]]          or "").strip()
-            time         = str(row[idx["time"]]         or "").strip()
-            subject      = str(row[idx["subject"]]      or "").strip()
-            section_name = str(row[idx["section_name"]] or "").strip()
-            room_name    = str(row[idx["room_name"]]    or "").strip()
-
-            if not all([day, time, subject, section_name, room_name]):
-                warnings.append(f"Row {row_num}: missing value(s) — skipped.")
-                skipped += 1
-                continue
-
-            valid_rows.append({
-                "row_num":      row_num,
-                "day":          day,
-                "time":         time,
-                "subject":      subject,
-                "section_name": section_name,
-                "room_name":    room_name,
-            })
-
-        if not valid_rows:
-            flash("No valid rows found in the file.", "error")
-            return redirect(url_for("schedule.schedule"))
-
-        conn = get_db_connection()
-        cur  = conn.cursor(cursor_factory=RealDictCursor)
-
-        for r in valid_rows:
-            try:
-                cur.execute(
-                    "SELECT id FROM sections WHERE LOWER(section_name) = LOWER(%s)",
-                    (r["section_name"],)
-                )
-                section_row = cur.fetchone()
-                if not section_row:
-                    warnings.append(
-                        f"Row {r['row_num']}: section '{r['section_name']}' not found — skipped."
-                    )
-                    skipped += 1
-                    continue
-                section_id = section_row["id"]
-
-                cur.execute(
-                    "SELECT id FROM rooms WHERE LOWER(room_name) = LOWER(%s)",
-                    (r["room_name"],)
-                )
-                room_row = cur.fetchone()
-                if room_row:
-                    room_id = room_row["id"]
-                else:
-                    cur.execute(
-                        "INSERT INTO rooms (room_name) VALUES (%s) RETURNING id",
-                        (r["room_name"],)
-                    )
-                    room_id = cur.fetchone()["id"]
-
-                # Skip exact duplicates
-                cur.execute("""
-                    SELECT id FROM schedules
-                    WHERE day        = %s
-                      AND time       = %s
-                      AND section_id = %s
-                      AND room_id    = %s
-                """, (r["day"], r["time"], section_id, room_id))
-                if cur.fetchone():
-                    skipped += 1
-                    continue
-
-                cur.execute("""
-                    INSERT INTO schedules (section_id, day, time, subject, room_id)
-                    VALUES (%s, %s, %s, %s, %s)
-                """, (section_id, r["day"], r["time"], r["subject"], room_id))
-
-                imported += 1
-
-            except Exception as row_err:
-                print(f"Error processing row {r['row_num']}: {str(row_err)}")
-                skipped += 1
-                continue
-
-        conn.commit()
-
-        msg = f"✅ Successfully imported {imported} schedules. Skipped {skipped} duplicate/invalid rows."
-        if warnings:
-            msg += " Issues: " + " | ".join(warnings[:5])
-            if len(warnings) > 5:
-                msg += f" … and {len(warnings) - 5} more."
-
-        flash(msg, "success" if imported > 0 else "error")
-
-    except Exception as e:
-        if conn: conn.rollback()
-        flash(f"❌ Import failed: {str(e)}", "error")
     finally:
         if cur:  cur.close()
         if conn: conn.close()
