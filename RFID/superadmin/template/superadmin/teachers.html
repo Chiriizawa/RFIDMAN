@@ -62,7 +62,6 @@
                         <th class="text-left py-6 px-6 font-semibold">Full Name</th>
                         <th class="text-left py-6 px-6 font-semibold">Contact</th>
                         <th class="text-left py-6 px-6 font-semibold">Email</th>
-                        <th class="text-left py-6 px-6 font-semibold">Registered</th>
                         <th class="text-center py-6 px-6 font-semibold">Action</th>
                     </tr>
                 </thead>
@@ -89,9 +88,6 @@
                                 {{ teacher.email }}
                             </td>
 
-                            <td class="py-5 px-6 text-gray-600">
-                                {{ teacher.created_at.strftime('%b %d, %Y') if teacher.created_at else '—' }}
-                            </td>
 
                             <td class="py-5 px-6 text-center">
                                 <div class="flex items-center justify-center gap-2 flex-wrap">
@@ -99,7 +95,7 @@
                                             onclick="openViewStudentsModal('{{ teacher.id }}')"
                                             class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-full transition">
                                         <i class="fas fa-eye text-sm"></i>
-                                        View
+                                        View Students
                                     </button>
                                 </div>
                             </td>

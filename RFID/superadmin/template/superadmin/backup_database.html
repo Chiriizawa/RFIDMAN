@@ -8,7 +8,7 @@
     <div class="bg-white rounded-3xl shadow-sm border p-6">
         <h1 class="text-2xl font-bold text-gray-800">Backup Database</h1>
         <p class="text-gray-500 mt-2">
-            Pili ka muna kung paano mo gustong i-backup ang database.
+            Choose how you want to backup the database first.
         </p>
     </div>
 
@@ -30,28 +30,7 @@
         {% endif %}
     {% endwith %}
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-        <!-- SQL Backup -->
-        <div class="bg-white rounded-3xl shadow-sm border p-6 flex flex-col justify-between">
-            <div>
-                <div class="w-14 h-14 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-2xl mb-4">
-                    🗄️
-                </div>
-                <h2 class="text-xl font-semibold text-gray-800">SQL Backup</h2>
-                <p class="text-gray-500 mt-2 text-sm leading-6">
-                    Full database dump. Pinakamaganda ito kung gusto mo ng buong backup
-                    na pwede i-restore later sa PostgreSQL.
-                </p>
-            </div>
-
-            <div class="mt-6">
-                <a href="{{ url_for('sadmin.download_backup', backup_type='sql') }}"
-                   class="inline-flex items-center justify-center w-full px-4 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition">
-                    Download SQL Backup
-                </a>
-            </div>
-        </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         <!-- CSV Backup -->
         <div class="bg-white rounded-3xl shadow-sm border p-6 flex flex-col justify-between">
@@ -61,8 +40,8 @@
                 </div>
                 <h2 class="text-xl font-semibold text-gray-800">CSV Backup</h2>
                 <p class="text-gray-500 mt-2 text-sm leading-6">
-                    Bawat table ay mase-save bilang separate CSV file at naka-zip.
-                    Maganda ito kung gusto mo tingnan ang data sa Excel.
+                    Each table will be saved as a separate CSV file and zipped.
+                    Great if you want to view the data in Excel.
                 </p>
             </div>
 
@@ -82,8 +61,8 @@
                 </div>
                 <h2 class="text-xl font-semibold text-gray-800">JSON Backup</h2>
                 <p class="text-gray-500 mt-2 text-sm leading-6">
-                    Lahat ng table data ilalagay sa iisang JSON file.
-                    Maganda ito kung gusto mo ng developer-friendly backup format.
+                    All table data will be placed in a single JSON file.
+                    Great if you want a developer-friendly backup format.
                 </p>
             </div>
 
@@ -100,9 +79,9 @@
     <div class="bg-amber-50 border border-amber-200 rounded-3xl p-5">
         <h3 class="text-lg font-semibold text-amber-800">Note</h3>
         <ul class="mt-3 space-y-2 text-sm text-amber-700 list-disc pl-5">
-            <li>Para gumana ang <strong>SQL Backup</strong>, kailangan meron kang <strong>pg_dump</strong>.</li>
-            <li>Pwede mong ilagay sa <strong>.env</strong> ang path nito gamit ang <strong>PG_DUMP_PATH</strong>.</li>
-            <li>Kapag wala pa, gagana pa rin ang <strong>CSV</strong> at <strong>JSON</strong> backup.</li>
+            <li>For <strong>SQL Backup</strong> to work, you need to have <strong>pg_dump</strong> installed.</li>
+            <li>You can set the path in your <strong>.env</strong> file using <strong>PG_DUMP_PATH</strong>.</li>
+            <li>If you don't have it yet, <strong>CSV</strong> and <strong>JSON</strong> backups will still work.</li>
         </ul>
     </div>
 
