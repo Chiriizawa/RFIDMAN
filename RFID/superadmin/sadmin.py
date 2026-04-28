@@ -103,7 +103,6 @@ def register_rfid_uid(uid_value: str):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        # ON CONFLICT DO NOTHING → no duplicate rows will be created
         cur.execute("""
             INSERT INTO rfid_cards (uid, created_at)
             VALUES (%s, NOW())
@@ -520,7 +519,7 @@ def _update_env_password(new_password: str):
 
 
 # ─────────────────────────────────────────────
-# DASHBOARD (protected)
+# DASHBOARD (protected) - UPDATED RFID COUNTING
 # ─────────────────────────────────────────────
 
 @sadmin.route('/')
@@ -559,11 +558,11 @@ def index():
         cur.execute("SELECT COUNT(*) AS count FROM students")
         total_students = cur.fetchone()["count"] or 0
 
-        cur.execute("SELECT COUNT(*) AS count FROM rfid_cards")
+        cur.execute("SELECT COUNT(DISTINCT uid) AS count FROM rfid_cards")
         total_rfid_cards = cur.fetchone()["count"] or 0
 
         cur.execute("""
-            SELECT COUNT(*) AS count
+            SELECT COUNT(DISTINCT r.uid) AS count
             FROM rfid_cards r
             LEFT JOIN students s ON r.uid = s.uid
             WHERE s.uid IS NULL
@@ -807,7 +806,7 @@ def uid():
 
 
 # ─────────────────────────────────────────────
-# OTHER PROTECTED ROUTES
+# ATTENDANCE ROUTE — FIXED (with year level)
 # ─────────────────────────────────────────────
 
 @sadmin.route('/attendance')
@@ -825,14 +824,14 @@ def attendance():
         cur  = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute("""
-            SELECT id, section_name
+            SELECT id, section_name, year_level
             FROM sections
-            ORDER BY section_name ASC
+            ORDER BY year_level ASC, section_name ASC
         """)
         sections = cur.fetchall()
 
         query = """
-            SELECT
+            SELECT DISTINCT ON (s.id)
                 s.id AS student_id,
                 CONCAT(
                     COALESCE(s.first_name, ''),
@@ -851,25 +850,23 @@ def attendance():
                 ) AS student_name,
                 s.uid,
                 sec.section_name,
-                latest_attendance.attendance_date,
-                latest_attendance.time_in,
-                latest_attendance.time_out,
-                latest_attendance.status,
-                latest_attendance.created_at
+                a.attendance_date,
+                TO_CHAR(a.time_in::time, 'HH12:MI AM') AS time_in,
+                TO_CHAR(a.time_out::time, 'HH12:MI AM') AS time_out,
+                CASE
+                    WHEN a.status IS NOT NULL
+                        THEN INITCAP(a.status)
+                    WHEN a.time_in IS NOT NULL
+                        AND a.time_in::time <= '08:00:00'::time
+                        THEN 'Present'
+                    WHEN a.time_in IS NOT NULL
+                        AND a.time_in::time > '08:00:00'::time
+                        THEN 'Late'
+                    ELSE NULL
+                END AS status
             FROM students s
             LEFT JOIN sections sec ON s.section_id = sec.id
-            LEFT JOIN LATERAL (
-                SELECT
-                    a.attendance_date,
-                    a.time_in,
-                    a.time_out,
-                    a.status,
-                    a.created_at
-                FROM attendance a
-                WHERE a.student_id = s.id
-                ORDER BY a.attendance_date DESC, a.created_at DESC
-                LIMIT 1
-            ) latest_attendance ON TRUE
+            LEFT JOIN attendance a ON a.student_id = s.id
         """
 
         params = []
@@ -878,10 +875,7 @@ def attendance():
             params.append(selected_section)
 
         query += """
-            ORDER BY
-                sec.section_name ASC,
-                s.last_name ASC,
-                s.first_name ASC
+            ORDER BY s.id, a.attendance_date DESC NULLS LAST, a.created_at DESC NULLS LAST
         """
 
         cur.execute(query, params)
@@ -903,6 +897,10 @@ def attendance():
         attendance_rows=attendance_rows
     )
 
+
+# ─────────────────────────────────────────────
+# BACKUP DATABASE (NEW MODERN UI)
+# ─────────────────────────────────────────────
 
 @sadmin.route('/backup-database')
 @login_required
@@ -1051,3 +1049,4 @@ def download_backup(backup_type):
     else:
         flash("Invalid backup type selected.", "error")
         return redirect(url_for("sadmin.backup_database"))
+

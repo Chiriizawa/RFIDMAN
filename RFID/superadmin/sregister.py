@@ -171,8 +171,6 @@ def get_db_connection():
 
 # ─────────────────────────────────────────────
 # SCHEDULE SUBQUERY HELPER
-# Aggregates all schedule rows for a section into one multi-line string.
-# Format per row: "Monday | General Chemistry 1 | 7:00-8:00 AM"
 # ─────────────────────────────────────────────
 
 SCHEDULE_SUBQUERY = """
@@ -186,6 +184,50 @@ SCHEDULE_SUBQUERY = """
         WHERE sch.section_id = sec.id
     )
 """
+
+
+# ─────────────────────────────────────────────
+# SF1 NAME PARSER
+# Handles "LASTNAME,FIRSTNAME MIDDLENAME" format
+# used in DepEd School Form 1 Excel files.
+# ─────────────────────────────────────────────
+
+def parse_sf1_name(raw):
+    """
+    Parse a name string in SF1 format: "LASTNAME,FIRSTNAME [MIDDLENAME]"
+    Returns (last_name, first_name, middle_name) — all title-cased strings.
+
+    Examples:
+      "AGAWIN,MATTHEUS EZEKIELLE MALUBAY"  → ("Agawin", "Mattheus Ezekielle", "Malubay")
+      "DE CASTRO,MARY ANGELLYN ABAS"       → ("De Castro", "Mary Angellyn", "Abas")
+      "SUERO,JETHRO NENCIO DEL RIO"        → ("Suero", "Jethro Nencio Del", "Rio")
+        ↑ edge case: "DEL RIO" split — caller should note this limitation
+    """
+    raw = (raw or '').strip()
+    if not raw:
+        return None, None, None
+
+    if ',' in raw:
+        last, rest = raw.split(',', 1)
+        last = last.strip().title()
+        rest = rest.strip()
+        parts = rest.split()
+        if len(parts) >= 2:
+            middle = parts[-1].title()
+            first  = ' '.join(parts[:-1]).title()
+        elif len(parts) == 1:
+            first  = parts[0].title()
+            middle = ''
+        else:
+            first  = ''
+            middle = ''
+    else:
+        # No comma — treat the whole string as last name only
+        last   = raw.title()
+        first  = ''
+        middle = ''
+
+    return last, first, middle
 
 
 # ─────────────────────────────────────────────
@@ -217,7 +259,6 @@ def student():
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        # ── Students with section + auto-resolved schedule from schedules table ──
         cur.execute(f"""
             SELECT
                 s.id,
@@ -233,7 +274,6 @@ def student():
                 s.section_id,
                 sec.section_name,
                 sec.year_level,
-                -- Auto-fill schedule by aggregating from schedules table
                 {SCHEDULE_SUBQUERY} AS schedule,
                 CASE
                     WHEN t.id IS NOT NULL THEN
@@ -255,7 +295,6 @@ def student():
         """)
         students = cur.fetchall()
 
-        # ── Available UIDs for add form ──────────────────────────────────────
         cur.execute("""
             SELECT rc.uid
             FROM rfid_cards rc
@@ -305,21 +344,18 @@ def add_student():
         conn = get_db_connection()
         cur  = conn.cursor()
 
-        # Duplicate email check
         cur.execute("SELECT id FROM students WHERE email = %s", (email,))
         if cur.fetchone():
             cur.close(); conn.close()
             flash("This email is already registered.", "error")
             return redirect(url_for('sregister.student'))
 
-        # Duplicate contact number check
         cur.execute("SELECT id FROM students WHERE contact_number = %s", (contact_number,))
         if cur.fetchone():
             cur.close(); conn.close()
             flash("This contact number is already registered.", "error")
             return redirect(url_for('sregister.student'))
 
-        # Duplicate student check (name + birthday)
         cur.execute("""
             SELECT id FROM students
             WHERE last_name = %s AND first_name = %s AND birthday = %s
@@ -329,7 +365,6 @@ def add_student():
             flash("This student is already registered.", "error")
             return redirect(url_for('sregister.student'))
 
-        # UID handling
         if not uid:
             cur.execute("""
                 SELECT rc.uid FROM rfid_cards rc
@@ -356,7 +391,6 @@ def add_student():
                 flash("This UID is already linked to another student.", "error")
                 return redirect(url_for('sregister.student'))
 
-        # INSERT — no section at creation; schedule comes from schedules table via section
         cur.execute("""
             INSERT INTO students
                 (uid, last_name, first_name, middle_name, extension,
@@ -412,19 +446,16 @@ def update_student(student_id):
             flash("Student not found.", "error")
             return redirect(url_for('sregister.student'))
 
-        # Duplicate email check (exclude self)
         cur.execute("SELECT id FROM students WHERE email = %s AND id <> %s", (email, student_id))
         if cur.fetchone():
             flash("This email is already registered to another student.", "error")
             return redirect(url_for('sregister.student'))
 
-        # Duplicate contact number check (exclude self)
         cur.execute("SELECT id FROM students WHERE contact_number = %s AND id <> %s", (contact_number, student_id))
         if cur.fetchone():
             flash("This contact number is already registered to another student.", "error")
             return redirect(url_for('sregister.student'))
 
-        # Duplicate name + birthday check (exclude self)
         cur.execute("""
             SELECT id FROM students
             WHERE last_name = %s AND first_name = %s AND birthday = %s AND id <> %s
@@ -466,25 +497,9 @@ def update_student(student_id):
         if conn: conn.close()
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# ROUTE: Assign / unassign a student to a section.
-# Schedule is read live from the schedules table — no schedule column needed
-# on students. section_id on the student row is enough.
-# ─────────────────────────────────────────────────────────────────────────────
-
 @sregister.route('/assign-section/<int:student_id>', methods=['POST'])
 @login_required
 def assign_section(student_id):
-    """
-    Assign (or clear) a student's section.
-
-    Accepts JSON  { "section_id": <int|null> }
-    or form data  section_id=<int|"">
-
-    On success returns JSON { "ok": true, "schedule": "...", "section_name": "...",
-                              "year_level": "...", "teacher_name": "..." }
-    """
-    # Support both JSON and form-encoded bodies
     if request.is_json:
         payload    = request.get_json(silent=True) or {}
         section_id = payload.get('section_id') or None
@@ -499,13 +514,11 @@ def assign_section(student_id):
         conn = get_db_connection()
         cur  = conn.cursor(cursor_factory=RealDictCursor)
 
-        # Verify student exists
         cur.execute("SELECT id FROM students WHERE id = %s", (student_id,))
         if not cur.fetchone():
             return jsonify({'ok': False, 'message': 'Student not found.'}), 404
 
         if section_id:
-            # Fetch the section + aggregate schedule from schedules table
             cur.execute(f"""
                 SELECT
                     sec.id,
@@ -534,11 +547,8 @@ def assign_section(student_id):
             if not section:
                 return jsonify({'ok': False, 'message': 'Section not found.'}), 404
 
-            # Update student: set section_id only (schedule is derived live)
             cur.execute("""
-                UPDATE students
-                SET section_id = %s
-                WHERE id = %s
+                UPDATE students SET section_id = %s WHERE id = %s
             """, (section_id, student_id))
 
             conn.commit()
@@ -552,12 +562,7 @@ def assign_section(student_id):
             })
 
         else:
-            # Clear section assignment
-            cur.execute("""
-                UPDATE students
-                SET section_id = NULL
-                WHERE id = %s
-            """, (student_id,))
+            cur.execute("UPDATE students SET section_id = NULL WHERE id = %s", (student_id,))
             conn.commit()
             return jsonify({
                 'ok':           True,
@@ -577,10 +582,6 @@ def assign_section(student_id):
         if cur:  cur.close()
         if conn: conn.close()
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# ROUTE: Return all sections as JSON (used by the Assign Section modal)
-# ─────────────────────────────────────────────────────────────────────────────
 
 @sregister.route('/sections-list', methods=['GET'])
 @login_required
@@ -647,7 +648,7 @@ def import_excel():
         """)
         available_count = cur.fetchone()[0]
 
-        # Count valid students
+        # ── Pre-count valid students ──────────────────────────────────────────
         valid_students_count = 0
         for s in students:
             try:
@@ -659,20 +660,25 @@ def import_excel():
                 contact      = (s.get('contact_number') or '').strip()
                 email        = (s.get('email') or '').strip()
 
-                if not (last_name and first_name and birthday_raw and contact and email):
+                # SF1 imports may omit contact/email — treat as valid for count purposes
+                # (they'll be skipped properly in the main loop below)
+                if not (last_name and first_name and birthday_raw):
                     continue
                 field_errors = validate_student_fields(
                     last_name, first_name, middle_name, extension,
-                    birthday_raw, contact, email
+                    birthday_raw, contact or '09000000000', email or 'placeholder@gmail.com'
                 )
-                if field_errors:
+                # Only count name/birthday errors, not contact/email (may be blank in SF1)
+                name_errors = [e for e in field_errors if 'name' in e.lower() or 'birth' in e.lower() or 'extension' in e.lower()]
+                if name_errors:
                     continue
-                cur.execute("SELECT id FROM students WHERE email = %s", (email,))
-                if cur.fetchone():
-                    continue
-                cur.execute("SELECT id FROM students WHERE contact_number = %s", (contact,))
-                if cur.fetchone():
-                    continue
+                if contact and email:
+                    cur.execute("SELECT id FROM students WHERE email = %s", (email,))
+                    if cur.fetchone():
+                        continue
+                    cur.execute("SELECT id FROM students WHERE contact_number = %s", (contact,))
+                    if cur.fetchone():
+                        continue
                 valid_students_count += 1
             except Exception:
                 continue
@@ -687,6 +693,7 @@ def import_excel():
                 )
             }), 400
 
+        # ── Main import loop ──────────────────────────────────────────────────
         for s in students:
             try:
                 last_name    = (s.get('last_name') or '').strip()
@@ -697,29 +704,57 @@ def import_excel():
                 contact      = (s.get('contact_number') or '').strip()
                 email        = (s.get('email') or '').strip()
 
-                if not (last_name and first_name and birthday_raw and contact and email):
+                # Require at minimum: name + birthday
+                if not (last_name and first_name and birthday_raw):
                     skipped += 1
                     continue
 
-                field_errors = validate_student_fields(
-                    last_name, first_name, middle_name or '', extension or '',
-                    birthday_raw, contact, email
-                )
-                if field_errors:
+                # Validate name / birthday / extension fields
+                name_bday_errors = []
+                if not re.match(r"^[a-zA-ZÀ-ÿ\s'\-]+$", last_name):
+                    name_bday_errors.append("bad last name")
+                if not re.match(r"^[a-zA-ZÀ-ÿ\s'\-]+$", first_name):
+                    name_bday_errors.append("bad first name")
+                if middle_name and not re.match(r"^[a-zA-ZÀ-ÿ\s'\-]+$", middle_name):
+                    name_bday_errors.append("bad middle name")
+                if name_bday_errors:
                     skipped += 1
                     continue
 
-                birthday = normalize_birthday(birthday_raw)
+                try:
+                    birthday = normalize_birthday(birthday_raw)
+                except ValueError:
+                    skipped += 1
+                    continue
 
-                # Duplicate checks
-                cur.execute("SELECT id FROM students WHERE email = %s", (email,))
-                if cur.fetchone():
+                today = date.today()
+                if birthday >= today or birthday.year >= today.year or birthday.year < MIN_BIRTH_YEAR:
                     skipped += 1
                     continue
-                cur.execute("SELECT id FROM students WHERE contact_number = %s", (contact,))
-                if cur.fetchone():
-                    skipped += 1
-                    continue
+
+                # Validate contact + email only when provided
+                if contact:
+                    if not contact.isdigit() or len(contact) != 11 or not contact.startswith('09'):
+                        skipped += 1
+                        continue
+                if email:
+                    if not re.match(r'^[^\s@]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$', email):
+                        skipped += 1
+                        continue
+
+                # Duplicate checks (only when contact/email provided)
+                if email:
+                    cur.execute("SELECT id FROM students WHERE email = %s", (email,))
+                    if cur.fetchone():
+                        skipped += 1
+                        continue
+                if contact:
+                    cur.execute("SELECT id FROM students WHERE contact_number = %s", (contact,))
+                    if cur.fetchone():
+                        skipped += 1
+                        continue
+
+                # Duplicate name + birthday check
                 cur.execute("""
                     SELECT id FROM students
                     WHERE last_name = %s AND first_name = %s AND birthday = %s
@@ -741,14 +776,15 @@ def import_excel():
                     break
                 uid = uid_row[0]
 
-                # INSERT — section assigned separately via assign-section route
                 cur.execute("""
                     INSERT INTO students
                         (uid, last_name, first_name, middle_name, extension,
                          birthday, contact_number, email)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """, (uid, last_name, first_name, middle_name, extension,
-                      birthday, contact, email))
+                """, (
+                    uid, last_name, first_name, middle_name, extension,
+                    birthday, contact or None, email or None
+                ))
 
                 imported += 1
 

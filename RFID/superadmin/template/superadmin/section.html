@@ -161,7 +161,7 @@
     </div>
 </div>
 
-<!-- ====================== ADD MODAL (FIXED IDs) ====================== -->
+<!-- ====================== ADD MODAL ====================== -->
 <div id="addModal" class="fixed inset-0 hidden items-center justify-center modal-backdrop z-50 p-4">
     <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden">
         <div class="top-gradient px-6 py-4 flex items-center justify-between">
@@ -181,7 +181,7 @@
                            placeholder="STEM, ABM, HUMSS, GAS"
                            required
                            class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
-                    <p id="add_section_name_error" class="error-message"></p>   <!-- FIXED -->
+                    <p id="add_section_name_error" class="error-message"></p>
                 </div>
 
                 <div>
@@ -220,7 +220,7 @@
     </div>
 </div>
 
-<!-- ====================== EDIT MODAL (unchanged) ====================== -->
+<!-- ====================== EDIT MODAL ====================== -->
 <div id="editModal" class="fixed inset-0 hidden items-center justify-center modal-backdrop z-50 p-4">
     <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden">
         <div class="top-gradient px-6 py-4 flex items-center justify-between">
@@ -310,20 +310,40 @@
     </div>
 </div>
 
-<!-- ====================== ASSIGN STUDENTS MODAL ====================== -->
+<!-- ====================== ASSIGN STUDENTS MODAL (UPDATED) ====================== -->
 <div id="assignModal" class="fixed inset-0 hidden items-center justify-center modal-backdrop z-50 p-4">
     <div class="bg-white w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+        
+        <!-- HEADER with Select All / Clear All in TOP RIGHT -->
         <div class="top-gradient px-6 py-4 flex items-center justify-between">
             <h3 class="text-white text-xl font-semibold">
                 Assign Students to <span id="assign_section_name" class="font-bold"></span>
             </h3>
-            <button type="button" onclick="closeAssignModal()" class="text-white text-2xl">&times;</button>
+            
+            <div class="flex items-center gap-2">
+                <!-- Select All & Clear All Buttons (Top Right) -->
+                <button type="button" 
+                        onclick="selectAllVisible()"
+                        class="px-4 py-1.5 text-sm font-semibold bg-white/20 hover:bg-white/30 text-white rounded-2xl flex items-center gap-2 transition-all active:scale-95">
+                    <i class="fa-solid fa-check-double"></i> 
+                    <span class="hidden md:inline">Select All</span>
+                </button>
+                <button type="button" 
+                        onclick="clearAllVisible()"
+                        class="px-4 py-1.5 text-sm font-semibold bg-white/20 hover:bg-white/30 text-white rounded-2xl flex items-center gap-2 transition-all active:scale-95">
+                    <i class="fa-solid fa-times"></i> 
+                    <span class="hidden md:inline">Clear All</span>
+                </button>
+                
+                <button type="button" onclick="closeAssignModal()" class="text-white text-3xl ml-1">&times;</button>
+            </div>
         </div>
 
         <form id="assignForm" method="POST" class="flex-1 flex flex-col">
             <input type="hidden" name="action" value="assign_students">
             <input type="hidden" name="section_id" id="assign_section_id">
 
+            <!-- Search Bar -->
             <div class="px-6 pt-6 pb-3 border-b">
                 <div class="relative">
                     <i class="fa-solid fa-magnifying-glass text-slate-400 absolute left-5 top-1/2 -translate-y-1/2"></i>
@@ -334,12 +354,14 @@
                 </div>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-6 space-y-2" id="studentsListContainer">
+            <!-- SCROLLABLE STUDENTS LIST -->
+            <div class="flex-1 overflow-y-auto p-6 space-y-2" id="studentsListContainer" style="max-height: 420px;">
                 <div id="studentsContainer" class="space-y-1">
                     <!-- Populated by JS -->
                 </div>
             </div>
 
+            <!-- Footer -->
             <div class="border-t px-6 py-5 bg-slate-50 flex items-center justify-between">
                 <div class="flex items-center gap-3 text-sm text-slate-600">
                     <span id="selectedCountDisplay" class="font-semibold text-emerald-600">0</span> 
@@ -545,7 +567,30 @@
         });
     }
 
-    // Real-time search + flash auto-hide (unchanged)
+    // ====================== SELECT ALL & CLEAR ALL ======================
+    function selectAllVisible() {
+        const rows = document.querySelectorAll('#studentsContainer .student-row');
+        rows.forEach(row => {
+            if (row.style.display !== 'none') {
+                const checkbox = row.querySelector('input[type="checkbox"]');
+                if (checkbox) checkbox.checked = true;
+            }
+        });
+        updateSelectedCount();
+    }
+
+    function clearAllVisible() {
+        const rows = document.querySelectorAll('#studentsContainer .student-row');
+        rows.forEach(row => {
+            if (row.style.display !== 'none') {
+                const checkbox = row.querySelector('input[type="checkbox"]');
+                if (checkbox) checkbox.checked = false;
+            }
+        });
+        updateSelectedCount();
+    }
+
+    // ====================== REAL-TIME SEARCH + FLASHES ======================
     let searchTimeout;
     function debounceSearch() {
         const input = document.getElementById('searchInput');
@@ -596,7 +641,7 @@
         const searchInput = document.getElementById('searchInput');
         searchInput.addEventListener('input', debounceSearch);
 
-        // Load all students (this is where the students come from)
+        // Load all students
         allStudents = [
             {% for student in all_students %}
             {

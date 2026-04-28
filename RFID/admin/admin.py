@@ -8,6 +8,7 @@ from datetime import datetime
 import pandas as pd
 from dotenv import load_dotenv
 import os
+import base64
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import smtplib
@@ -723,7 +724,8 @@ def get_teacher_by_email(email):
             SELECT t.id, t.last_name, t.first_name, t.middle_name, t.extension,
                    t.contact_number, t.email AS teacher_email, t.created_at,
                    ta.id AS account_id, ta.teacher_id AS linked_teacher_id,
-                   ta.email AS account_email, ta.password, ta.reset_token
+                   ta.email AS account_email, ta.password, ta.reset_token,
+                   t.profile_image
             FROM teacher_accounts ta
             INNER JOIN teachers t ON t.id = ta.teacher_id
             WHERE LOWER(TRIM(ta.email)) = LOWER(TRIM(%s)) LIMIT 1;
@@ -734,11 +736,21 @@ def get_teacher_by_email(email):
             return None
         full_name = build_full_name(row["first_name"], row["middle_name"], row["last_name"], row["extension"])
         return {
-            "id": row["id"], "teacher_id": row["linked_teacher_id"], "account_id": row["account_id"],
-            "first_name": row["first_name"], "middle_name": row["middle_name"], "last_name": row["last_name"],
-            "extension": row["extension"], "full_name": full_name, "contact_number": row["contact_number"],
-            "teacher_email": row["teacher_email"], "email": row["account_email"],
-            "password_hash": row["password"], "created_at": row["created_at"], "reset_token": row["reset_token"]
+            "id": row["id"],
+            "teacher_id": row["linked_teacher_id"],
+            "account_id": row["account_id"],
+            "first_name": row["first_name"],
+            "middle_name": row["middle_name"],
+            "last_name": row["last_name"],
+            "extension": row["extension"],
+            "full_name": full_name,
+            "contact_number": row["contact_number"],
+            "teacher_email": row["teacher_email"],
+            "email": row["account_email"],
+            "password_hash": row["password"],
+            "created_at": row["created_at"],
+            "reset_token": row["reset_token"],
+            "profile_image": row["profile_image"]
         }
     except Exception as e:
         print(f"get_teacher_by_email error: {e}")
@@ -754,8 +766,13 @@ def get_teacher_by_id(teacher_db_id):
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cur.execute("""
-            SELECT id, last_name, first_name, middle_name, extension, contact_number, email, created_at
-            FROM teachers WHERE id = %s LIMIT 1;
+            SELECT 
+                t.id, t.last_name, t.first_name, t.middle_name, t.extension,
+                t.contact_number, t.email, t.created_at,
+                t.profile_image, ta.id as account_id
+            FROM teachers t
+            LEFT JOIN teacher_accounts ta ON ta.teacher_id = t.id
+            WHERE t.id = %s LIMIT 1;
         """, (teacher_db_id,))
         row = cur.fetchone()
         cur.close()
@@ -763,9 +780,17 @@ def get_teacher_by_id(teacher_db_id):
             return None
         full_name = build_full_name(row["first_name"], row["middle_name"], row["last_name"], row["extension"])
         return {
-            "id": row["id"], "first_name": row["first_name"], "middle_name": row["middle_name"],
-            "last_name": row["last_name"], "extension": row["extension"], "full_name": full_name,
-            "contact_number": row["contact_number"], "email": row["email"], "created_at": row["created_at"]
+            "id": row["id"],
+            "account_id": row["account_id"],
+            "first_name": row["first_name"],
+            "middle_name": row["middle_name"],
+            "last_name": row["last_name"],
+            "extension": row["extension"],
+            "full_name": full_name,
+            "contact_number": row["contact_number"],
+            "email": row["email"],
+            "created_at": row["created_at"],
+            "profile_image": row["profile_image"]
         }
     except Exception as e:
         print(f"get_teacher_by_id error: {e}")
@@ -902,16 +927,16 @@ def send_reset_email(to_email, reset_token):
         smtp_username = os.getenv("MAIL_USERNAME")
         smtp_password = os.getenv("MAIL_PASSWORD")
         from_email = os.getenv("MAIL_FROM", smtp_username)
-        
+
         if not smtp_username or not smtp_password:
             print("❌ Email credentials not configured")
             return False
-        
+
         base_url = os.getenv("BASE_URL", "http://127.0.0.1:5000")
         reset_link = f"{base_url}/admin/reset_password/{reset_token}"
-        
+
         subject = "Password Reset Request - Tap & Know System"
-        
+
         html_content = f"""
         <!DOCTYPE html>
         <html>
@@ -953,19 +978,19 @@ def send_reset_email(to_email, reset_token):
         </body>
         </html>
         """
-        
+
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
         msg['From'] = from_email
         msg['To'] = to_email
         msg.attach(MIMEText(html_content, 'html'))
-        
+
         server = smtplib.SMTP(smtp_server, smtp_port, timeout=30)
         server.starttls()
         server.login(smtp_username, smtp_password)
         server.send_message(msg)
         server.quit()
-        
+
         print(f"✅ Password reset email sent to {to_email}")
         print(f"🔗 Reset link: {reset_link}")
         return True
@@ -993,6 +1018,10 @@ def teacher_login():
                     password_valid = True
             if password_valid:
                 session.permanent = True
+                # ✅ FIX: Store only small scalar values in the session cookie.
+                # Never store the profile_image (base64 blob) — it bloats the
+                # cookie past the 4 KB browser limit. Fetch it from the DB
+                # on each request via get_teacher_by_id() instead.
                 session['teacher_logged_in'] = True
                 session['teacher_id'] = teacher['id']
                 session['teacher_account_id'] = teacher['account_id']
@@ -1009,6 +1038,8 @@ def teacher_login():
 @admin_bp.route('/teacher/profile')
 @login_required
 def teacher_profile():
+    # get_teacher_by_id() fetches profile_image fresh from the DB every time,
+    # so templates should use current_teacher.profile_image — not session.
     teacher = get_teacher_by_id(session.get('teacher_id'))
     if not teacher:
         session.clear()
@@ -1041,6 +1072,122 @@ def update_teacher_profile():
         return jsonify({"success": False, "message": str(e)}), 500
 
 # =========================
+# PROFILE IMAGE UPLOAD
+# =========================
+
+ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
+
+def allowed_image(filename):
+    return (
+        '.' in filename
+        and filename.rsplit('.', 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
+    )
+
+@admin_bp.route('/teacher/upload_profile_pic', methods=['POST'])
+@login_required
+def upload_teacher_profile_pic():
+    teacher_id = session.get('teacher_id')
+
+    if not teacher_id:
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+
+    if 'profile_image' not in request.files:
+        return jsonify({"success": False, "message": "No file uploaded"}), 400
+
+    file = request.files['profile_image']
+
+    if not file or file.filename == '':
+        return jsonify({"success": False, "message": "No file selected"}), 400
+
+    if not allowed_image(file.filename):
+        return jsonify({
+            "success": False,
+            "message": "Invalid file type. Allowed: PNG, JPG, JPEG, GIF, WEBP"
+        }), 400
+
+    file_bytes = file.read()
+    if len(file_bytes) > MAX_IMAGE_SIZE_BYTES:
+        return jsonify({
+            "success": False,
+            "message": "File too large. Maximum size is 5 MB."
+        }), 400
+
+    ext = file.filename.rsplit('.', 1)[1].lower()
+    mime_map = {
+        'jpg': 'image/jpeg', 'jpeg': 'image/jpeg',
+        'png': 'image/png', 'gif': 'image/gif', 'webp': 'image/webp'
+    }
+    mime_type = mime_map.get(ext, 'image/jpeg')
+    b64_data = base64.b64encode(file_bytes).decode('utf-8')
+    data_uri = f"data:{mime_type};base64,{b64_data}"
+
+    conn = get_connection()
+    if conn is None:
+        return jsonify({"success": False, "message": "Database connection failed"}), 500
+
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE teachers
+            SET    profile_image = %s
+            WHERE  id = %s
+        """, (data_uri, teacher_id))
+        conn.commit()
+        cur.close()
+
+        # ✅ FIX: Do NOT write the base64 image into the session cookie.
+        # The template already receives it via current_teacher.profile_image
+        # which is loaded fresh from the DB on every page request.
+
+        return jsonify({
+            "success": True,
+            "message": "Profile picture updated successfully",
+            "profile_image": data_uri
+        })
+
+    except Exception as e:
+        print(f"upload_teacher_profile_pic error: {e}")
+        if conn:
+            conn.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+    finally:
+        if conn:
+            conn.close()
+
+
+@admin_bp.route('/teacher/remove_profile_pic', methods=['POST'])
+@login_required
+def remove_teacher_profile_pic():
+    teacher_id = session.get('teacher_id')
+    if not teacher_id:
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+
+    conn = get_connection()
+    if conn is None:
+        return jsonify({"success": False, "message": "Database connection failed"}), 500
+
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE teachers SET profile_image = NULL WHERE id = %s",
+            (teacher_id,)
+        )
+        conn.commit()
+        cur.close()
+
+        # ✅ FIX: Do NOT write image data to session — just let the DB be the
+        # source of truth. The profile page re-fetches via get_teacher_by_id().
+
+        return jsonify({"success": True, "message": "Profile picture removed"})
+    except Exception as e:
+        print(f"remove_teacher_profile_pic error: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+    finally:
+        if conn:
+            conn.close()
+
+# =========================
 # FORGOT PASSWORD ROUTES
 # =========================
 @admin_bp.route('/forgot_password_ajax', methods=['POST'])
@@ -1069,17 +1216,13 @@ def forgot_password_ajax():
 def reset_password(token):
     print(f"Reset password route called with token: {token}")
     email = verify_reset_token(token)
-    
     print(f"Email from token: {email}")
-    
     if not email:
         flash('Invalid or expired reset link. Please request a new one.', 'error')
         return redirect(url_for('admin_bp.teacher_login'))
-    
     if request.method == 'POST':
         password = request.form.get('password', '').strip()
         confirm_password = request.form.get('confirm_password', '').strip()
-        
         if not password:
             flash('Please enter a password.', 'error')
         elif len(password) < 6:
@@ -1097,9 +1240,7 @@ def reset_password(token):
             except Exception as e:
                 print(f"Password reset error: {e}")
                 flash('An error occurred. Please try again.', 'error')
-        
         return render_template('reset_password.html', token=token)
-    
     return render_template('reset_password.html', token=token)
 
 @admin_bp.route('/teacher/logout')
@@ -1107,11 +1248,6 @@ def teacher_logout():
     session.clear()
     flash('You have been logged out.', 'success')
     return redirect(url_for('admin_bp.teacher_login'))
-
-@admin_bp.route('/teacher/upload_profile_pic', methods=['POST'])
-@login_required
-def upload_teacher_profile_pic():
-    return jsonify({"success": False, "message": "Profile picture upload is disabled"}), 501
 
 @admin_bp.route('/debug/db_test')
 def debug_db_test():
@@ -1145,25 +1281,20 @@ def test_email_send():
         return jsonify({"success": False, "message": str(e)})
 
 # =========================
-# TEACHER MY SCHEDULES ROUTES (Logged-in teacher only)
+# TEACHER MY SCHEDULES ROUTES
 # =========================
 @admin_bp.route('/teacher_schedules')
 @login_required
 def teacher_schedules():
-    """Display sections for the logged-in teacher"""
     teacher_id = session.get('teacher_id')
     if not teacher_id:
         flash('Teacher not found', 'error')
         return redirect(url_for('admin_bp.teacher_login'))
-    
     conn = get_db_connection()
     if conn is None:
         return render_template('my_schedules.html', sections=[])
-    
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        
-        # Get all sections assigned to the logged-in teacher
         cur.execute("""
             SELECT 
                 s.id as section_id,
@@ -1176,12 +1307,9 @@ def teacher_schedules():
             GROUP BY s.id, s.section_name, s.year_level
             ORDER BY s.section_name
         """, (teacher_id,))
-        
         sections = cur.fetchall()
-        
         sections_data = []
         for section in sections:
-            # Get schedule count for this section from schedules table
             cur2 = conn.cursor()
             cur2.execute("""
                 SELECT COUNT(*) as schedule_count
@@ -1190,7 +1318,6 @@ def teacher_schedules():
             """, (section['section_id'],))
             schedule_count = cur2.fetchone()[0]
             cur2.close()
-            
             sections_data.append({
                 'section_id': section['section_id'],
                 'section_name': section['section_name'],
@@ -1198,10 +1325,8 @@ def teacher_schedules():
                 'student_count': section['student_count'] or 0,
                 'schedule_count': schedule_count
             })
-        
         conn.close()
         return render_template('my_schedules.html', sections=sections_data)
-        
     except Exception as e:
         print(f"Teacher schedules error: {e}")
         if conn:
@@ -1211,31 +1336,23 @@ def teacher_schedules():
 @admin_bp.route('/section_weekly_schedule_data/<int:section_id>')
 @login_required
 def section_weekly_schedule_data(section_id):
-    """API endpoint to get weekly schedule data for a section from schedules table"""
     teacher_id = session.get('teacher_id')
     if not teacher_id:
         return jsonify({"success": False, "error": "Not logged in"})
-    
     conn = get_db_connection()
     if conn is None:
         return jsonify({"success": False, "error": "Database connection failed"})
-    
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        
-        # Verify the section belongs to the logged-in teacher
         cur.execute("""
             SELECT id, section_name, year_level
             FROM sections
             WHERE id = %s AND teacher_id = %s
         """, (section_id, teacher_id))
-        
         section = cur.fetchone()
         if not section:
             conn.close()
             return jsonify({"success": False, "error": "Section not found or unauthorized"})
-        
-        # Get all schedules for this section with teacher and room info
         cur.execute("""
             SELECT 
                 s.id,
@@ -1261,25 +1378,17 @@ def section_weekly_schedule_data(section_id):
                 END,
                 s.time
         """, (section_id,))
-        
         schedules = cur.fetchall()
         conn.close()
-        
-        # Format schedule data for calendar view with hourly slots
         schedule_data = []
         for s in schedules:
             teacher_name = ""
             if s['teacher_first'] and s['teacher_last']:
                 teacher_name = f"{s['teacher_first']} {s['teacher_last']}"
-            
             time_str = str(s['time'])
-            # Get hour from time
             hour = int(time_str.split(':')[0])
-            
-            # Create hourly time slot (e.g., "7:00-8:00")
             next_hour = hour + 1
             time_slot = f"{hour}:00-{next_hour}:00"
-            
             schedule_data.append({
                 'id': s['id'],
                 'day': s['day'],
@@ -1291,47 +1400,35 @@ def section_weekly_schedule_data(section_id):
                 'teacher': teacher_name,
                 'room': s['room_name'] or 'TBD'
             })
-        
         section_data = {
             'section_id': section['id'],
             'section_name': section['section_name'],
             'year_level': section['year_level'],
             'schedules': schedule_data
         }
-        
         return jsonify({"success": True, "section": section_data})
-        
     except Exception as e:
         print(f"Section weekly schedule data error: {e}")
         if conn:
             conn.close()
         return jsonify({"success": False, "error": str(e)})
+
 # =========================
 # ROOMS API
 # =========================
 @admin_bp.route('/api/rooms')
 @login_required
 def get_rooms():
-    """Get list of all rooms"""
     conn = get_db_connection()
     if conn is None:
         return jsonify({"success": False, "rooms": []})
-    
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cur.execute("SELECT id, room_name FROM rooms ORDER BY room_name")
         rooms = cur.fetchall()
         conn.close()
-        
-        rooms_list = []
-        for r in rooms:
-            rooms_list.append({
-                'id': r['id'],
-                'name': r['room_name']
-            })
-        
+        rooms_list = [{'id': r['id'], 'name': r['room_name']} for r in rooms]
         return jsonify({"success": True, "rooms": rooms_list})
-        
     except Exception as e:
         print(f"Get rooms error: {e}")
         if conn:
@@ -1344,32 +1441,24 @@ def get_rooms():
 @admin_bp.route('/update_student/<int:student_id>', methods=['PUT'])
 @login_required
 def update_student(student_id):
-    """Update student information"""
     teacher_id = session.get('teacher_id')
     if not teacher_id:
         return jsonify({"success": False, "message": "Not logged in"}), 401
-    
     conn = get_db_connection()
     if conn is None:
         return jsonify({"success": False, "message": "Database connection failed"}), 500
-    
     try:
         data = request.get_json()
         cur = conn.cursor()
-        
-        # Verify teacher has access to this student
         cur.execute("""
             SELECT s.id FROM students s
             JOIN sections sec ON s.section_id = sec.id
             WHERE s.id = %s AND sec.teacher_id = %s
         """, (student_id, teacher_id))
-        
         if not cur.fetchone():
             cur.close()
             conn.close()
             return jsonify({"success": False, "message": "Unauthorized to edit this student"}), 403
-        
-        # Update student
         cur.execute("""
             UPDATE students SET 
                 first_name = %s,
@@ -1392,13 +1481,10 @@ def update_student(student_id):
             data.get('schedule', ''),
             student_id
         ))
-        
         conn.commit()
         cur.close()
         conn.close()
-        
         return jsonify({"success": True, "message": "Student updated successfully"})
-        
     except Exception as e:
         print(f"Update student error: {e}")
         if conn:
@@ -1408,57 +1494,34 @@ def update_student(student_id):
 @admin_bp.route('/student_info/<int:student_id>')
 @login_required
 def student_info(student_id):
-    """Display detailed information about a student"""
     teacher_id = session.get('teacher_id')
     if not teacher_id:
         flash('Please login first', 'error')
         return redirect(url_for('admin_bp.teacher_login'))
-    
     conn = get_db_connection()
     if conn is None:
         flash('Database connection error', 'error')
         return redirect(url_for('admin_bp.teacher_schedules'))
-    
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        
-        # Get student details and verify teacher has access to this student's section
         cur.execute("""
             SELECT 
-                st.id,
-                st.uid,
-                st.first_name,
-                st.middle_name,
-                st.last_name,
-                st.extension,
-                st.contact_number,
-                st.email,
-                st.schedule,
-                st.created_at,
-                s.id as section_id,
-                s.section_name,
-                s.year_level,
-                t.id as teacher_id,
-                t.first_name as teacher_first,
-                t.last_name as teacher_last
+                st.id, st.uid, st.first_name, st.middle_name, st.last_name,
+                st.extension, st.contact_number, st.email, st.schedule, st.created_at,
+                s.id as section_id, s.section_name, s.year_level,
+                t.id as teacher_id, t.first_name as teacher_first, t.last_name as teacher_last
             FROM students st
             LEFT JOIN sections s ON st.section_id = s.id
             LEFT JOIN teachers t ON s.teacher_id = t.id
             WHERE st.id = %s
         """, (student_id,))
-        
         student = cur.fetchone()
-        
         if not student:
             flash('Student not found', 'error')
             return redirect(url_for('admin_bp.teacher_schedules'))
-        
-        # Check if teacher has access to this student's section
         if student['teacher_id'] != teacher_id:
             flash('You do not have permission to view this student', 'error')
             return redirect(url_for('admin_bp.teacher_schedules'))
-        
-        # Get attendance history for this student
         cur.execute("""
             SELECT 
                 DATE(created_at) as scan_date,
@@ -1471,11 +1534,8 @@ def student_info(student_id):
             ORDER BY scan_date DESC
             LIMIT 30
         """, (student['uid'],))
-        
         attendance_history = cur.fetchall()
         conn.close()
-        
-        # Build full name
         full_name_parts = [
             student['first_name'] or '',
             student['middle_name'] or '',
@@ -1483,12 +1543,10 @@ def student_info(student_id):
             student['extension'] or ''
         ]
         full_name = ' '.join([p for p in full_name_parts if p]).strip()
-        
-        return render_template('student_info.html', 
-                             student=student, 
-                             full_name=full_name,
-                             attendance_history=attendance_history)
-        
+        return render_template('student_info.html',
+                               student=student,
+                               full_name=full_name,
+                               attendance_history=attendance_history)
     except Exception as e:
         print(f"Student info error: {e}")
         if conn:

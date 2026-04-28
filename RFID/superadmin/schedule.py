@@ -41,31 +41,64 @@ def get_db_connection():
 # TIME PARSING & CONFLICT HELPERS
 # ─────────────────────────────────────────────
 
-TIME_FORMATS = [
-    "%I:%M %p",   # 7:00 AM
-    "%I:%M%p",    # 7:00AM
-    "%H:%M",      # 07:00 (24-hr)
-    "%I %p",      # 7 AM
-]
-
-
-def parse_time_str(raw: str):
+def parse_time_str(raw: str, fallback_period: str = None):
     """
-    Parse a single time string like "7:00 AM" or "07:00".
+    Parse a single time string like "7:00 AM", "07:00", or "7:00" (ambiguous).
+
+    If `fallback_period` is provided ("AM" or "PM"), it is used when the raw
+    string has no AM/PM indicator — this fixes the common case where a range
+    like "2:00 - 3:00 PM" is stored and the first half has no period.
+
     Returns a datetime.time object or None.
     """
     raw = raw.strip().upper()
+
+    # Patterns tried in order (most-specific first)
+    TIME_FORMATS = [
+        "%I:%M %p",   # 7:00 AM
+        "%I:%M%p",    # 7:00AM
+        "%H:%M",      # 07:00 (24-hr — only used when no period present)
+        "%I %p",      # 7 AM
+        "%I%p",       # 7AM
+    ]
+
+    # Check if the raw string already contains an AM/PM indicator
+    has_period = bool(re.search(r'\b(AM|PM)\b', raw))
+
+    # If no period in the raw string AND a fallback is supplied, inject it
+    if not has_period and fallback_period:
+        augmented = f"{raw} {fallback_period}"
+        for fmt in ["%I:%M %p", "%I %p", "%I%p"]:
+            try:
+                return datetime.strptime(augmented, fmt).time()
+            except ValueError:
+                continue
+
+    # Normal parsing
     for fmt in TIME_FORMATS:
         try:
             return datetime.strptime(raw, fmt).time()
         except ValueError:
             continue
+
     return None
+
+
+def _extract_period(raw: str):
+    """Return 'AM' or 'PM' if found in raw, else None."""
+    m = re.search(r'\b(AM|PM)\b', raw.upper())
+    return m.group(1) if m else None
 
 
 def parse_time_range(time_str: str):
     """
     Parse "7:00 AM - 8:30 AM" (or variants) into (start_time, end_time).
+
+    KEY FIX: If the start portion has no AM/PM but the end portion does,
+    the end's period is inherited by the start.  This handles formats like:
+        "2:00 - 3:00 PM"   →  start=2:00 PM, end=3:00 PM  ✓
+        "7:00 AM - 8:00 AM"  →  start=7:00 AM, end=8:00 AM  ✓
+
     Supports separators: ' - ', ' – ', '-', '–', ' to '.
     Returns (dtime, dtime) tuple or (None, None) on failure.
     """
@@ -74,12 +107,25 @@ def parse_time_range(time_str: str):
 
     time_str = time_str.strip()
 
-    # Try various separators
-    for sep in [' - ', ' – ', ' to ', '-', '–']:
+    for sep in [' - ', ' – ', ' to ', ' – ', '-', '–']:
         if sep in time_str:
             parts = time_str.split(sep, 1)
-            start = parse_time_str(parts[0].strip())
-            end   = parse_time_str(parts[1].strip())
+            start_raw = parts[0].strip()
+            end_raw   = parts[1].strip()
+
+            # Determine the period (AM/PM) from each half
+            end_period   = _extract_period(end_raw)
+            start_period = _extract_period(start_raw)
+
+            # Parse end first (it is most likely to have an explicit period)
+            end = parse_time_str(end_raw)
+
+            # Parse start; if it has no period, inherit from end
+            if start_period:
+                start = parse_time_str(start_raw)
+            else:
+                start = parse_time_str(start_raw, fallback_period=end_period)
+
             if start and end and end > start:
                 return start, end
             break
@@ -358,15 +404,15 @@ def bulk_add_schedule():
         row_errors  = []
         valid_rows  = []
 
-        # Keep track of times already validated in this batch (for intra-batch teacher conflicts)
+        # Keep track of times already validated in this batch
         # { teacher_id: { day: [(start, end, row_num)] } }
         batch_teacher_times: dict[int, dict[str, list]] = {}
         # { room_id: { day: [(start, end, row_num)] } }
         batch_room_times: dict[int, dict[str, list]] = {}
 
         for i, (day, time_str, room_id_str) in enumerate(zip(days, times, room_ids), start=1):
-            day        = day.strip()
-            time_str   = time_str.strip()
+            day         = day.strip()
+            time_str    = time_str.strip()
             room_id_str = room_id_str.strip()
 
             # Required fields check

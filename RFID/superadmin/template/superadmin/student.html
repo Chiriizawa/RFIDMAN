@@ -22,13 +22,6 @@
         </svg>
         Import CSV / Excel
       </button>
-      <button onclick="exportToCSV()"
-              class="flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-medium px-5 py-3 rounded-3xl transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-        </svg>
-        Export CSV
-      </button>
     </div>
     <div class="relative">
       <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500">
@@ -96,22 +89,15 @@
                   {{ s.last_name }}, {{ s.first_name }}{% if s.middle_name %} {{ s.middle_name }}{% endif %}{% if s.extension %} {{ s.extension }}{% endif %}
                 </span>
               </td>
-              {# Section cell — updated live via JS after assign #}
-              <td class="py-5 px-4 text-gray-500 align-top" id="cell-section-{{ s.id }}">
-                {{ s.section_name or '—' }}
-              </td>
-              <td class="py-5 px-4 text-gray-500 align-top" id="cell-year-{{ s.id }}">
-                {{ s.year_level or '—' }}
-              </td>
-              <td class="py-5 px-4 text-gray-500 align-top">{{ s.contact_number }}</td>
-              <td class="py-5 px-4 text-gray-500 align-top break-all">{{ s.email }}</td>
-              {# Schedule cell — auto-filled from section on assign #}
+              <td class="py-5 px-4 text-gray-500 align-top" id="cell-section-{{ s.id }}">{{ s.section_name or '—' }}</td>
+              <td class="py-5 px-4 text-gray-500 align-top" id="cell-year-{{ s.id }}">{{ s.year_level or '—' }}</td>
+              <td class="py-5 px-4 text-gray-500 align-top">{{ s.contact_number or '—' }}</td>
+              <td class="py-5 px-4 text-gray-500 align-top break-all">{{ s.email or '—' }}</td>
               <td class="py-5 px-4 text-gray-500 text-sm align-top" id="cell-schedule-{{ s.id }}">
                 <div class="schedule-cell whitespace-pre-line leading-6 max-w-xs">{{ s.schedule or '—' }}</div>
               </td>
               <td class="py-5 px-4 align-top">
                 <div class="flex flex-wrap items-center gap-2">
-                  {# VIEW button #}
                   <button type="button"
                     onclick='openViewStudentModal({
                       id: {{ s.id | tojson }},
@@ -138,7 +124,6 @@
                     View
                   </button>
 
-                  {# EDIT button #}
                   <button type="button"
                     onclick='openEditStudentModal({
                       id: {{ s.id | tojson }},
@@ -158,7 +143,6 @@
                     Edit
                   </button>
 
-                  {# ASSIGN SECTION button #}
                   <button type="button"
                     onclick='openAssignSectionModal({{ s.id | tojson }}, {{ (s.section_id or "") | tojson }})'
                     class="inline-flex items-center gap-2 bg-violet-500 hover:bg-violet-600 text-white text-sm font-medium px-4 py-2 rounded-2xl shadow-sm transition-colors">
@@ -199,10 +183,8 @@
         </svg>
       </button>
     </div>
-
     <div class="modal-body">
       <form id="addStudentForm" action="{{ url_for('sregister.add_student') }}" method="POST" class="p-8" novalidate onsubmit="return validateAddForm(event)">
-
         <div class="mb-6">
           <label class="form-label">Available UID <span class="text-gray-400 font-normal">(Optional)</span></label>
           <select name="uid" class="form-select">
@@ -212,7 +194,6 @@
             {% endfor %}
           </select>
         </div>
-
         <div class="mb-2">
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Personal Information</p>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -245,9 +226,7 @@
             </div>
           </div>
         </div>
-
         <hr class="border-gray-100 my-6">
-
         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Contact & Details</p>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
           <div>
@@ -266,19 +245,11 @@
             <p class="field-error hidden" id="err_add_email"></p>
           </div>
         </div>
-
       </form>
     </div>
-
     <div class="modal-footer">
-      <button type="button" onclick="closeAddStudentModal()"
-              class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors">
-        Cancel
-      </button>
-      <button type="submit" form="addStudentForm"
-              class="px-7 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors">
-        Save Student
-      </button>
+      <button type="button" onclick="closeAddStudentModal()" class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors">Cancel</button>
+      <button type="submit" form="addStudentForm" class="px-7 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors">Save Student</button>
     </div>
   </div>
 </div>
@@ -289,7 +260,7 @@
     <div class="modal-header bg-gradient-to-r from-emerald-500 to-emerald-600">
       <div>
         <h2 class="text-white text-xl font-semibold">Import Students</h2>
-        <p class="text-emerald-100 text-sm mt-0.5">Bulk upload students via .csv or .xlsx file</p>
+        <p class="text-emerald-100 text-sm mt-0.5">Bulk upload via .csv, .xlsx — or a DepEd SF1 Excel file</p>
       </div>
       <button type="button" onclick="closeModal('importStudentModal')" class="modal-close-btn">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -299,6 +270,8 @@
     </div>
 
     <div class="modal-body p-8">
+
+      <!-- File picker -->
       <div class="mb-5">
         <label class="form-label">Choose File <span class="text-red-400">*</span></label>
         <label class="flex items-center gap-3 w-full border-2 border-dashed border-gray-200 hover:border-emerald-400 rounded-2xl px-5 py-4 cursor-pointer bg-gray-50 hover:bg-emerald-50 transition-all group">
@@ -309,45 +282,71 @@
           </div>
           <div class="flex-1 min-w-0">
             <p id="importFileName" class="text-sm font-medium text-gray-500 truncate">No file chosen</p>
-            <p class="text-xs text-gray-400 mt-0.5">CSV or Excel (.xlsx, .xls)</p>
+            <p class="text-xs text-gray-400 mt-0.5">CSV, Excel (.xlsx / .xls), or DepEd SF1</p>
           </div>
           <input id="importFileInput" type="file" accept=".csv,.xlsx,.xls" class="hidden" onchange="handleImportFileChange(this)">
         </label>
       </div>
 
-      <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-gray-600 flex items-start gap-3 mb-5">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-        </svg>
-        <div>
-          <strong>Note:</strong> Import will only include basic information. Section, Year Level, and Schedule are assigned separately via the <strong>Section</strong> button.
+      <!-- Mode toggle -->
+      <div class="mb-5">
+        <p class="form-label mb-2">File Format</p>
+        <div class="flex gap-3">
+          <label class="flex-1 flex items-center gap-2 border-2 border-blue-500 bg-blue-50 rounded-2xl px-4 py-3 cursor-pointer has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 border-gray-200 bg-white hover:border-blue-300 transition-all">
+            <input type="radio" name="importMode" value="standard" class="accent-blue-600" checked onchange="setImportMode('standard')">
+            <div>
+              <p class="text-sm font-semibold text-gray-800">Standard CSV / Excel</p>
+              <p class="text-xs text-gray-400 mt-0.5">Columns: last_name, first_name, birthday, contact_number, email</p>
+            </div>
+          </label>
+          <label class="flex-1 flex items-center gap-2 border-2 border-gray-200 bg-white rounded-2xl px-4 py-3 cursor-pointer hover:border-violet-300 transition-all">
+            <input type="radio" name="importMode" value="sf1" class="accent-violet-600" onchange="setImportMode('sf1')">
+            <div>
+              <p class="text-sm font-semibold text-gray-800">DepEd SF1 Excel</p>
+              <p class="text-xs text-gray-400 mt-0.5">Auto-detects "LASTNAME,FIRSTNAME MIDDLENAME" format</p>
+            </div>
+          </label>
         </div>
       </div>
 
-      <div class="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 flex items-start gap-3">
+      <!-- Standard mode note -->
+      <div id="noteStandard" class="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 flex items-start gap-3">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
         <div>
-          Required columns:
-          <strong>last_name, first_name, birthday, contact_number, email</strong><br>
-          <span class="text-gray-400 mt-1 block">
-            Optional: middle_name, extension<br>
-            UID is <em>not</em> required — it will be auto-linked from available RFID cards.
-          </span>
+          Required columns: <strong>last_name, first_name, birthday, contact_number, email</strong><br>
+          <span class="text-gray-400 mt-1 block">Optional: middle_name, extension. UID is auto-linked from available RFID cards.</span>
         </div>
       </div>
+
+      <!-- SF1 mode note -->
+      <div id="noteSF1" class="hidden bg-violet-50 border border-violet-200 rounded-2xl p-4 text-xs text-gray-600 flex items-start gap-3">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-violet-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div>
+          <strong>SF1 Mode:</strong> Reads the DepEd School Form 1 Excel directly.<br>
+          Names are split automatically from <code class="bg-violet-100 px-1 rounded">LASTNAME,FIRSTNAME MIDDLENAME</code>.<br>
+          <span class="text-gray-400 mt-1 block">Contact number &amp; email are <em>not</em> in SF1 — you can fill them in later via Edit.</span>
+        </div>
+      </div>
+
+      <!-- Warning note -->
+      <div class="mt-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-gray-600 flex items-start gap-3">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+        </svg>
+        <div>
+          <strong>Note:</strong> Section, Year Level, and Schedule are assigned separately via the <strong>Section</strong> button after import.
+        </div>
+      </div>
+
     </div>
 
     <div class="modal-footer">
-      <button type="button" onclick="closeModal('importStudentModal')"
-              class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors">
-        Cancel
-      </button>
-      <button type="button" onclick="runImportFromModal()"
-              class="px-7 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm shadow-sm transition-colors">
-        Import Students
-      </button>
+      <button type="button" onclick="closeModal('importStudentModal')" class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors">Cancel</button>
+      <button type="button" onclick="runImportFromModal()" class="px-7 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm shadow-sm transition-colors">Import Students</button>
     </div>
   </div>
 </div>
@@ -366,73 +365,26 @@
         </svg>
       </button>
     </div>
-
     <div class="modal-body flex-1 p-8">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <div>
-          <label class="view-label">UID</label>
-          <div id="view_uid" class="view-field"></div>
-        </div>
-        <div>
-          <label class="view-label">Registered</label>
-          <div id="view_created_at" class="view-field"></div>
-        </div>
-        <div>
-          <label class="view-label">Last Name</label>
-          <div id="view_last_name" class="view-field"></div>
-        </div>
-        <div>
-          <label class="view-label">First Name</label>
-          <div id="view_first_name" class="view-field"></div>
-        </div>
-        <div>
-          <label class="view-label">Middle Name</label>
-          <div id="view_middle_name" class="view-field"></div>
-        </div>
-        <div>
-          <label class="view-label">Extension</label>
-          <div id="view_extension" class="view-field"></div>
-        </div>
-        <div>
-          <label class="view-label">Birthday</label>
-          <div id="view_birthday" class="view-field"></div>
-        </div>
-        <div>
-          <label class="view-label">Contact Number</label>
-          <div id="view_contact_number" class="view-field"></div>
-        </div>
-        <div class="sm:col-span-2">
-          <label class="view-label">Email Address</label>
-          <div id="view_email" class="view-field break-all"></div>
-        </div>
-
-        {# ── Section info (auto-filled from section assignment) ── #}
+        <div><label class="view-label">UID</label><div id="view_uid" class="view-field"></div></div>
+        <div><label class="view-label">Registered</label><div id="view_created_at" class="view-field"></div></div>
+        <div><label class="view-label">Last Name</label><div id="view_last_name" class="view-field"></div></div>
+        <div><label class="view-label">First Name</label><div id="view_first_name" class="view-field"></div></div>
+        <div><label class="view-label">Middle Name</label><div id="view_middle_name" class="view-field"></div></div>
+        <div><label class="view-label">Extension</label><div id="view_extension" class="view-field"></div></div>
+        <div><label class="view-label">Birthday</label><div id="view_birthday" class="view-field"></div></div>
+        <div><label class="view-label">Contact Number</label><div id="view_contact_number" class="view-field"></div></div>
+        <div class="sm:col-span-2"><label class="view-label">Email Address</label><div id="view_email" class="view-field break-all"></div></div>
         <hr class="sm:col-span-2 border-gray-100 my-1">
-
-        <div>
-          <label class="view-label">Section</label>
-          <div id="view_section_name" class="view-field"></div>
-        </div>
-        <div>
-          <label class="view-label">Year Level</label>
-          <div id="view_year_level" class="view-field"></div>
-        </div>
-        <div>
-          <label class="view-label">Adviser / Teacher</label>
-          <div id="view_teacher_name" class="view-field"></div>
-        </div>
-        <div class="sm:col-span-2">
-          <label class="view-label">Schedule</label>
-          <div id="view_schedule" class="view-field whitespace-pre-line leading-6"></div>
-        </div>
+        <div><label class="view-label">Section</label><div id="view_section_name" class="view-field"></div></div>
+        <div><label class="view-label">Year Level</label><div id="view_year_level" class="view-field"></div></div>
+        <div><label class="view-label">Adviser / Teacher</label><div id="view_teacher_name" class="view-field"></div></div>
+        <div class="sm:col-span-2"><label class="view-label">Schedule</label><div id="view_schedule" class="view-field whitespace-pre-line leading-6"></div></div>
       </div>
     </div>
-
     <div class="modal-footer">
-      <button type="button" onclick="closeViewStudentModal()"
-              class="px-7 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors">
-        Close
-      </button>
+      <button type="button" onclick="closeViewStudentModal()" class="px-7 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors">Close</button>
     </div>
   </div>
 </div>
@@ -451,18 +403,14 @@
         </svg>
       </button>
     </div>
-
     <div class="modal-body">
       <form id="editStudentForm" method="POST" class="p-8" novalidate onsubmit="return validateEditForm(event)">
-
         <div class="mb-6">
           <label class="form-label">UID</label>
           <input type="text" id="edit_uid" class="form-input bg-gray-100" readonly>
           <p class="text-xs text-gray-400 mt-2">UID is readonly to preserve the existing RFID link.</p>
         </div>
-
         <hr class="border-gray-100 my-6">
-
         <div class="mb-2">
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Personal Information</p>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -495,9 +443,7 @@
             </div>
           </div>
         </div>
-
         <hr class="border-gray-100 my-6">
-
         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Contact & Details</p>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
           <div>
@@ -516,19 +462,11 @@
             <p class="field-error hidden" id="err_edit_email"></p>
           </div>
         </div>
-
       </form>
     </div>
-
     <div class="modal-footer">
-      <button type="button" onclick="closeEditStudentModal()"
-              class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors">
-        Cancel
-      </button>
-      <button type="submit" form="editStudentForm"
-              class="px-7 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-500 text-white font-medium text-sm shadow-sm transition-colors">
-        Update Student
-      </button>
+      <button type="button" onclick="closeEditStudentModal()" class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors">Cancel</button>
+      <button type="submit" form="editStudentForm" class="px-7 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-500 text-white font-medium text-sm shadow-sm transition-colors">Update Student</button>
     </div>
   </div>
 </div>
@@ -547,9 +485,7 @@
         </svg>
       </button>
     </div>
-
     <div class="modal-body p-8">
-      {# Loading state #}
       <div id="assignSectionLoading" class="py-10 flex flex-col items-center justify-center gap-3 text-gray-400">
         <svg class="animate-spin w-7 h-7 text-violet-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
@@ -557,37 +493,17 @@
         </svg>
         <span class="text-sm">Loading sections…</span>
       </div>
-
-      {# Section list #}
-      <div id="assignSectionList" class="hidden flex flex-col gap-3">
-        {# Injected by JS #}
-      </div>
-
-      {# Empty state #}
-      <div id="assignSectionEmpty" class="hidden py-10 text-center text-gray-400 text-sm">
-        No sections found. Please create sections first.
-      </div>
-
-      {# Schedule preview #}
+      <div id="assignSectionList" class="hidden flex flex-col gap-3"></div>
+      <div id="assignSectionEmpty" class="hidden py-10 text-center text-gray-400 text-sm">No sections found. Please create sections first.</div>
       <div id="assignSchedulePreview" class="hidden mt-5 bg-violet-50 border border-violet-200 rounded-2xl p-4">
         <p class="text-xs font-semibold text-violet-400 uppercase tracking-wider mb-1">Schedule Preview</p>
         <p id="assignScheduleText" class="text-sm text-gray-700 whitespace-pre-line leading-6"></p>
       </div>
     </div>
-
     <div class="modal-footer gap-3">
-      <button type="button" onclick="clearAssignSection()"
-              class="px-5 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-red-50 hover:border-red-200 hover:text-red-600 font-medium text-sm transition-colors">
-        Clear Section
-      </button>
-      <button type="button" onclick="closeModal('assignSectionModal')"
-              class="px-5 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors ml-auto">
-        Cancel
-      </button>
-      <button type="button" id="assignSectionSaveBtn" onclick="saveAssignSection()" disabled
-              class="px-7 py-2.5 rounded-2xl bg-violet-500 hover:bg-violet-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium text-sm shadow-sm transition-colors">
-        Save
-      </button>
+      <button type="button" onclick="clearAssignSection()" class="px-5 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-red-50 hover:border-red-200 hover:text-red-600 font-medium text-sm transition-colors">Clear Section</button>
+      <button type="button" onclick="closeModal('assignSectionModal')" class="px-5 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors ml-auto">Cancel</button>
+      <button type="button" id="assignSectionSaveBtn" onclick="saveAssignSection()" disabled class="px-7 py-2.5 rounded-2xl bg-violet-500 hover:bg-violet-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium text-sm shadow-sm transition-colors">Save</button>
     </div>
   </div>
 </div>
@@ -606,14 +522,9 @@
         </svg>
       </button>
     </div>
-    <div class="p-6">
-      <p id="alertModalMessage" class="text-gray-700 text-sm leading-relaxed whitespace-pre-line"></p>
-    </div>
+    <div class="p-6"><p id="alertModalMessage" class="text-gray-700 text-sm leading-relaxed whitespace-pre-line"></p></div>
     <div class="modal-footer">
-      <button type="button" onclick="closeAlertModal()"
-              class="px-7 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors">
-        OK
-      </button>
+      <button type="button" onclick="closeAlertModal()" class="px-7 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors">OK</button>
     </div>
   </div>
 </div>
@@ -636,18 +547,10 @@
         </svg>
       </button>
     </div>
-    <div class="p-6">
-      <p id="confirmModalMessage" class="text-gray-700 text-sm leading-relaxed whitespace-pre-line"></p>
-    </div>
+    <div class="p-6"><p id="confirmModalMessage" class="text-gray-700 text-sm leading-relaxed whitespace-pre-line"></p></div>
     <div class="modal-footer">
-      <button type="button" onclick="resolveConfirm(false)"
-              class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors">
-        Cancel
-      </button>
-      <button type="button" id="confirmModalOkBtn" onclick="resolveConfirm(true)"
-              class="px-7 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors">
-        Confirm
-      </button>
+      <button type="button" onclick="resolveConfirm(false)" class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors">Cancel</button>
+      <button type="button" id="confirmModalOkBtn" onclick="resolveConfirm(true)" class="px-7 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors">Confirm</button>
     </div>
   </div>
 </div>
@@ -656,24 +559,22 @@
 
 <script>
 // ══════════════════════════════════════════════════
-// MODAL ALERT / CONFIRM
+// ALERT / CONFIRM
 // ══════════════════════════════════════════════════
-
 function showAlert(message, type = 'error', title = null) {
   const types = {
-    error:   { gradient: 'from-red-500 to-red-600',     icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>', defaultTitle: 'Error' },
+    error:   { gradient: 'from-red-500 to-red-600',         icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>', defaultTitle: 'Error' },
     success: { gradient: 'from-emerald-500 to-emerald-600', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>', defaultTitle: 'Success' },
-    info:    { gradient: 'from-blue-500 to-blue-600',    icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>', defaultTitle: 'Info' },
-    warning: { gradient: 'from-amber-500 to-amber-600',  icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>', defaultTitle: 'Warning' },
+    info:    { gradient: 'from-blue-500 to-blue-600',       icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>', defaultTitle: 'Info' },
+    warning: { gradient: 'from-amber-500 to-amber-600',     icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>', defaultTitle: 'Warning' },
   }
   const cfg = types[type] || types.info
-  document.getElementById('alertModalHeader').className = `modal-header bg-gradient-to-r ${cfg.gradient}`
-  document.getElementById('alertModalIcon').innerHTML   = cfg.icon
-  document.getElementById('alertModalTitle').textContent = title || cfg.defaultTitle
+  document.getElementById('alertModalHeader').className    = `modal-header bg-gradient-to-r ${cfg.gradient}`
+  document.getElementById('alertModalIcon').innerHTML      = cfg.icon
+  document.getElementById('alertModalTitle').textContent   = title || cfg.defaultTitle
   document.getElementById('alertModalMessage').textContent = message
   openModal('alertModal')
 }
-
 function closeAlertModal() { closeModal('alertModal') }
 
 let _confirmResolve = null
@@ -688,49 +589,36 @@ function showConfirm(message, title = 'Confirm', okLabel = 'Confirm', okClass = 
     openModal('confirmModal')
   })
 }
-
 function resolveConfirm(value) {
   closeModal('confirmModal')
   if (_confirmResolve) { _confirmResolve(value); _confirmResolve = null }
 }
 
 // ══════════════════════════════════════════════════
-// VALIDATION HELPERS
+// VALIDATION
 // ══════════════════════════════════════════════════
-
 const VALID_EXTENSIONS = ['', 'Jr.', 'Sr.', 'II', 'III', 'IV', 'V']
 
 ;(function setBirthdayLimits() {
-  const today   = new Date()
-  const maxYear = today.getFullYear() - 1
-  const maxDate = maxYear + '-12-31'
-  const minDate = '2006-01-01'
-  ;['add_birthday', 'edit_birthday'].forEach(function(id) {
+  const today = new Date()
+  const maxDate = (today.getFullYear() - 1) + '-12-31'
+  ;['add_birthday', 'edit_birthday'].forEach(id => {
     const el = document.getElementById(id)
-    if (el) { el.min = minDate; el.max = maxDate }
+    if (el) { el.min = '2006-01-01'; el.max = maxDate }
   })
 })()
 
 const ALLOWED_EMAIL_DOMAINS = [
-  'gmail.com','yahoo.com','yahoo.com.ph',
-  'outlook.com','hotmail.com','live.com',
-  'icloud.com','me.com','mac.com',
-  'protonmail.com','proton.me',
-  'aol.com','zoho.com',
-  'deped.gov.ph','ched.gov.ph','edu.ph','school.edu.ph',
-  'up.edu.ph','dlsu.edu.ph','ateneo.edu.ph','ust.edu.ph',
-  'admu.edu.ph','mapua.edu.ph','pup.edu.ph','tip.edu.ph',
-  'feu.edu.ph','nu.edu.ph','ceu.edu.ph','slu.edu.ph',
-  'au.edu.ph','usc.edu.ph','usjr.edu.ph','cpu.edu.ph',
-  'wvsu.edu.ph','vsu.edu.ph',
+  'gmail.com','yahoo.com','yahoo.com.ph','outlook.com','hotmail.com','live.com',
+  'icloud.com','me.com','mac.com','protonmail.com','proton.me','aol.com','zoho.com',
+  'deped.gov.ph','ched.gov.ph','edu.ph','school.edu.ph','up.edu.ph','dlsu.edu.ph',
+  'ateneo.edu.ph','ust.edu.ph','admu.edu.ph','mapua.edu.ph','pup.edu.ph','tip.edu.ph',
+  'feu.edu.ph','nu.edu.ph','ceu.edu.ph','slu.edu.ph','au.edu.ph','usc.edu.ph',
+  'usjr.edu.ph','cpu.edu.ph','wvsu.edu.ph','vsu.edu.ph',
 ]
-
 function isValidEmailDomain(email) {
-  const lower  = email.toLowerCase()
-  const atIdx  = lower.lastIndexOf('@')
-  if (atIdx < 1) return false
-  const domain = lower.slice(atIdx + 1)
-  if (ALLOWED_EMAIL_DOMAINS.indexOf(domain) !== -1) return true
+  const domain = email.toLowerCase().split('@').pop()
+  if (ALLOWED_EMAIL_DOMAINS.includes(domain)) return true
   if (/^[a-z0-9-]+\.edu\.ph$/.test(domain)) return true
   if (/^[a-z0-9-]+\.gov\.ph$/.test(domain)) return true
   return false
@@ -739,24 +627,19 @@ function isValidEmailDomain(email) {
 function showError(id, msg) {
   const el = document.getElementById(id)
   if (!el) return
-  el.textContent = msg
-  el.classList.remove('hidden')
+  el.textContent = msg; el.classList.remove('hidden')
   const input = document.getElementById(id.replace('err_', ''))
   if (input) input.classList.add('input-error')
 }
-
 function clearError(id) {
   const el = document.getElementById(id)
   if (!el) return
-  el.textContent = ''
-  el.classList.add('hidden')
+  el.textContent = ''; el.classList.add('hidden')
   const input = document.getElementById(id.replace('err_', ''))
   if (input) input.classList.remove('input-error')
 }
-
 function clearAllErrors(prefix) {
-  const suffixes = ['last_name','first_name','middle_name','birthday','contact_number','email']
-  suffixes.forEach(s => clearError(`err_${prefix}_${s}`))
+  ['last_name','first_name','middle_name','birthday','contact_number','email'].forEach(s => clearError(`err_${prefix}_${s}`))
 }
 
 function validateStudentFields(prefix) {
@@ -797,12 +680,11 @@ function validateStudentFields(prefix) {
   else if (!contact.startsWith('09')) { showError(`err_${prefix}_contact_number`, 'Contact number must start with 09.'); valid = false }
 
   const email = document.getElementById(`${prefix}_email`).value.trim()
-  const basicEmailRegex = /^[^\s@]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/
   if (!email) { showError(`err_${prefix}_email`, 'Email address is required.'); valid = false }
-  else if (!basicEmailRegex.test(email)) { showError(`err_${prefix}_email`, 'Please enter a valid email address.'); valid = false }
+  else if (!/^[^\s@]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(email)) { showError(`err_${prefix}_email`, 'Please enter a valid email address.'); valid = false }
   else if (!isValidEmailDomain(email)) {
     const atPart = email.split('@')[1] || ''
-    showError(`err_${prefix}_email`, `"@${atPart}" is not an accepted email domain. Use Gmail, Yahoo, Outlook, iCloud, or a valid school/government email.`)
+    showError(`err_${prefix}_email`, `"@${atPart}" is not an accepted email domain.`)
     valid = false
   }
 
@@ -810,7 +692,6 @@ function validateStudentFields(prefix) {
     const firstErr = document.querySelector(`#${prefix}StudentForm .field-error:not(.hidden)`)
     if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
-
   return valid
 }
 
@@ -834,18 +715,14 @@ function unlockBodyScroll() {
   const anyOpen = ALL_MODALS.some(id => document.getElementById(id)?.classList.contains('is-open'))
   if (!anyOpen) { document.documentElement.classList.remove('modal-open'); document.body.classList.remove('modal-open') }
 }
-
 function openModal(id) {
-  const el = document.getElementById(id)
-  if (!el) return
+  const el = document.getElementById(id); if (!el) return
   el.classList.remove('hidden')
   requestAnimationFrame(() => el.classList.add('is-open'))
   lockBodyScroll()
 }
-
 function closeModal(id) {
-  const el = document.getElementById(id)
-  if (!el) return
+  const el = document.getElementById(id); if (!el) return
   el.classList.remove('is-open')
   setTimeout(() => { if (!el.classList.contains('is-open')) { el.classList.add('hidden'); unlockBodyScroll() } }, 180)
 }
@@ -853,9 +730,7 @@ function closeModal(id) {
 function openAddStudentModal()  { clearAllErrors('add'); openModal('addStudentModal') }
 function closeAddStudentModal() { closeModal('addStudentModal') }
 
-// ── View modal — now includes section + schedule ──────────────────────────────
 function openViewStudentModal(student) {
-  // Basic info
   document.getElementById('view_uid').textContent            = student.uid || '—'
   document.getElementById('view_created_at').textContent     = student.created_at || '—'
   document.getElementById('view_last_name').textContent      = student.last_name || '—'
@@ -865,13 +740,10 @@ function openViewStudentModal(student) {
   document.getElementById('view_birthday').textContent       = student.birthday || '—'
   document.getElementById('view_contact_number').textContent = student.contact_number || '—'
   document.getElementById('view_email').textContent          = student.email || '—'
-  // Section / schedule info
   document.getElementById('view_section_name').textContent   = student.section_name || '—'
   document.getElementById('view_year_level').textContent     = student.year_level || '—'
   document.getElementById('view_teacher_name').textContent   = student.teacher_name || '—'
   document.getElementById('view_schedule').textContent       = student.schedule || '—'
-
-  // Store student id so live updates can refresh the view data
   document.getElementById('viewStudentModal').dataset.studentId = student.id
   openModal('viewStudentModal')
 }
@@ -880,9 +752,7 @@ function closeViewStudentModal() { closeModal('viewStudentModal') }
 function openEditStudentModal(student) {
   clearAllErrors('edit')
   const form = document.getElementById('editStudentForm')
-  const tpl  = "{{ url_for('sregister.update_student', student_id=0) }}"
-  form.action = tpl.replace('/0', '/' + student.id)
-
+  form.action = "{{ url_for('sregister.update_student', student_id=0) }}".replace('/0', '/' + student.id)
   document.getElementById('edit_uid').value            = student.uid || ''
   document.getElementById('edit_last_name').value      = student.last_name || ''
   document.getElementById('edit_first_name').value     = student.first_name || ''
@@ -903,275 +773,47 @@ function handleImportFileChange(input) {
 }
 
 // ══════════════════════════════════════════════════
-// ASSIGN SECTION MODAL
+// IMPORT MODE TOGGLE
 // ══════════════════════════════════════════════════
+let _importMode = 'standard'
 
-let _assignStudentId    = null   // current student being assigned
-let _assignSectionId    = null   // currently selected section id in the modal
-let _assignSectionCache = null   // cached sections from API
-
-async function openAssignSectionModal(studentId, currentSectionId) {
-  _assignStudentId = studentId
-  _assignSectionId = currentSectionId || null
-
-  // Reset UI
-  document.getElementById('assignSectionLoading').classList.remove('hidden')
-  document.getElementById('assignSectionList').classList.add('hidden')
-  document.getElementById('assignSectionEmpty').classList.add('hidden')
-  document.getElementById('assignSchedulePreview').classList.add('hidden')
-  document.getElementById('assignSectionSaveBtn').disabled = true
-
-  openModal('assignSectionModal')
-
-  try {
-    // Use cached sections if available
-    if (!_assignSectionCache) {
-      const res  = await fetch("{{ url_for('sregister.sections_list') }}")
-      const data = await res.json()
-      if (!data.ok) throw new Error(data.message || 'Failed to load sections.')
-      _assignSectionCache = data.sections
-    }
-
-    renderAssignSectionList(_assignSectionCache, currentSectionId)
-  } catch (err) {
-    document.getElementById('assignSectionLoading').classList.add('hidden')
-    document.getElementById('assignSectionEmpty').textContent = 'Error loading sections: ' + err.message
-    document.getElementById('assignSectionEmpty').classList.remove('hidden')
-  }
-}
-
-function renderAssignSectionList(sections, currentSectionId) {
-  document.getElementById('assignSectionLoading').classList.add('hidden')
-
-  if (!sections || sections.length === 0) {
-    document.getElementById('assignSectionEmpty').classList.remove('hidden')
-    return
-  }
-
-  const list = document.getElementById('assignSectionList')
-  list.innerHTML = ''
-
-  sections.forEach(sec => {
-    const isSelected = String(sec.id) === String(currentSectionId)
-    const card = document.createElement('button')
-    card.type = 'button'
-    card.dataset.sectionId = sec.id
-    card.className = [
-      'w-full text-left px-5 py-4 rounded-2xl border-2 transition-all',
-      isSelected
-        ? 'border-violet-500 bg-violet-50'
-        : 'border-gray-200 bg-white hover:border-violet-300 hover:bg-violet-50/50'
-    ].join(' ')
-
-    card.innerHTML = `
-      <div class="flex items-start justify-between gap-3">
-        <div>
-          <p class="font-semibold text-gray-900 text-sm">${sec.section_name || '—'}</p>
-          <p class="text-xs text-gray-500 mt-0.5">Year ${sec.year_level || '—'} · ${sec.teacher_name || 'No adviser'}</p>
-        </div>
-        <span class="check-icon flex-shrink-0 w-5 h-5 rounded-full border-2 ${isSelected ? 'bg-violet-500 border-violet-500' : 'border-gray-300'} flex items-center justify-center">
-          ${isSelected ? '<svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>' : ''}
-        </span>
-      </div>
-      ${sec.schedule ? `<p class="text-xs text-gray-400 mt-2 leading-5">${sec.schedule}</p>` : ''}
-    `
-
-    card.addEventListener('click', () => selectAssignSection(sec, sections))
-    list.appendChild(card)
-  })
-
-  list.classList.remove('hidden')
-
-  // Show schedule preview for current selection
-  if (currentSectionId) {
-    const cur = sections.find(s => String(s.id) === String(currentSectionId))
-    if (cur) showAssignSchedulePreview(cur.schedule)
-  }
-
-  // Enable save if a section is already selected
-  document.getElementById('assignSectionSaveBtn').disabled = !currentSectionId
-}
-
-function selectAssignSection(section, allSections) {
-  _assignSectionId = section.id
-
-  // Update all card styles
-  const list = document.getElementById('assignSectionList')
-  list.querySelectorAll('button[data-section-id]').forEach(card => {
-    const isThis = String(card.dataset.sectionId) === String(section.id)
-    card.className = [
-      'w-full text-left px-5 py-4 rounded-2xl border-2 transition-all',
-      isThis ? 'border-violet-500 bg-violet-50' : 'border-gray-200 bg-white hover:border-violet-300 hover:bg-violet-50/50'
-    ].join(' ')
-    const icon = card.querySelector('.check-icon')
-    if (icon) {
-      icon.className = `check-icon flex-shrink-0 w-5 h-5 rounded-full border-2 ${isThis ? 'bg-violet-500 border-violet-500' : 'border-gray-300'} flex items-center justify-center`
-      icon.innerHTML = isThis ? '<svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>' : ''
-    }
-  })
-
-  showAssignSchedulePreview(section.schedule)
-  document.getElementById('assignSectionSaveBtn').disabled = false
-}
-
-function showAssignSchedulePreview(schedule) {
-  const preview = document.getElementById('assignSchedulePreview')
-  const text    = document.getElementById('assignScheduleText')
-  if (schedule) {
-    text.textContent = schedule
-    preview.classList.remove('hidden')
-  } else {
-    preview.classList.add('hidden')
-  }
-}
-
-async function saveAssignSection() {
-  if (!_assignStudentId || !_assignSectionId) return
-
-  const btn = document.getElementById('assignSectionSaveBtn')
-  btn.disabled = true
-  btn.textContent = 'Saving…'
-
-  try {
-    const res  = await fetch(`/superadmin/assign-section/${_assignStudentId}`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ section_id: _assignSectionId })
-    })
-    const data = await res.json()
-
-    if (!data.ok) throw new Error(data.message || 'Failed to assign section.')
-
-    // ── Live-update the table row without a page reload ──────────────────
-    const row = document.getElementById(`student-row-${_assignStudentId}`)
-    if (row) {
-      const secCell  = document.getElementById(`cell-section-${_assignStudentId}`)
-      const yearCell = document.getElementById(`cell-year-${_assignStudentId}`)
-      const schCell  = document.getElementById(`cell-schedule-${_assignStudentId}`)
-
-      if (secCell)  secCell.textContent  = data.section_name || '—'
-      if (yearCell) yearCell.textContent = data.year_level   || '—'
-      if (schCell) {
-        const div = schCell.querySelector('.schedule-cell') || schCell
-        div.textContent = data.schedule || '—'
-      }
-    }
-
-    // ── If view modal is open for this student, update it too ────────────
-    const viewModal = document.getElementById('viewStudentModal')
-    if (viewModal && !viewModal.classList.contains('hidden') &&
-        viewModal.dataset.studentId == _assignStudentId) {
-      document.getElementById('view_section_name').textContent = data.section_name || '—'
-      document.getElementById('view_year_level').textContent   = data.year_level   || '—'
-      document.getElementById('view_teacher_name').textContent = data.teacher_name || '—'
-      document.getElementById('view_schedule').textContent     = data.schedule     || '—'
-    }
-
-    // ── Update the Section button onclick to reflect new section_id ──────
-    const sectionBtn = row ? row.querySelector(`button[onclick*="openAssignSectionModal"]`) : null
-    if (sectionBtn) {
-      sectionBtn.setAttribute('onclick', `openAssignSectionModal(${_assignStudentId}, ${_assignSectionId})`)
-    }
-
-    closeModal('assignSectionModal')
-    showAlert(`Section assigned successfully!\n\nSection: ${data.section_name}\nSchedule auto-filled.`, 'success', 'Section Assigned')
-
-  } catch (err) {
-    showAlert(err.message || 'Failed to assign section.', 'error', 'Error')
-  } finally {
-    btn.disabled    = false
-    btn.textContent = 'Save'
-  }
-}
-
-async function clearAssignSection() {
-  if (!_assignStudentId) return
-  const confirmed = await showConfirm(
-    'Remove the section assignment for this student?\nTheir schedule will also be cleared.',
-    'Clear Section',
-    'Clear',
-    'bg-red-500 hover:bg-red-600'
-  )
-  if (!confirmed) return
-
-  try {
-    const res  = await fetch(`/superadmin/assign-section/${_assignStudentId}`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ section_id: null })
-    })
-    const data = await res.json()
-    if (!data.ok) throw new Error(data.message || 'Failed to clear section.')
-
-    // Live-update table cells
-    const secCell  = document.getElementById(`cell-section-${_assignStudentId}`)
-    const yearCell = document.getElementById(`cell-year-${_assignStudentId}`)
-    const schCell  = document.getElementById(`cell-schedule-${_assignStudentId}`)
-    if (secCell)  secCell.textContent  = '—'
-    if (yearCell) yearCell.textContent = '—'
-    if (schCell) {
-      const div = schCell.querySelector('.schedule-cell') || schCell
-      div.textContent = '—'
-    }
-
-    // Update view modal if open
-    const viewModal = document.getElementById('viewStudentModal')
-    if (viewModal && !viewModal.classList.contains('hidden') &&
-        viewModal.dataset.studentId == _assignStudentId) {
-      document.getElementById('view_section_name').textContent = '—'
-      document.getElementById('view_year_level').textContent   = '—'
-      document.getElementById('view_teacher_name').textContent = '—'
-      document.getElementById('view_schedule').textContent     = '—'
-    }
-
-    // Reset Section button onclick
-    const row = document.getElementById(`student-row-${_assignStudentId}`)
-    const sectionBtn = row ? row.querySelector(`button[onclick*="openAssignSectionModal"]`) : null
-    if (sectionBtn) sectionBtn.setAttribute('onclick', `openAssignSectionModal(${_assignStudentId}, '')`)
-
-    _assignSectionId = null
-    _assignSectionCache = null  // invalidate cache so next open re-fetches
-    closeModal('assignSectionModal')
-    showAlert('Section cleared successfully.', 'success', 'Cleared')
-
-  } catch (err) {
-    showAlert(err.message || 'Failed to clear section.', 'error', 'Error')
-  }
+function setImportMode(mode) {
+  _importMode = mode
+  document.getElementById('noteStandard').classList.toggle('hidden', mode !== 'standard')
+  document.getElementById('noteSF1').classList.toggle('hidden', mode !== 'sf1')
 }
 
 // ══════════════════════════════════════════════════
-// TABLE UTILITIES
+// SF1 NAME PARSER  (mirrors Python parse_sf1_name)
+// "LASTNAME,FIRSTNAME MIDDLENAME" → { last, first, middle }
 // ══════════════════════════════════════════════════
+function parseSF1Name(raw) {
+  raw = (raw || '').trim()
+  if (!raw) return { last_name: '', first_name: '', middle_name: '' }
 
-function filterTable() {
-  const q = document.getElementById('searchInput').value.toLowerCase().trim()
-  document.querySelectorAll('#studentsTable tbody tr').forEach(row => {
-    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none'
-  })
+  if (raw.includes(',')) {
+    const [lastRaw, ...restParts] = raw.split(',')
+    const last = toTitleCase(lastRaw.trim())
+    const rest = restParts.join(',').trim()
+    const parts = rest.split(/\s+/)
+    if (parts.length >= 2) {
+      const middle = toTitleCase(parts[parts.length - 1])
+      const first  = toTitleCase(parts.slice(0, -1).join(' '))
+      return { last_name: last, first_name: first, middle_name: middle }
+    } else {
+      return { last_name: last, first_name: toTitleCase(rest), middle_name: '' }
+    }
+  }
+  return { last_name: toTitleCase(raw), first_name: '', middle_name: '' }
 }
 
-function exportToCSV() {
-  const table = document.getElementById('studentsTable')
-  let csv = []
-  const headers = Array.from(table.querySelectorAll('thead th')).map(th => `"${th.textContent.trim()}"`)
-  csv.push(headers.join(','))
-  table.querySelectorAll('tbody tr').forEach(row => {
-    const cols = Array.from(row.querySelectorAll('td')).map(td => `"${td.textContent.trim().replace(/"/g, '""')}"`)
-    csv.push(cols.join(','))
-  })
-  const blob = new Blob([csv.join('\n')], { type: 'text/csv' })
-  const url  = URL.createObjectURL(blob)
-  const a    = document.createElement('a')
-  a.href     = url
-  a.download = `students_${new Date().toISOString().slice(0,10)}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
+function toTitleCase(str) {
+  return (str || '').replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
 }
 
 // ══════════════════════════════════════════════════
-// IMPORT
+// IMPORT ENTRY POINT
 // ══════════════════════════════════════════════════
-
 async function runImportFromModal() {
   const input = document.getElementById('importFileInput')
   if (!input.files[0]) { showAlert('Please choose a file first.', 'warning', 'No File Selected'); return }
@@ -1203,6 +845,9 @@ function normalizeBirthday(value) {
   if (!raw) return ''
   if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw
   if (/^\d+(\.\d+)?$/.test(raw)) return excelSerialToDate(parseFloat(raw))
+  // mm/dd/yyyy → yyyy-mm-dd
+  const mmddyyyy = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  if (mmddyyyy) return `${mmddyyyy[3]}-${mmddyyyy[1].padStart(2,'0')}-${mmddyyyy[2].padStart(2,'0')}`
   const parsed = new Date(raw)
   if (!isNaN(parsed.getTime()))
     return `${parsed.getFullYear()}-${String(parsed.getMonth()+1).padStart(2,'0')}-${String(parsed.getDate()).padStart(2,'0')}`
@@ -1212,12 +857,18 @@ function normalizeBirthday(value) {
 function processImportedSheet(wb, filename) {
   const ws   = wb.Sheets[wb.SheetNames[0]]
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
-  parseAndImport(rows, filename)
+
+  if (_importMode === 'sf1') {
+    parseAndImportSF1(rows, filename)
+  } else {
+    parseAndImportStandard(rows, filename)
+  }
 }
 
-async function parseAndImport(rows, filename) {
+// ── Standard CSV/Excel parser ─────────────────────────────────────────────────
+async function parseAndImportStandard(rows, filename) {
   if (rows.length < 2) { showAlert('No data found in the file.', 'error', 'Empty File'); return }
-  const headers  = rows[0].map(h => (h || '').toString().trim().toLowerCase())
+  const headers = rows[0].map(h => (h || '').toString().trim().toLowerCase())
   const students = []
 
   for (let row of rows.slice(1)) {
@@ -1239,12 +890,73 @@ async function parseAndImport(rows, filename) {
   }
 
   if (students.length === 0) {
-    showAlert('No valid student rows found.\n\nMake sure your file has columns like:\nlast_name, first_name, birthday, contact_number, email\n\nOptional: middle_name, extension', 'error', 'No Valid Rows')
+    showAlert('No valid student rows found.\n\nRequired columns: last_name, first_name, birthday, contact_number, email', 'error', 'No Valid Rows')
+    return
+  }
+  await confirmAndSendImport(students, filename, 'standard')
+}
+
+// ── SF1 Excel parser ──────────────────────────────────────────────────────────
+async function parseAndImportSF1(rows, filename) {
+  if (rows.length < 2) { showAlert('No data found in the file.', 'error', 'Empty File'); return }
+
+  const students = []
+
+  // Detect the NAME column (col index 2 in standard SF1) and BIRTHDAY col (col index 11)
+  // We scan all rows to find student data rows.
+  // A student row has a value in col 2 matching "LASTNAME,FIRSTNAME..." pattern
+  // and a date-like value in col 11.
+  for (let row of rows) {
+    if (!row || row.length < 3) continue
+    const nameCell = (row[2] ?? '').toString().trim()
+    const bdayCell = (row[11] ?? '').toString().trim()
+
+    // Skip header / total / legend rows
+    if (!nameCell || !nameCell.includes(',')) continue
+    if (nameCell.includes('===') || nameCell.toLowerCase().includes('name') || nameCell.toLowerCase().includes('lrn')) continue
+    if (!bdayCell) continue
+
+    const { last_name, first_name, middle_name } = parseSF1Name(nameCell)
+    if (!last_name || !first_name) continue
+
+    const birthday = normalizeBirthday(bdayCell)
+    if (!birthday) continue
+
+    // Sex is in col 10
+    const sex = (row[10] ?? '').toString().trim()
+
+    students.push({
+      last_name,
+      first_name,
+      middle_name: middle_name || '',
+      birthday,
+      sex,
+      // contact & email intentionally blank — SF1 doesn't have them
+      contact_number: '',
+      email: '',
+    })
+  }
+
+  if (students.length === 0) {
+    showAlert(
+      'No valid student rows found in the SF1 file.\n\nMake sure you selected the correct file and "DepEd SF1 Excel" mode.',
+      'error', 'No Valid Rows'
+    )
     return
   }
 
+  await confirmAndSendImport(students, filename, 'sf1')
+}
+
+// ── Shared confirm + POST ─────────────────────────────────────────────────────
+async function confirmAndSendImport(students, filename, mode) {
+  const modeLabel = mode === 'sf1' ? 'DepEd SF1' : 'Standard'
+  const sf1Note   = mode === 'sf1'
+    ? '\n\n⚠️ Contact number & email are not in SF1 files — please fill them in via Edit after import.'
+    : ''
+
   const confirmed = await showConfirm(
-    `Found ${students.length} student(s) in "${filename}".\n\nImport them now?`,
+    `Found ${students.length} student(s) in "${filename}" [${modeLabel} mode].\n\nImport them now?${sf1Note}`,
     'Confirm Import', 'Import Now', 'bg-emerald-600 hover:bg-emerald-700'
   )
   if (!confirmed) return
@@ -1269,8 +981,181 @@ async function parseAndImport(rows, filename) {
 }
 
 // ══════════════════════════════════════════════════
-// CLOSE ON BACKDROP / ESC
+// ASSIGN SECTION
 // ══════════════════════════════════════════════════
+let _assignStudentId    = null
+let _assignSectionId    = null
+let _assignSectionCache = null
+
+async function openAssignSectionModal(studentId, currentSectionId) {
+  _assignStudentId = studentId
+  _assignSectionId = currentSectionId || null
+  document.getElementById('assignSectionLoading').classList.remove('hidden')
+  document.getElementById('assignSectionList').classList.add('hidden')
+  document.getElementById('assignSectionEmpty').classList.add('hidden')
+  document.getElementById('assignSchedulePreview').classList.add('hidden')
+  document.getElementById('assignSectionSaveBtn').disabled = true
+  openModal('assignSectionModal')
+  try {
+    if (!_assignSectionCache) {
+      const res  = await fetch("{{ url_for('sregister.sections_list') }}")
+      const data = await res.json()
+      if (!data.ok) throw new Error(data.message || 'Failed to load sections.')
+      _assignSectionCache = data.sections
+    }
+    renderAssignSectionList(_assignSectionCache, currentSectionId)
+  } catch (err) {
+    document.getElementById('assignSectionLoading').classList.add('hidden')
+    document.getElementById('assignSectionEmpty').textContent = 'Error loading sections: ' + err.message
+    document.getElementById('assignSectionEmpty').classList.remove('hidden')
+  }
+}
+
+function renderAssignSectionList(sections, currentSectionId) {
+  document.getElementById('assignSectionLoading').classList.add('hidden')
+  if (!sections || sections.length === 0) { document.getElementById('assignSectionEmpty').classList.remove('hidden'); return }
+  const list = document.getElementById('assignSectionList')
+  list.innerHTML = ''
+  sections.forEach(sec => {
+    const isSelected = String(sec.id) === String(currentSectionId)
+    const card = document.createElement('button')
+    card.type = 'button'
+    card.dataset.sectionId = sec.id
+    card.className = `w-full text-left px-5 py-4 rounded-2xl border-2 transition-all ${isSelected ? 'border-violet-500 bg-violet-50' : 'border-gray-200 bg-white hover:border-violet-300 hover:bg-violet-50/50'}`
+    card.innerHTML = `
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="font-semibold text-gray-900 text-sm">${sec.section_name || '—'}</p>
+          <p class="text-xs text-gray-500 mt-0.5">Year ${sec.year_level || '—'} · ${sec.teacher_name || 'No adviser'}</p>
+        </div>
+        <span class="check-icon flex-shrink-0 w-5 h-5 rounded-full border-2 ${isSelected ? 'bg-violet-500 border-violet-500' : 'border-gray-300'} flex items-center justify-center">
+          ${isSelected ? '<svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>' : ''}
+        </span>
+      </div>
+      ${sec.schedule ? `<p class="text-xs text-gray-400 mt-2 leading-5">${sec.schedule}</p>` : ''}
+    `
+    card.addEventListener('click', () => selectAssignSection(sec, sections))
+    list.appendChild(card)
+  })
+  list.classList.remove('hidden')
+  if (currentSectionId) {
+    const cur = sections.find(s => String(s.id) === String(currentSectionId))
+    if (cur) showAssignSchedulePreview(cur.schedule)
+  }
+  document.getElementById('assignSectionSaveBtn').disabled = !currentSectionId
+}
+
+function selectAssignSection(section, allSections) {
+  _assignSectionId = section.id
+  document.querySelectorAll('#assignSectionList button[data-section-id]').forEach(card => {
+    const isThis = String(card.dataset.sectionId) === String(section.id)
+    card.className = `w-full text-left px-5 py-4 rounded-2xl border-2 transition-all ${isThis ? 'border-violet-500 bg-violet-50' : 'border-gray-200 bg-white hover:border-violet-300 hover:bg-violet-50/50'}`
+    const icon = card.querySelector('.check-icon')
+    if (icon) {
+      icon.className = `check-icon flex-shrink-0 w-5 h-5 rounded-full border-2 ${isThis ? 'bg-violet-500 border-violet-500' : 'border-gray-300'} flex items-center justify-center`
+      icon.innerHTML = isThis ? '<svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>' : ''
+    }
+  })
+  showAssignSchedulePreview(section.schedule)
+  document.getElementById('assignSectionSaveBtn').disabled = false
+}
+
+function showAssignSchedulePreview(schedule) {
+  const preview = document.getElementById('assignSchedulePreview')
+  const text    = document.getElementById('assignScheduleText')
+  if (schedule) { text.textContent = schedule; preview.classList.remove('hidden') }
+  else { preview.classList.add('hidden') }
+}
+
+async function saveAssignSection() {
+  if (!_assignStudentId || !_assignSectionId) return
+  const btn = document.getElementById('assignSectionSaveBtn')
+  btn.disabled = true; btn.textContent = 'Saving…'
+  try {
+    const res  = await fetch(`/superadmin/assign-section/${_assignStudentId}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ section_id: _assignSectionId })
+    })
+    const data = await res.json()
+    if (!data.ok) throw new Error(data.message || 'Failed to assign section.')
+
+    const secCell  = document.getElementById(`cell-section-${_assignStudentId}`)
+    const yearCell = document.getElementById(`cell-year-${_assignStudentId}`)
+    const schCell  = document.getElementById(`cell-schedule-${_assignStudentId}`)
+    if (secCell)  secCell.textContent  = data.section_name || '—'
+    if (yearCell) yearCell.textContent = data.year_level   || '—'
+    if (schCell) { const div = schCell.querySelector('.schedule-cell') || schCell; div.textContent = data.schedule || '—' }
+
+    const viewModal = document.getElementById('viewStudentModal')
+    if (viewModal && !viewModal.classList.contains('hidden') && viewModal.dataset.studentId == _assignStudentId) {
+      document.getElementById('view_section_name').textContent = data.section_name || '—'
+      document.getElementById('view_year_level').textContent   = data.year_level   || '—'
+      document.getElementById('view_teacher_name').textContent = data.teacher_name || '—'
+      document.getElementById('view_schedule').textContent     = data.schedule     || '—'
+    }
+
+    const row = document.getElementById(`student-row-${_assignStudentId}`)
+    const sectionBtn = row ? row.querySelector(`button[onclick*="openAssignSectionModal"]`) : null
+    if (sectionBtn) sectionBtn.setAttribute('onclick', `openAssignSectionModal(${_assignStudentId}, ${_assignSectionId})`)
+
+    closeModal('assignSectionModal')
+    showAlert(`Section assigned successfully!\n\nSection: ${data.section_name}\nSchedule auto-filled.`, 'success', 'Section Assigned')
+  } catch (err) {
+    showAlert(err.message || 'Failed to assign section.', 'error', 'Error')
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save'
+  }
+}
+
+async function clearAssignSection() {
+  if (!_assignStudentId) return
+  const confirmed = await showConfirm('Remove the section assignment for this student?\nTheir schedule will also be cleared.', 'Clear Section', 'Clear', 'bg-red-500 hover:bg-red-600')
+  if (!confirmed) return
+  try {
+    const res  = await fetch(`/superadmin/assign-section/${_assignStudentId}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ section_id: null })
+    })
+    const data = await res.json()
+    if (!data.ok) throw new Error(data.message || 'Failed to clear section.')
+
+    const secCell  = document.getElementById(`cell-section-${_assignStudentId}`)
+    const yearCell = document.getElementById(`cell-year-${_assignStudentId}`)
+    const schCell  = document.getElementById(`cell-schedule-${_assignStudentId}`)
+    if (secCell)  secCell.textContent  = '—'
+    if (yearCell) yearCell.textContent = '—'
+    if (schCell) { const div = schCell.querySelector('.schedule-cell') || schCell; div.textContent = '—' }
+
+    const viewModal = document.getElementById('viewStudentModal')
+    if (viewModal && !viewModal.classList.contains('hidden') && viewModal.dataset.studentId == _assignStudentId) {
+      document.getElementById('view_section_name').textContent = '—'
+      document.getElementById('view_year_level').textContent   = '—'
+      document.getElementById('view_teacher_name').textContent = '—'
+      document.getElementById('view_schedule').textContent     = '—'
+    }
+
+    const row = document.getElementById(`student-row-${_assignStudentId}`)
+    const sectionBtn = row ? row.querySelector(`button[onclick*="openAssignSectionModal"]`) : null
+    if (sectionBtn) sectionBtn.setAttribute('onclick', `openAssignSectionModal(${_assignStudentId}, '')`)
+
+    _assignSectionId = null; _assignSectionCache = null
+    closeModal('assignSectionModal')
+    showAlert('Section cleared successfully.', 'success', 'Cleared')
+  } catch (err) {
+    showAlert(err.message || 'Failed to clear section.', 'error', 'Error')
+  }
+}
+
+// ══════════════════════════════════════════════════
+// TABLE UTILITIES
+// ══════════════════════════════════════════════════
+function filterTable() {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim()
+  document.querySelectorAll('#studentsTable tbody tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none'
+  })
+}
+
 ALL_MODALS.forEach(id => {
   document.getElementById(id)?.addEventListener('click', function(e) {
     if (e.target === this) {
@@ -1304,96 +1189,35 @@ document.addEventListener('DOMContentLoaded', function() {
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
   body { font-family: 'Inter', system-ui, sans-serif; }
-
-  html.modal-open,
-  body.modal-open { overflow: hidden !important; }
-
-  .form-label {
-    display: block; font-size: .8125rem; font-weight: 500;
-    color: #374151; margin-bottom: .5rem;
-  }
-  .form-input {
-    display: block; width: 100%; padding: .75rem 1rem;
-    font-size: .875rem; color: #111827; background: #fff;
-    border: 1.5px solid #e5e7eb; border-radius: .875rem;
-    outline: none; transition: border-color .15s, box-shadow .15s;
-  }
+  html.modal-open, body.modal-open { overflow: hidden !important; }
+  .form-label { display: block; font-size: .8125rem; font-weight: 500; color: #374151; margin-bottom: .5rem; }
+  .form-input { display: block; width: 100%; padding: .75rem 1rem; font-size: .875rem; color: #111827; background: #fff; border: 1.5px solid #e5e7eb; border-radius: .875rem; outline: none; transition: border-color .15s, box-shadow .15s; }
   .form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
   .form-input::placeholder { color: #9ca3af; }
   .form-input.input-error { border-color: #f87171 !important; box-shadow: 0 0 0 3px rgba(248,113,113,.15) !important; }
-  .form-select {
-    display: block; width: 100%;
-    padding: .75rem 2.5rem .75rem 1rem; font-size: .875rem; color: #111827;
-    background: #fff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") no-repeat right .75rem center / 1.25rem;
-    border: 1.5px solid #e5e7eb; border-radius: .875rem;
-    outline: none; appearance: none; -webkit-appearance: none;
-    transition: border-color .15s, box-shadow .15s;
-  }
+  .form-select { display: block; width: 100%; padding: .75rem 2.5rem .75rem 1rem; font-size: .875rem; color: #111827; background: #fff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") no-repeat right .75rem center / 1.25rem; border: 1.5px solid #e5e7eb; border-radius: .875rem; outline: none; appearance: none; -webkit-appearance: none; transition: border-color .15s, box-shadow .15s; }
   .form-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
-  .field-error {
-    font-size: .75rem; color: #ef4444; margin-top: .35rem;
-    display: flex; align-items: center; gap: .25rem;
-  }
+  .field-error { font-size: .75rem; color: #ef4444; margin-top: .35rem; display: flex; align-items: center; gap: .25rem; }
   .field-error::before { content: '⚠ '; }
-  .view-label {
-    display: block; font-size: .7rem; font-weight: 600;
-    text-transform: uppercase; letter-spacing: .06em;
-    color: #9ca3af; margin-bottom: .4rem;
-  }
-  .view-field {
-    background: #f9fafb; border: 1.5px solid #e5e7eb;
-    border-radius: .875rem; padding: .75rem 1rem;
-    font-size: .875rem; color: #1f2937; min-height: 2.75rem;
-  }
-  .modal-overlay {
-    position: fixed; inset: 0; z-index: 2147483000;
-    display: flex; align-items: flex-start; justify-content: center;
-    padding: 24px 16px; overflow-y: auto; overflow-x: hidden;
-    background: rgba(17,24,39,.58);
-    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
-    isolation: isolate; opacity: 0; pointer-events: none;
-    transition: opacity .18s ease;
-  }
+  .view-label { display: block; font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #9ca3af; margin-bottom: .4rem; }
+  .view-field { background: #f9fafb; border: 1.5px solid #e5e7eb; border-radius: .875rem; padding: .75rem 1rem; font-size: .875rem; color: #1f2937; min-height: 2.75rem; }
+  .modal-overlay { position: fixed; inset: 0; z-index: 2147483000; display: flex; align-items: flex-start; justify-content: center; padding: 24px 16px; overflow-y: auto; overflow-x: hidden; background: rgba(17,24,39,.58); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); isolation: isolate; opacity: 0; pointer-events: none; transition: opacity .18s ease; }
   .modal-overlay.is-open { opacity: 1; pointer-events: auto; }
-  .modal-panel {
-    position: relative; z-index: 2147483001; width: 100%;
-    background: #fff; border-radius: 1.5rem;
-    box-shadow: 0 25px 50px -12px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.12);
-    overflow: hidden; display: flex; flex-direction: column;
-    margin: auto 0; max-height: calc(100vh - 48px);
-    transform: translateY(10px) scale(.985);
-    transition: transform .18s ease, opacity .18s ease;
-  }
+  .modal-panel { position: relative; z-index: 2147483001; width: 100%; background: #fff; border-radius: 1.5rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.12); overflow: hidden; display: flex; flex-direction: column; margin: auto 0; max-height: calc(100vh - 48px); transform: translateY(10px) scale(.985); transition: transform .18s ease, opacity .18s ease; }
   .modal-overlay.is-open .modal-panel { transform: translateY(0) scale(1); }
   .modal-panel-lg { max-width: 960px; }
   .modal-panel-md { max-width: 560px; }
   .modal-panel-sm { max-width: 440px; }
-  .modal-header {
-    position: sticky; top: 0; z-index: 30; padding: 1.25rem 2rem;
-    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-  }
+  .modal-header { position: sticky; top: 0; z-index: 30; padding: 1.25rem 2rem; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
   .modal-body { overflow-y: auto; overflow-x: hidden; flex: 1 1 auto; }
-  .modal-footer {
-    position: sticky; bottom: 0; z-index: 30; padding: 1.25rem 2rem;
-    border-top: 1px solid #f3f4f6; background: rgba(249,250,251,.96);
-    backdrop-filter: blur(6px); display: flex; align-items: center;
-    justify-content: flex-end; gap: .75rem; flex-shrink: 0;
-  }
-  .modal-close-btn {
-    width: 2.25rem; height: 2.25rem; border-radius: 9999px;
-    background: rgba(255,255,255,.2); color: #fff;
-    display: flex; align-items: center; justify-content: center;
-    transition: background-color .15s;
-  }
+  .modal-footer { position: sticky; bottom: 0; z-index: 30; padding: 1.25rem 2rem; border-top: 1px solid #f3f4f6; background: rgba(249,250,251,.96); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: flex-end; gap: .75rem; flex-shrink: 0; }
+  .modal-close-btn { width: 2.25rem; height: 2.25rem; border-radius: 9999px; background: rgba(255,255,255,.2); color: #fff; display: flex; align-items: center; justify-content: center; transition: background-color .15s; }
   .modal-close-btn:hover { background: rgba(255,255,255,.3); }
-  @keyframes fadeIn {
-    from { opacity: 0; transform: scale(.97) translateY(8px); }
-    to   { opacity: 1; transform: scale(1) translateY(0); }
-  }
+  @keyframes fadeIn { from { opacity: 0; transform: scale(.97) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
   .animate-fadeIn { animation: fadeIn .2s ease-out; }
   @media (max-width: 640px) {
     .modal-overlay { padding: 12px; align-items: stretch; }
-    .modal-panel   { max-height: calc(100vh - 24px); border-radius: 1.25rem; }
+    .modal-panel { max-height: calc(100vh - 24px); border-radius: 1.25rem; }
     .modal-header, .modal-footer { padding-left: 1rem; padding-right: 1rem; }
   }
 </style>
