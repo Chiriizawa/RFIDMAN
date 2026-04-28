@@ -689,11 +689,6 @@ def add_room():
 
     return redirect(url_for("schedule.schedule"))
 
-
-# ─────────────────────────────────────────────
-# DELETE ROOM
-# ─────────────────────────────────────────────
-
 @schedule_bp.route("/schedule/room/delete/<int:room_id>", methods=["POST"])
 @login_required
 def delete_room(room_id):
