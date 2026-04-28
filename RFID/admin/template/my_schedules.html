@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}My Schedule{% endblock %}
+{% block title %}My Class Schedules{% endblock %}
 
 {% block content %}
 <style>
@@ -31,14 +31,26 @@
         flex-wrap: wrap;
     }
     
+    .section-selector label {
+        font-weight: 600;
+        color: #1e293b;
+    }
+    
     .section-selector select {
         padding: 0.5rem 1rem;
         border-radius: 0.5rem;
         border: 1px solid #e2e8f0;
         background: white;
         font-size: 0.9rem;
-        min-width: 250px;
+        min-width: 300px;
         cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .section-selector select:focus {
+        outline: none;
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.1);
     }
     
     .schedule-table-container {
@@ -53,7 +65,7 @@
         width: 100%;
         border-collapse: collapse;
         font-size: 0.8rem;
-        min-width: 700px;
+        min-width: 800px;
     }
     
     .weekly-schedule th {
@@ -78,7 +90,7 @@
         font-weight: 700;
         color: #1e293b;
         text-align: center;
-        min-width: 80px;
+        min-width: 90px;
         position: sticky;
         left: 0;
         font-size: 0.8rem;
@@ -123,13 +135,6 @@
         margin-top: 0.2rem;
     }
     
-    .day-header {
-        background: #1e293b;
-        color: white;
-        font-weight: 700;
-        font-size: 0.9rem;
-    }
-    
     .export-btn {
         background: #f59e0b;
         color: white;
@@ -139,20 +144,30 @@
         border: none;
         cursor: pointer;
         transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
     }
     
     .export-btn:hover {
         background: #d97706;
+        transform: translateY(-1px);
     }
     
     .loading-spinner {
         text-align: center;
-        padding: 2rem;
+        padding: 3rem;
     }
     
-    .fa-spinner {
-        font-size: 2rem;
+    .loading-spinner i {
+        font-size: 2.5rem;
         color: #f59e0b;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
     }
     
     .schedule-badge {
@@ -165,6 +180,30 @@
         margin-left: 0.5rem;
     }
     
+    .section-info {
+        background: #f0fdf4;
+        border-left: 4px solid #ffffff;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .empty-state {
+        background: #f8fafc;
+        border-radius: 1rem;
+        padding: 3rem;
+        text-align: center;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .fade-in {
+        animation: fadeIn 0.3s ease;
+    }
+    
     @media (max-width: 768px) {
         .header-gradient { padding: 1rem; }
         .weekly-schedule { font-size: 0.7rem; }
@@ -173,6 +212,7 @@
         .subject-name { font-size: 0.75rem; }
         .teacher-name, .room, .schedule-time { font-size: 0.6rem; }
         .time-cell { font-size: 0.7rem; min-width: 65px; }
+        .section-selector select { min-width: 250px; }
     }
 </style>
 
@@ -185,10 +225,9 @@
                         <i class="fa-solid fa-calendar-alt text-accent"></i>
                         My Class Schedules
                     </h1>
-                    <p class="text-white/80 mt-1 text-sm">Weekly calendar view of your class schedules</p>
+                    <p class="text-white/80 mt-1 text-sm">Weekly calendar view of your class schedules (Monday to Friday)</p>
                 </div>
-                <button onclick="exportToCSV()" class="export-btn">
-                    <i class="fa-solid fa-download mr-2"></i> Export Schedule
+               
                 </button>
             </div>
         </div>
@@ -197,14 +236,12 @@
             {% if sections and sections|length > 0 %}
             
             <div class="section-selector">
-                <label><i class="fa-solid fa-chalkboard text-accent mr-2"></i>Select Section:</label>
+                <i class="fa-solid fa-chalkboard text-accent"></i>
+                <label>Select Section:</label>
                 <select id="sectionSelect" onchange="loadSectionSchedule(this.value)">
                     {% for section in sections %}
                     <option value="{{ section.section_id }}" {% if loop.first %}selected{% endif %}>
                         {{ section.section_name }} (Year {{ section.year_level }}) - {{ section.student_count }} students
-                        {% if section.schedule_count > 0 %}
-                        <span class="schedule-badge"><i class="fa-regular fa-clock"></i> {{ section.schedule_count }} classes</span>
-                        {% endif %}
                     </option>
                     {% endfor %}
                 </select>
@@ -212,16 +249,17 @@
 
             <div id="scheduleContainer">
                 <div class="loading-spinner">
-                    <i class="fa-solid fa-spinner fa-spin text-accent text-3xl"></i>
+                    <i class="fa-solid fa-spinner fa-spin"></i>
                     <p class="text-gray-500 mt-2">Loading schedule...</p>
                 </div>
             </div>
 
             {% else %}
-            <div class="empty-state text-center p-5">
-                <div class="text-6xl mb-4">📅</div>
+            <div class="empty-state">
+                <i class="fa-regular fa-calendar-circle-exclamation text-6xl text-gray-400 mb-4"></i>
                 <h3 class="text-xl font-semibold text-gray-700 mb-2">No Sections Assigned</h3>
                 <p class="text-gray-500">You haven't been assigned to any sections yet.</p>
+                <p class="text-gray-400 text-sm mt-2">Contact the administrator to assign sections.</p>
             </div>
             {% endif %}
         </div>
@@ -229,163 +267,256 @@
 </div>
 
 <script>
-const sectionsData = {
-    {% for section in sections %}
-    "{{ section.section_id }}": {
-        "section_id": {{ section.section_id }},
-        "section_name": "{{ section.section_name }}",
-        "year_level": "{{ section.year_level }}"
-    }{% if not loop.last %},{% endif %}
-    {% endfor %}
-};
-
-// HOURLY TIME SLOTS from 7:00 AM to 5:00 PM
-const timeSlots = [
-    '7:00-8:00', '8:00-9:00', '9:00-10:00', '10:00-11:00',
-    '11:00-12:00', '12:00-13:00', '13:00-14:00', '14:00-15:00',
-    '15:00-16:00', '16:00-17:00'
-];
-
-const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
-async function loadSectionSchedule(sectionId) {
-    const container = document.getElementById('scheduleContainer');
-    container.innerHTML = `<div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin text-accent text-3xl"></i><p class="text-gray-500 mt-2">Loading schedule...</p></div>`;
+    // Days of the week (Monday to Friday only)
+    const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
     
-    try {
-        const response = await fetch(`/admin/section_weekly_schedule_data/${sectionId}`);
-        const data = await response.json();
-        
-        if (data.success && data.section) {
-            renderCalendarTable(data.section);
-        } else {
-            container.innerHTML = `<div class="text-center py-5"><div class="text-6xl mb-4">📅</div><h3 class="text-xl font-semibold text-gray-700">No schedule data</h3><p class="text-gray-500 mt-2">This section doesn't have a schedule set yet.</p></div>`;
-        }
-    } catch (error) {
-        console.error('Error loading schedule:', error);
-        container.innerHTML = `<div class="text-center py-5"><div class="text-6xl mb-4">⚠️</div><h3 class="text-xl font-semibold text-gray-700">Error loading schedule</h3><p class="text-gray-500 mt-2">Please try again later.</p></div>`;
-    }
-}
-
-function renderCalendarTable(section) {
-    const schedules = section.schedules || [];
+    // Hourly time slots from 7:00 AM to 5:00 PM
+    const TIME_SLOTS = [
+        '7:00', '8:00', '9:00', '10:00', '11:00', 
+        '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'
+    ];
     
-    // Build schedule map using time_slot
-    const scheduleMap = {};
-    for (const s of schedules) {
-        const dayKey = s.day.substring(0, 3).toUpperCase();
-        const timeSlot = s.time_slot;
-        
-        if (!scheduleMap[timeSlot]) scheduleMap[timeSlot] = {};
-        scheduleMap[timeSlot][dayKey] = s;
+    let currentScheduleData = null;
+    
+    function formatTime(time) {
+        if (!time) return '';
+        let hour = parseInt(time.split(':')[0]);
+        const minute = time.split(':')[1] || '00';
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        hour = hour % 12 || 12;
+        return `${hour}:${minute} ${ampm}`;
     }
     
-    let tableHtml = `
-        <div class="mb-4 p-3 bg-blue-50 rounded-lg">
-            <h3 class="font-semibold text-gray-800">📚 ${escapeHtml(section.section_name)} - Year ${section.year_level}</h3>
-            <p class="text-xs text-gray-500 mt-1">${schedules.length} class schedule(s) configured</p>
-        </div>
-        <div class="schedule-table-container">
-            <table class="weekly-schedule">
-                <thead><tr><th class="day-header">TIME</th>${days.map(d => `<th class="day-header">${d.substring(0, 3)}</th>`).join('')}</tr></thead>
-                <tbody>`;
+    function getTimeSlotLabel(startTime) {
+        const hour = parseInt(startTime.split(':')[0]);
+        const nextHour = hour + 1;
+        const startFormatted = formatTime(startTime);
+        const endFormatted = formatTime(`${String(nextHour).padStart(2, '0')}:00`);
+        return `${startFormatted} - ${endFormatted}`;
+    }
     
-    for (const timeSlot of timeSlots) {
-        tableHtml += `<tr><td class="time-cell">${escapeHtml(timeSlot)}</td>`;
-        for (const day of days) {
-            const dayKey = day.substring(0, 3).toUpperCase();
-            const schedule = scheduleMap[timeSlot]?.[dayKey] || null;
+    async function loadSectionSchedule(sectionId) {
+        const container = document.getElementById('scheduleContainer');
+        container.innerHTML = `
+            <div class="loading-spinner">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <p class="text-gray-500 mt-2">Loading schedule...</p>
+            </div>
+        `;
+        
+        try {
+            const response = await fetch(`/admin/api/schedule_data/${sectionId}`);
+            const data = await response.json();
             
-            tableHtml += `<td class="schedule-cell" style="vertical-align: middle;">`;
-            if (schedule) {
-                tableHtml += `
-                    <div class="schedule-block">
-                        <div class="subject-name">📖 ${escapeHtml(schedule.subject)}</div>
-                        <div class="teacher-name"><i class="fa-solid fa-user-graduate mr-1"></i>${escapeHtml(schedule.teacher || '—')}</div>
-                        <div class="room"><i class="fa-solid fa-location-dot mr-1"></i>${escapeHtml(schedule.room || 'TBD')}</div>
-                        <div class="schedule-time"><i class="fa-regular fa-clock mr-1"></i>${escapeHtml(schedule.formatted_time)}</div>
-                    </div>`;
-            }
-            tableHtml += `</td>`;
-        }
-        tableHtml += `</tr>`;
-    }
-    
-    tableHtml += `</tbody></table></div>`;
-    
-    if (schedules.length > 0) {
-        tableHtml += `
-            <div class="mt-4 p-3 bg-gray-50 rounded-lg">
-                <h4 class="font-medium text-gray-700 mb-2"><i class="fa-solid fa-list-check text-accent mr-2"></i>Schedule List:</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    ${schedules.map(s => `
-                        <div class="text-sm p-2 bg-white rounded border">
-                            <span class="font-semibold text-accent">${escapeHtml(s.day)}</span>
-                            <span class="text-gray-600"> at ${escapeHtml(s.formatted_time)}</span>
-                            <div class="font-medium mt-1">${escapeHtml(s.subject)}</div>
-                            <div class="text-xs text-gray-500 mt-1">
-                                👨‍🏫 ${escapeHtml(s.teacher || '—')} | 📍 ${escapeHtml(s.room || 'TBD')}
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>`;
-    } else {
-        tableHtml += `<div class="text-center py-5"><p class="text-gray-500">No class schedules configured yet.</p></div>`;
-    }
-    
-    document.getElementById('scheduleContainer').innerHTML = tableHtml;
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-function exportToCSV() {
-    let csvContent = "TIME,MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY,SUNDAY\n";
-    const rows = document.querySelectorAll('.weekly-schedule tbody tr');
-    rows.forEach(row => {
-        const cells = row.querySelectorAll('td');
-        const rowData = [];
-        cells.forEach((cell, index) => {
-            if (index === 0) {
-                rowData.push(`"${cell.innerText.trim()}"`);
+            if (data.success) {
+                currentScheduleData = data;
+                renderScheduleTable(data);
             } else {
-                const blocks = cell.querySelectorAll('.schedule-block');
-                let cellText = '';
-                blocks.forEach(block => {
-                    const subject = block.querySelector('.subject-name')?.innerText.replace('📖', '').trim() || '';
-                    if (subject) cellText += `${subject}\n`;
-                });
-                rowData.push(`"${cellText.replace(/"/g, '""').trim()}"`);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-regular fa-calendar text-6xl text-gray-400 mb-4"></i>
+                        <h3 class="text-xl font-semibold text-gray-700 mb-2">No Schedule Data</h3>
+                        <p class="text-gray-500">${data.error || 'This section doesn\'t have a schedule set yet.'}</p>
+                    </div>
+                `;
             }
-        });
-        csvContent += rowData.join(',') + '\n';
+        } catch (error) {
+            console.error('Error loading schedule:', error);
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-circle-exclamation text-6xl text-red-400 mb-4"></i>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">Error Loading Schedule</h3>
+                    <p class="text-gray-500">Network error. Please try again.</p>
+                </div>
+            `;
+        }
+    }
+    
+    function renderScheduleTable(data) {
+        if (!data || !data.schedules) return;
+        
+        // Build schedule map: day + hour
+        const scheduleMap = {};
+        for (const sch of data.schedules) {
+            const hour = sch.time.split(':')[0];
+            const key = `${sch.day}|${hour}`;
+            if (!scheduleMap[key]) {
+                scheduleMap[key] = [];
+            }
+            scheduleMap[key].push(sch);
+        }
+        
+        // Build the table HTML
+        let tableHtml = `
+            <div class="section-info fade-in">
+                <i class="fa-solid fa-circle-info text-accent mr-2"></i>
+                <strong>${escapeHtml(data.section.name)}</strong> - Year ${escapeHtml(data.section.year_level || 'N/A')}
+                <span class="schedule-badge">${data.schedules.length} class(es) scheduled</span>
+            </div>
+            <div class="schedule-table-container fade-in">
+                <table class="weekly-schedule">
+                    <thead>
+                        <tr>
+                            <th class="time-cell">TIME</th>
+                            ${DAYS.map(day => `<th class="day-header">${day.toUpperCase()}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        for (const timeSlot of TIME_SLOTS) {
+            const hour = timeSlot.split(':')[0];
+            const timeLabel = getTimeSlotLabel(timeSlot);
+            
+            tableHtml += `<tr>`;
+            tableHtml += `<td class="time-cell">${escapeHtml(timeLabel)}</td>`;
+            
+            for (const day of DAYS) {
+                const key = `${day}|${hour}`;
+                const schedules = scheduleMap[key] || [];
+                
+                tableHtml += `<td class="schedule-cell">`;
+                
+                if (schedules.length > 0) {
+                    for (const sch of schedules) {
+                        tableHtml += `
+                            <div class="schedule-block">
+                                <div class="subject-name">
+                                    <i class="fa-regular fa-bookmark mr-1"></i>
+                                    ${escapeHtml(sch.subject)}
+                                </div>
+                                ${sch.teacher_name ? `
+                                <div class="teacher-name">
+                                    <i class="fa-solid fa-user-graduate mr-1"></i>
+                                    ${escapeHtml(sch.teacher_name)}
+                                </div>
+                                ` : ''}
+                                ${sch.room_name ? `
+                                <div class="room">
+                                    <i class="fa-solid fa-location-dot mr-1"></i>
+                                    ${escapeHtml(sch.room_name)}
+                                </div>
+                                ` : ''}
+                                <div class="schedule-time">
+                                    <i class="fa-regular fa-clock mr-1"></i>
+                                    ${escapeHtml(sch.time)}
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+                
+                tableHtml += `</td>`;
+            }
+            
+            tableHtml += `</tr>`;
+        }
+        
+        tableHtml += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        // Add schedule list summary if there are schedules
+        if (data.schedules.length > 0) {
+            tableHtml += `
+                <div class="mt-4 p-3 bg-gray-50 rounded-lg fade-in">
+                    <h4 class="font-medium text-gray-700 mb-2">
+                        <i class="fa-solid fa-list-check text-accent mr-2"></i>
+                        All Scheduled Classes (${data.schedules.length})
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        ${data.schedules.map(sch => `
+                            <div class="text-sm p-2 bg-white rounded border border-gray-200">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-semibold text-accent">${escapeHtml(sch.day)}</span>
+                                    <span class="text-xs text-gray-500">${escapeHtml(sch.time)}</span>
+                                </div>
+                                <div class="font-medium mt-1">${escapeHtml(sch.subject)}</div>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    👨‍🏫 ${escapeHtml(sch.teacher_name || 'Not assigned')} 
+                                    | 📍 ${escapeHtml(sch.room_name || 'No room')}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        document.getElementById('scheduleContainer').innerHTML = tableHtml;
+    }
+    
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    function exportToCSV() {
+        if (!currentScheduleData || !currentScheduleData.schedules) {
+            alert('No schedule data to export');
+            return;
+        }
+        
+        // Build CSV content
+        let csvContent = "TIME,MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY\n";
+        
+        // Build schedule map for export
+        const exportMap = {};
+        for (const sch of currentScheduleData.schedules) {
+            const hour = sch.time.split(':')[0];
+            const key = `${sch.day}|${hour}`;
+            if (!exportMap[key]) {
+                exportMap[key] = [];
+            }
+            exportMap[key].push(sch);
+        }
+        
+        for (const timeSlot of TIME_SLOTS) {
+            const hour = timeSlot.split(':')[0];
+            const timeLabel = getTimeSlotLabel(timeSlot);
+            const row = [timeLabel];
+            
+            for (const day of DAYS) {
+                const key = `${day}|${hour}`;
+                const schedules = exportMap[key] || [];
+                
+                if (schedules.length > 0) {
+                    const scheduleText = schedules.map(sch => 
+                        `${sch.subject} | ${sch.teacher_name || ''} | ${sch.room_name || ''}`
+                    ).join('; ');
+                    row.push(`"${scheduleText.replace(/"/g, '""')}"`);
+                } else {
+                    row.push('"---"');
+                }
+            }
+            
+            csvContent += row.join(',') + '\n';
+        }
+        
+        // Download CSV
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentScheduleData.section.name}_schedule_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        alert('Schedule exported successfully!');
+    }
+    
+    // Initialize - load first section on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const select = document.getElementById('sectionSelect');
+        if (select && select.value) {
+            loadSectionSchedule(select.value);
+        }
     });
-    
-    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `class_schedule_${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-    
-    alert('Schedule exported successfully!');
-}
-
-document.getElementById('sectionSelect')?.addEventListener('change', function() {
-    loadSectionSchedule(this.value);
-});
-
-// Load first section on page load
-if (document.getElementById('sectionSelect')?.value) {
-    loadSectionSchedule(document.getElementById('sectionSelect').value);
-}
 </script>
 {% endblock %}

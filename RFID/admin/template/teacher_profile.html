@@ -79,9 +79,10 @@
     }
     
     .form-input::placeholder { color: #94a3b8; font-size: 0.85rem; }
-    .form-input:disabled, .form-input[readonly] { background: #f8fafc; color: #64748b; cursor: not-allowed; border-color: #e2e8f0; }
+    .form-input.error { border-color: #ef4444; background: #fef2f2; }
     
     label { color: #1e293b; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.5rem; display: block; letter-spacing: 0.3px; }
+    .label-required { color: #ef4444; margin-left: 2px; }
     
     .btn-primary {
         background: #f59e0b;
@@ -136,24 +137,148 @@
     
     .divider { height: 1px; background: linear-gradient(to right, #e2e8f0, transparent); margin: 1.5rem 0; }
     
-    /* Responsive Styles */
+    .error-text { font-size: 0.7rem; color: #ef4444; margin-top: 0.25rem; display: none; align-items: center; gap: 0.25rem; }
+    .error-text.show { display: flex; }
+    
+    .valid-text { font-size: 0.7rem; color: #10b981; margin-top: 0.25rem; display: none; align-items: center; gap: 0.25rem; }
+    .valid-text.show { display: flex; }
+    
+    /* Modal Styles - Fixed */
+   /* Modal Styles - Full Screen Blur */
+/* Modal Styles - No Blur */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 99999;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal.show {
+    display: flex;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-content {
+    background: rgba(30, 30, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 1.5rem;
+    padding: 2rem;
+    max-width: 450px;
+    width: 90%;
+    animation: modalSlideIn 0.3s ease;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes modalSlideIn {
+    from { transform: translateY(-30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.modal-header i {
+    font-size: 3rem;
+    color: #facc15;
+    margin-bottom: 0.5rem;
+}
+
+.modal-header h3 {
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.modal-header p {
+    color: #94a3b8;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+}
+
+.modal-btn {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    transition: all 0.3s ease;
+}
+
+.modal-btn:hover {
+    background: linear-gradient(135deg, #d97706, #b45309);
+    transform: translateY(-2px);
+}
+
+.modal-close {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+    
+    .password-wrapper {
+        position: relative;
+    }
+    
+    .password-toggle {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.6);
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+    
+    .password-toggle:hover {
+        color: #facc15;
+    }
+    
+    .glass-input-modal {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #e2e8f0;
+        border-radius: 0.75rem;
+        padding: 0.85rem 1.25rem;
+        width: 100%;
+        outline: none;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+    }
+    
+    .glass-input-modal:focus {
+        border-color: #facc15;
+        background: rgba(255, 255, 255, 0.15);
+        box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.1);
+    }
+    
+    .glass-input-modal::placeholder {
+        color: rgba(148, 163, 184, 0.7);
+    }
+    
     @media (max-width: 768px) {
         .header-gradient { padding: 1rem 1.25rem; }
-        .header-gradient h1 { font-size: 1.1rem; }
         .form-input { font-size: 0.85rem; padding: 0.5rem 0.75rem; }
         .info-display-value { font-size: 0.8rem; }
         .section-header { font-size: 0.9rem; }
         label { font-size: 0.75rem; }
         .info-display-box { padding: 0.6rem 0.8rem; }
         .btn-primary, .btn-secondary { padding: 0.6rem; font-size: 0.85rem; }
-        .p-6 { padding: 1rem; }
-    }
-    
-    @media (max-width: 480px) {
-        .grid-cols-1.md\:grid-cols-2 { gap: 0.75rem; }
-        .info-display-value { font-size: 0.75rem; }
-        .info-display-label { font-size: 0.6rem; }
-        .section-header { font-size: 0.85rem; }
+        .modal-content { padding: 1.5rem; }
     }
 </style>
 
@@ -184,7 +309,7 @@
                     <div class="info-display-label">
                         <i class="fa-solid fa-envelope mr-1 text-yellow-400"></i> Email Address
                     </div>
-                    <div class="info-display-value">
+                    <div class="info-display-value" id="teacherEmailDisplay">
                         {{ current_teacher.email }}
                     </div>
                 </div>
@@ -199,36 +324,72 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label>First Name <span class="text-red-500">*</span></label>
+                        <label>First Name <span class="label-required">*</span></label>
                         <input type="text" id="first_name" name="first_name"
                                value="{{ current_teacher.first_name }}"
                                class="form-input"
                                placeholder="Enter first name"
                                maxlength="50">
+                        <div class="info-text">
+                            <i class="fa-solid fa-info-circle"></i> Letters only (A-Z, a-z), spaces, hyphens, apostrophes • 2-50 characters
+                        </div>
+                        <div class="error-text" id="first_name_error">
+                            <i class="fa-solid fa-exclamation-circle"></i> Invalid: Only letters, spaces, hyphens, and apostrophes allowed
+                        </div>
+                        <div class="valid-text" id="first_name_valid">
+                            <i class="fa-solid fa-check-circle"></i> Valid format
+                        </div>
                     </div>
                     <div>
-                        <label>Middle Name</label>
+                        <label>Middle Name <span class="label-required" style="color:#64748b;">(Optional)</span></label>
                         <input type="text" id="middle_name" name="middle_name"
                                value="{{ current_teacher.middle_name or '' }}"
                                class="form-input"
                                placeholder="Enter middle name (optional)"
                                maxlength="50">
+                        <div class="info-text">
+                            <i class="fa-solid fa-info-circle"></i> Letters only (A-Z, a-z), spaces, hyphens, apostrophes • Max 50 characters
+                        </div>
+                        <div class="error-text" id="middle_name_error">
+                            <i class="fa-solid fa-exclamation-circle"></i> Invalid: Only letters, spaces, hyphens, and apostrophes allowed
+                        </div>
+                        <div class="valid-text" id="middle_name_valid">
+                            <i class="fa-solid fa-check-circle"></i> Valid format
+                        </div>
                     </div>
                     <div>
-                        <label>Last Name <span class="text-red-500">*</span></label>
+                        <label>Last Name <span class="label-required">*</span></label>
                         <input type="text" id="last_name" name="last_name"
                                value="{{ current_teacher.last_name }}"
                                class="form-input"
                                placeholder="Enter last name"
                                maxlength="50">
+                        <div class="info-text">
+                            <i class="fa-solid fa-info-circle"></i> Letters only (A-Z, a-z), spaces, hyphens, apostrophes • 2-50 characters
+                        </div>
+                        <div class="error-text" id="last_name_error">
+                            <i class="fa-solid fa-exclamation-circle"></i> Invalid: Only letters, spaces, hyphens, and apostrophes allowed
+                        </div>
+                        <div class="valid-text" id="last_name_valid">
+                            <i class="fa-solid fa-check-circle"></i> Valid format
+                        </div>
                     </div>
                     <div>
-                        <label>Extension</label>
+                        <label>Extension <span class="label-required" style="color:#64748b;">(Optional)</span></label>
                         <input type="text" id="extension" name="extension"
                                value="{{ current_teacher.extension or '' }}"
                                class="form-input"
                                placeholder="e.g., Jr., Sr., III"
                                maxlength="20">
+                        <div class="info-text">
+                            <i class="fa-solid fa-info-circle"></i> Valid: Jr., Sr., II, III, IV, V, VI, VII, VIII, IX, X
+                        </div>
+                        <div class="error-text" id="extension_error">
+                            <i class="fa-solid fa-exclamation-circle"></i> Invalid extension (e.g., Jr., Sr., II, III)
+                        </div>
+                        <div class="valid-text" id="extension_valid">
+                            <i class="fa-solid fa-check-circle"></i> Valid extension
+                        </div>
                     </div>
                 </div>
 
@@ -241,18 +402,31 @@
                            maxlength="11"
                            inputmode="numeric">
                     <div class="info-text">
-                        <i class="fa-solid fa-info-circle"></i> Numbers only • Max 11 digits
+                        <i class="fa-solid fa-info-circle"></i> Philippine mobile number: 11 digits, starts with 09 (e.g., 09123456789)
+                    </div>
+                    <div class="error-text" id="contact_error">
+                        <i class="fa-solid fa-exclamation-circle"></i> Invalid: Must be 11 digits starting with 09 (e.g., 09123456789)
+                    </div>
+                    <div class="valid-text" id="contact_valid">
+                        <i class="fa-solid fa-check-circle"></i> Valid Philippine mobile number
                     </div>
                 </div>
 
                 <div>
-                    <label>Email Address</label>
+                    <label>Email Address <span class="label-required">*</span></label>
                     <input type="email" id="email" name="email"
                            value="{{ current_teacher.email }}"
                            class="form-input"
-                           readonly disabled>
+                           placeholder="teacher@example.com"
+                           maxlength="100">
                     <div class="info-text">
-                        <i class="fa-solid fa-info-circle"></i> Email address cannot be changed
+                        <i class="fa-solid fa-info-circle"></i> Valid email format required. This will be used for login and password reset.
+                    </div>
+                    <div class="error-text" id="email_error">
+                        <i class="fa-solid fa-exclamation-circle"></i> Invalid email format (e.g., name@example.com)
+                    </div>
+                    <div class="valid-text" id="email_valid">
+                        <i class="fa-solid fa-check-circle"></i> Valid email format
                     </div>
                 </div>
 
@@ -276,21 +450,15 @@
 
                 <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
                     <p class="text-gray-600 text-sm mb-4">
-                        <i class="fa-solid fa-envelope mr-2 text-accent"></i>
-                        A password reset link will be sent to your email address: 
-                        <strong class="text-gray-800">{{ current_teacher.email }}</strong>
+                        <i class="fa-solid fa-lock mr-2 text-accent"></i>
+                        Enter your new password below to change it immediately.
                     </p>
                     
-                    <button type="button" onclick="sendPasswordReset()" id="resetPasswordBtn"
+                    <button type="button" onclick="openChangePasswordModal()" id="changePasswordBtn"
                             class="btn-secondary font-semibold rounded-xl transition">
-                        <i class="fa-solid fa-paper-plane mr-2"></i>
-                        Send Password Reset Link
+                        <i class="fa-solid fa-key mr-2"></i>
+                        Change Password
                     </button>
-                    
-                    <div class="info-text mt-3">
-                        <i class="fa-solid fa-info-circle"></i> 
-                        You will receive an email with instructions to reset your password. The link will expire after 24 hours.
-                    </div>
                 </div>
             </div>
 
@@ -298,7 +466,68 @@
     </div>
 </div>
 
+<!-- Change Password Modal -->
+<div id="changePasswordModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <i class="fa-solid fa-lock"></i>
+            <h3>Change Password</h3>
+            <p>Enter your new password below</p>
+        </div>
+        
+        <form id="changePasswordForm" class="space-y-5">
+            <div>
+                <label class="block text-sm font-medium text-blue-200 mb-2">
+                    <i class="fa-solid fa-lock mr-1 text-yellow-400/70"></i>
+                    New Password
+                </label>
+                <div class="password-wrapper">
+                    <input type="password" id="newPassword" name="password" required
+                           placeholder="Enter new password (min. 6 characters)"
+                           class="glass-input-modal w-full pr-12">
+                    <button type="button" class="password-toggle" onclick="toggleModalPassword('newPassword', 'toggleModalIcon1')">
+                        <i class="fa-regular fa-eye" id="toggleModalIcon1"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-blue-200 mb-2">
+                    <i class="fa-solid fa-lock mr-1 text-yellow-400/70"></i>
+                    Confirm New Password
+                </label>
+                <div class="password-wrapper">
+                    <input type="password" id="confirmNewPassword" name="confirm_password" required
+                           placeholder="Confirm your new password"
+                           class="glass-input-modal w-full pr-12">
+                    <button type="button" class="password-toggle" onclick="toggleModalPassword('confirmNewPassword', 'toggleModalIcon2')">
+                        <i class="fa-regular fa-eye" id="toggleModalIcon2"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="flex gap-3">
+                <button type="button" onclick="closeChangePasswordModal()"
+                        class="modal-close flex-1 text-white font-semibold py-3 rounded-xl transition">
+                    Cancel
+                </button>
+                <button type="submit" id="changePasswordSubmitBtn"
+                        class="modal-btn flex-1 text-white font-semibold py-3 rounded-xl transition">
+                    <i class="fa-solid fa-check-circle mr-2"></i>
+                    Update Password
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+// REGEX PATTERNS
+const NAME_REGEX = /^[A-Za-z\u00C0-\u00FF\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF]+(?:[\s\-'][A-Za-z\u00C0-\u00FF\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF]+)*$/;
+const EXTENSION_REGEX = /^(|Jr\.?|Sr\.?|I{1,3}|IV|V|VI|VII|VIII|IX|X|II|III)$/i;
+const PHONE_REGEX = /^(09)\d{9}$/;
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
 function showToast(message, type = 'success', title = '') {
     const titles = { success: '✓ Success!', error: '✗ Error!', info: 'ℹ Info', warning: '⚠ Warning' };
     const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
@@ -323,16 +552,11 @@ function showToast(message, type = 'success', title = '') {
     }, 3000);
 }
 
-function setButtonLoading(button, isLoading, originalText, loadingText = 'Sending...') {
+function setButtonLoading(button, isLoading, originalText, loadingText = 'Saving...') {
     if (isLoading) {
         button.classList.add('btn-loading');
         button.disabled = true;
-        const icon = button.querySelector('i');
-        if (icon) {
-            button.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> ${loadingText}`;
-        } else {
-            button.innerHTML = loadingText;
-        }
+        button.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> ${loadingText}`;
     } else {
         button.classList.remove('btn-loading');
         button.disabled = false;
@@ -340,20 +564,215 @@ function setButtonLoading(button, isLoading, originalText, loadingText = 'Sendin
     }
 }
 
-function validateContactNumber(input) {
-    let value = input.value;
-    let cleaned = value.replace(/[^\d]/g, '');
+function toggleModalPassword(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    icon.classList.toggle('fa-eye', !isHidden);
+    icon.classList.toggle('fa-eye-slash', isHidden);
+}
+
+function openChangePasswordModal() {
+    document.getElementById('changePasswordModal').classList.add('show');
+    document.getElementById('newPassword').focus();
+}
+
+function closeChangePasswordModal() {
+    document.getElementById('changePasswordModal').classList.remove('show');
+    document.getElementById('changePasswordForm').reset();
+}
+
+function removeErrorStyles() {
+    const fields = ['first_name', 'middle_name', 'last_name', 'extension', 'contact_number', 'email'];
+    fields.forEach(id => {
+        const input = document.getElementById(id);
+        const errorDiv = document.getElementById(`${id}_error`);
+        const validDiv = document.getElementById(`${id}_valid`);
+        if (input) input.classList.remove('error');
+        if (errorDiv) errorDiv.classList.remove('show');
+        if (validDiv) validDiv.classList.remove('show');
+    });
+}
+
+function showFieldStatus(fieldId, isValid, errorMessage = null) {
+    const input = document.getElementById(fieldId);
+    const errorDiv = document.getElementById(`${fieldId}_error`);
+    const validDiv = document.getElementById(`${fieldId}_valid`);
     
-    if (cleaned.length > 11) {
-        cleaned = cleaned.slice(0, 11);
-        showToast('Contact number cannot exceed 11 digits', 'warning', 'Too Long');
+    if (input && errorDiv && validDiv) {
+        if (!input.value.trim()) {
+            input.classList.remove('error');
+            errorDiv.classList.remove('show');
+            validDiv.classList.remove('show');
+            return;
+        }
+        
+        if (isValid) {
+            input.classList.remove('error');
+            errorDiv.classList.remove('show');
+            validDiv.classList.add('show');
+        } else {
+            input.classList.add('error');
+            errorDiv.classList.add('show');
+            validDiv.classList.remove('show');
+            if (errorMessage) {
+                showToast(errorMessage, 'warning', 'Invalid Input');
+            }
+        }
+    }
+}
+
+function validateName(value) {
+    if (!value || value.trim() === '') return false;
+    const trimmed = value.trim();
+    if (trimmed.length < 2) return false;
+    if (trimmed.length > 50) return false;
+    return NAME_REGEX.test(trimmed);
+}
+
+function validateExtension(value) {
+    if (!value || value.trim() === '') return true;
+    const trimmed = value.trim();
+    if (trimmed.length > 20) return false;
+    return EXTENSION_REGEX.test(trimmed);
+}
+
+function validateContactNumber(value) {
+    if (!value || value.trim() === '') return true;
+    const cleaned = value.replace(/\s/g, '');
+    if (cleaned.length !== 11) return false;
+    if (!PHONE_REGEX.test(cleaned)) return false;
+    return true;
+}
+
+function validateEmail(value) {
+    if (!value || value.trim() === '') return false;
+    return EMAIL_REGEX.test(value.trim());
+}
+
+function cleanNameInput(input) {
+    let value = input.value;
+    const original = value;
+    value = value.replace(/[^A-Za-z\u00C0-\u00FF\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF\s\-']/g, '');
+    value = value.replace(/\s+/g, ' ').trim();
+    if (value !== original) {
+        input.value = value;
+        if (original.match(/[0-9]/)) {
+            showToast('Names cannot contain numbers', 'warning', 'Invalid Character');
+        }
+        if (original.match(/[!@#$%^&*()_+=[\]{};:"\\|,.<>/?]/)) {
+            showToast('Names cannot contain special characters', 'warning', 'Invalid Character');
+        }
+    }
+    return value;
+}
+
+function cleanContactInput(input) {
+    let value = input.value;
+    const original = value;
+    value = value.replace(/[^\d]/g, '');
+    if (value.length > 11) {
+        value = value.slice(0, 11);
+    }
+    if (value !== original) {
+        input.value = value;
+        if (original.match(/[A-Za-z]/)) {
+            showToast('Contact number can only contain digits', 'warning', 'Invalid Character');
+        }
+    }
+    return value;
+}
+
+function validateForm() {
+    removeErrorStyles();
+    let isValid = true;
+    
+    const firstName = document.getElementById('first_name');
+    const lastName = document.getElementById('last_name');
+    const middleName = document.getElementById('middle_name');
+    const extension = document.getElementById('extension');
+    const contactNumber = document.getElementById('contact_number');
+    const email = document.getElementById('email');
+    
+    if (firstName) {
+        const isValidName = validateName(firstName.value);
+        showFieldStatus('first_name', isValidName, 'First name must contain only letters, spaces, hyphens, or apostrophes. 2-50 characters.');
+        if (!isValidName && firstName.value.trim()) isValid = false;
     }
     
-    if (value !== cleaned) {
-        input.value = cleaned;
-        if (value.match(/[a-zA-Z]/)) {
-            showToast('Only numbers are allowed in contact number field', 'warning', 'Invalid Input');
-        }
+    if (lastName) {
+        const isValidName = validateName(lastName.value);
+        showFieldStatus('last_name', isValidName, 'Last name must contain only letters, spaces, hyphens, or apostrophes. 2-50 characters.');
+        if (!isValidName && lastName.value.trim()) isValid = false;
+    }
+    
+    if (middleName && middleName.value.trim()) {
+        const isValidName = validateName(middleName.value);
+        showFieldStatus('middle_name', isValidName, 'Middle name must contain only letters, spaces, hyphens, or apostrophes.');
+        if (!isValidName) isValid = false;
+    } else {
+        showFieldStatus('middle_name', true);
+    }
+    
+    if (extension && extension.value.trim()) {
+        const isValidExt = validateExtension(extension.value);
+        showFieldStatus('extension', isValidExt, 'Extension must be Jr., Sr., II, III, IV, V, VI, VII, VIII, IX, or X');
+        if (!isValidExt) isValid = false;
+    } else {
+        showFieldStatus('extension', true);
+    }
+    
+    if (contactNumber && contactNumber.value.trim()) {
+        const isValidContact = validateContactNumber(contactNumber.value);
+        showFieldStatus('contact_number', isValidContact, 'Contact number must be 11 digits starting with 09 (e.g., 09123456789)');
+        if (!isValidContact) isValid = false;
+    } else {
+        showFieldStatus('contact_number', true);
+    }
+    
+    if (email) {
+        const isValidEmail = validateEmail(email.value);
+        showFieldStatus('email', isValidEmail, 'Please enter a valid email address (e.g., name@example.com)');
+        if (!isValidEmail) isValid = false;
+    }
+    
+    return isValid;
+}
+
+function setupLiveValidation() {
+    const firstName = document.getElementById('first_name');
+    if (firstName) {
+        firstName.addEventListener('input', function() { cleanNameInput(this); showFieldStatus('first_name', validateName(this.value)); });
+        firstName.addEventListener('blur', function() { if (this.value.trim()) { const words = this.value.trim().split(/\s+/); const capitalized = words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '); if (capitalized !== this.value) this.value = capitalized; showFieldStatus('first_name', validateName(this.value)); } });
+    }
+    
+    const middleName = document.getElementById('middle_name');
+    if (middleName) {
+        middleName.addEventListener('input', function() { cleanNameInput(this); showFieldStatus('middle_name', !this.value.trim() || validateName(this.value)); });
+        middleName.addEventListener('blur', function() { if (this.value.trim()) { const words = this.value.trim().split(/\s+/); const capitalized = words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '); if (capitalized !== this.value) this.value = capitalized; showFieldStatus('middle_name', validateName(this.value)); } });
+    }
+    
+    const lastName = document.getElementById('last_name');
+    if (lastName) {
+        lastName.addEventListener('input', function() { cleanNameInput(this); showFieldStatus('last_name', validateName(this.value)); });
+        lastName.addEventListener('blur', function() { if (this.value.trim()) { const words = this.value.trim().split(/\s+/); const capitalized = words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '); if (capitalized !== this.value) this.value = capitalized; showFieldStatus('last_name', validateName(this.value)); } });
+    }
+    
+    const extension = document.getElementById('extension');
+    if (extension) {
+        extension.addEventListener('input', function() { let v = this.value; v = v.replace(/[^A-Za-z\s\.]/g, ''); v = v.replace(/\s+/g, ' ').trim(); if (v !== this.value) this.value = v; if (this.value.trim()) this.value = this.value.toUpperCase(); showFieldStatus('extension', !this.value.trim() || validateExtension(this.value)); });
+    }
+    
+    const contactField = document.getElementById('contact_number');
+    if (contactField) {
+        contactField.addEventListener('input', function() { cleanContactInput(this); showFieldStatus('contact_number', !this.value.trim() || validateContactNumber(this.value)); });
+        contactField.addEventListener('blur', function() { if (this.value.trim() && !validateContactNumber(this.value)) showToast('Contact number must be 11 digits starting with 09', 'warning', 'Invalid Format'); });
+    }
+    
+    const emailField = document.getElementById('email');
+    if (emailField) {
+        emailField.addEventListener('input', function() { showFieldStatus('email', validateEmail(this.value)); });
     }
 }
 
@@ -361,35 +780,21 @@ async function saveProfile() {
     const saveBtn = document.getElementById('saveBtn');
     const originalText = '<i class="fa-solid fa-floppy-disk mr-2"></i> Save Profile Changes';
     
+    if (!validateForm()) {
+        return;
+    }
+    
     let firstName = document.getElementById('first_name').value.trim();
     let middleName = document.getElementById('middle_name').value.trim();
     let lastName = document.getElementById('last_name').value.trim();
     let extension = document.getElementById('extension').value.trim();
     const contactNumber = document.getElementById('contact_number').value.trim();
+    const email = document.getElementById('email').value.trim().toLowerCase();
     
-    if (!firstName) {
-        showToast('First name is required', 'warning', 'Missing Field');
-        document.getElementById('first_name').focus();
-        return;
-    }
-    
-    if (!lastName) {
-        showToast('Last name is required', 'warning', 'Missing Field');
-        document.getElementById('last_name').focus();
-        return;
-    }
-    
-    if (contactNumber && !/^\d+$/.test(contactNumber)) {
-        showToast('Contact number can only contain numbers', 'warning', 'Invalid Format');
-        document.getElementById('contact_number').focus();
-        return;
-    }
-    
-    if (contactNumber && contactNumber.length > 11) {
-        showToast('Contact number cannot exceed 11 digits', 'warning', 'Too Long');
-        document.getElementById('contact_number').focus();
-        return;
-    }
+    firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+    if (middleName) middleName = middleName.charAt(0).toUpperCase() + middleName.slice(1).toLowerCase();
+    lastName = lastName.charAt(0).toUpperCase() + lastName.slice(1).toLowerCase();
+    if (extension) extension = extension.toUpperCase();
     
     const fullName = [firstName, middleName, lastName, extension].filter(p => p).join(' ');
     
@@ -398,7 +803,8 @@ async function saveProfile() {
         middle_name: middleName,
         last_name: lastName,
         extension: extension,
-        contact_number: contactNumber
+        contact_number: contactNumber,
+        email: email
     };
 
     setButtonLoading(saveBtn, true, originalText, 'Saving...');
@@ -414,8 +820,8 @@ async function saveProfile() {
 
         if (data.success) {
             showToast('Your profile has been updated successfully!', 'success', 'Profile Updated');
-            
             document.getElementById('teacherNameDisplay').textContent = fullName;
+            document.getElementById('teacherEmailDisplay').textContent = email;
             document.title = `My Profile - ${fullName}`;
         } else {
             showToast(data.message || 'Failed to update profile.', 'error', 'Update Failed');
@@ -428,71 +834,76 @@ async function saveProfile() {
     }
 }
 
-async function sendPasswordReset() {
-    const resetBtn = document.getElementById('resetPasswordBtn');
-    const originalText = '<i class="fa-solid fa-paper-plane mr-2"></i> Send Password Reset Link';
-    const email = '{{ current_teacher.email }}';
+// Handle change password form submission
+document.getElementById('changePasswordForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
     
-    if (!email) {
-        showToast('No email address found for this account', 'error', 'Cannot Send');
+    const password = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmNewPassword').value;
+    const btn = document.getElementById('changePasswordSubmitBtn');
+    const originalText = btn.innerHTML;
+    const email = document.getElementById('email').value.trim();
+    
+    if (!password) {
+        showToast('Please enter a new password.', 'warning', 'Password Required');
         return;
     }
     
-    setButtonLoading(resetBtn, true, originalText, 'Sending...');
+    if (password.length < 6) {
+        showToast('Password must be at least 6 characters long.', 'warning', 'Invalid Password');
+        return;
+    }
+    
+    if (password !== confirmPassword) {
+        showToast('Passwords do not match. Please try again.', 'error', 'Password Mismatch');
+        return;
+    }
+    
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Updating...';
+    btn.disabled = true;
+    btn.classList.add('opacity-70');
     
     try {
-        const response = await fetch("{{ url_for('admin_bp.forgot_password_ajax') }}", {
+        const response = await fetch("{{ url_for('admin_bp.update_teacher_password') }}", {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email })
+            body: JSON.stringify({ 
+                email: email,
+                password: password 
+            })
         });
         
         const data = await response.json();
         
         if (data.success) {
-            showToast(data.message, 'success', 'Email Sent');
-            resetBtn.innerHTML = '<i class="fa-solid fa-check mr-2"></i> Reset Link Sent!';
+            showToast('Password has been changed successfully!', 'success', 'Password Updated');
+            closeChangePasswordModal();
             setTimeout(() => {
-                if (resetBtn) {
-                    resetBtn.innerHTML = originalText;
-                }
-            }, 3000);
+                window.location.href = "{{ url_for('admin_bp.teacher_login') }}";
+            }, 2000);
         } else {
-            showToast(data.message || 'Failed to send reset link. Please try again.', 'error', 'Failed');
+            showToast(data.message || 'Failed to change password. Please try again.', 'error', 'Update Failed');
         }
     } catch (error) {
-        console.error('Error sending reset email:', error);
-        showToast('Network error. Please check your connection and try again.', 'error', 'Connection Error');
+        console.error('Error:', error);
+        showToast('Network error. Please try again.', 'error', 'Connection Error');
     } finally {
-        setTimeout(() => {
-            if (resetBtn && !resetBtn.disabled) {
-                setButtonLoading(resetBtn, false, originalText);
-            } else if (resetBtn && resetBtn.innerHTML !== originalText && resetBtn.innerHTML !== '<i class="fa-solid fa-check mr-2"></i> Reset Link Sent!') {
-                setButtonLoading(resetBtn, false, originalText);
-            }
-        }, 2000);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        btn.classList.remove('opacity-70');
     }
-}
+});
 
-document.addEventListener('DOMContentLoaded', () => {
-    const contactField = document.getElementById('contact_number');
-    if (contactField) {
-        contactField.placeholder = '09123456789';
-        
-        contactField.addEventListener('input', function(e) {
-            validateContactNumber(this);
-        });
-        
-        contactField.addEventListener('keypress', function(e) {
-            const charCode = e.which ? e.which : e.keyCode;
-            if (charCode < 48 || charCode > 57) {
-                e.preventDefault();
-                showToast('Only numbers are allowed in contact number field', 'warning', 'Invalid Input');
-                return false;
-            }
-            return true;
-        });
+// Close modal when clicking outside
+document.getElementById('changePasswordModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeChangePasswordModal();
     }
+});
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    setupLiveValidation();
 });
 </script>
 {% endblock %}
