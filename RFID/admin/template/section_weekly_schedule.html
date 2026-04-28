@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ section.section_name }} - Weekly Schedule{% endblock %}
+{% block title %}{{ section_name }} - Weekly Schedule{% endblock %}
 
 {% block content %}
 <style>
@@ -48,7 +48,7 @@
         width: 100%;
         border-collapse: collapse;
         font-size: 0.75rem;
-        min-width: 800px;
+        min-width: 900px;
     }
     
     .weekly-schedule th {
@@ -65,6 +65,7 @@
         padding: 0.5rem;
         vertical-align: top;
         background: white;
+        min-width: 120px;
     }
     
     .weekly-schedule .time-cell {
@@ -72,7 +73,7 @@
         font-weight: 700;
         color: #1e293b;
         text-align: center;
-        min-width: 70px;
+        min-width: 80px;
         position: sticky;
         left: 0;
         font-size: 0.7rem;
@@ -80,21 +81,21 @@
     
     .schedule-block {
         margin-bottom: 0.5rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 1px solid #e2e8f0;
+        padding: 0.5rem;
+        background: #fef3c7;
+        border-radius: 0.5rem;
+        border-left: 3px solid #f59e0b;
     }
     
     .schedule-block:last-child {
         margin-bottom: 0;
-        padding-bottom: 0;
-        border-bottom: none;
     }
     
-    .course-code {
+    .subject-code {
         font-weight: 800;
         color: #d97706;
         font-size: 0.75rem;
-        margin-bottom: 0.15rem;
+        margin-bottom: 0.25rem;
     }
     
     .teacher-name {
@@ -107,13 +108,26 @@
         font-size: 0.6rem;
         color: #6b7280;
         font-family: monospace;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .time-badge {
+        font-size: 0.6rem;
+        color: #f59e0b;
+        font-weight: 500;
+        margin-top: 0.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
     }
     
     .day-header {
         background: #1e293b;
         color: white;
         font-weight: 700;
-        font-size: 0.8rem;
+        font-size: 0.9rem;
     }
     
     .student-list-card {
@@ -150,80 +164,35 @@
         background: #d97706;
     }
     
-    .grid {
-        display: grid;
-        gap: 0.5rem;
-    }
-    
-    .grid-cols-1 {
-        grid-template-columns: repeat(1, 1fr);
-    }
-    
-    @media (min-width: 768px) {
-        .md\:grid-cols-2 {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-    
-    .font-medium {
-        font-weight: 500;
-    }
-    
-    .text-xs {
-        font-size: 0.7rem;
-    }
-    
-    .text-gray-500 {
-        color: #6b7280;
-    }
-    
-    .text-blue-500 {
-        color: #3b82f6;
-    }
-    
-    .ml-2 {
-        margin-left: 0.5rem;
-    }
-    
-    .mr-1 {
-        margin-right: 0.25rem;
-    }
-    
-    .mr-2 {
-        margin-right: 0.5rem;
-    }
-    
-    .mt-3 {
-        margin-top: 0.75rem;
-    }
-    
-    .mb-3 {
-        margin-bottom: 0.75rem;
-    }
-    
-    .p-6 {
-        padding: 1.5rem;
-    }
-    
-    .text-center {
+    .loading-spinner {
         text-align: center;
+        padding: 3rem;
     }
     
-    .text-6xl {
-        font-size: 4rem;
+    .loading-spinner i {
+        font-size: 3rem;
+        color: #f59e0b;
+        animation: spin 1s linear infinite;
     }
     
-    .text-gray-400 {
-        color: #9ca3af;
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
     }
     
-    .text-gray-700 {
-        color: #374151;
+    .empty-schedule {
+        text-align: center;
+        padding: 2rem;
+        color: #64748b;
     }
     
-    .py-5 {
-        padding-top: 1.25rem;
-        padding-bottom: 1.25rem;
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .fade-in {
+        animation: fadeIn 0.3s ease;
     }
     
     @media (max-width: 768px) {
@@ -231,19 +200,19 @@
             padding: 1rem;
         }
         .weekly-schedule {
-            font-size: 0.65rem;
+            font-size: 0.6rem;
         }
         .weekly-schedule td, .weekly-schedule th {
             padding: 0.3rem;
         }
-        .course-code {
-            font-size: 0.65rem;
+        .subject-code {
+            font-size: 0.6rem;
         }
-        .teacher-name {
-            font-size: 0.55rem;
-        }
-        .room {
+        .teacher-name, .room, .time-badge {
             font-size: 0.5rem;
+        }
+        .schedule-block {
+            padding: 0.3rem;
         }
     }
 </style>
@@ -256,13 +225,11 @@
                     <a href="{{ url_for('admin_bp.teacher_schedules') }}" class="back-btn">
                         <i class="fa-solid fa-arrow-left"></i> Back to Sections
                     </a>
-                    <h1 class="text-2xl font-semibold flex items-center gap-3 mt-3">
+                    <h1 class="text-2xl font-semibold flex items-center gap-3 mt-3" id="sectionTitle">
                         <i class="fa-solid fa-calendar-week text-accent"></i>
-                        {{ section.section_name }} - Weekly Schedule
+                        Loading...
                     </h1>
-                    <p class="text-white/80 mt-1">
-                        Year {{ section.year_level }} | Adviser: {{ section.first_name }} {{ section.last_name }}
-                    </p>
+                    <p class="text-white/80 mt-1" id="sectionInfo"></p>
                 </div>
                 <button onclick="exportToCSV()" class="export-btn">
                     <i class="fa-solid fa-download mr-2"></i> Export Schedule
@@ -271,166 +238,273 @@
         </div>
 
         <div class="p-6">
-            {% if students and students|length > 0 %}
-            
-            <!-- Weekly Schedule Table -->
-            <div class="schedule-table-container">
-                <table class="weekly-schedule">
-                    <thead>
-                        <tr>
-                            <th class="day-header">TIME</th>
-                            <th class="day-header">MON</th>
-                            <th class="day-header">TUE</th>
-                            <th class="day-header">WED</th>
-                            <th class="day-header">THU</th>
-                            <th class="day-header">FRI</th>
-                            <th class="day-header">SAT</th>
-                            <th class="day-header">SUN</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% set time_slots = [
-                            '7:00-7:30', '7:30-8:00', '8:00-8:30', '8:30-9:00', 
-                            '9:00-9:30', '9:30-10:00', '10:00-10:30', '10:30-11:00',
-                            '11:00-11:30', '11:30-12:00', '12:00-12:30', '12:30-13:00',
-                            '13:00-13:30', '13:30-14:00', '14:00-14:30', '14:30-15:00',
-                            '15:00-15:30', '15:30-16:00', '16:00-16:30', '16:30-17:00'
-                        ] %}
-                        {% for time_slot in time_slots %}
-                        <tr>
-                            <td class="time-cell">{{ time_slot }}</td>
-                            {% set days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
-                            {% for day in days %}
-                            <td class="schedule-cell">
-                                {% for student in students %}
-                                    {% if student.schedule %}
-                                        {% set schedule_lower = student.schedule|lower %}
-                                        {% set time_slot_lower = time_slot|lower %}
-                                        {% set day_lower = day|lower %}
-                                        {% set day_short = day[:3]|lower %}
-                                        
-                                        {% if time_slot_lower in schedule_lower or day_lower in schedule_lower or day_short in schedule_lower %}
-                                        <div class="schedule-block">
-                                            <!-- Parse schedule string to extract course, teacher, room -->
-                                            {% set parts = student.schedule.split('\n') %}
-                                            <div class="course-code">
-                                                {% if parts|length > 0 %}
-                                                    {{ parts[0]|trim }}
-                                                {% else %}
-                                                    {{ student.schedule|truncate(30) }}
-                                                {% endif %}
-                                            </div>
-                                            {% if parts|length > 1 and parts[1]|trim|length > 0 %}
-                                            <div class="teacher-name">
-                                                <i class="fa-solid fa-user-graduate mr-1"></i>{{ parts[1]|trim }}
-                                            </div>
-                                            {% endif %}
-                                            {% if parts|length > 2 and parts[2]|trim|length > 0 %}
-                                            <div class="room">
-                                                <i class="fa-solid fa-location-dot mr-1"></i>{{ parts[2]|trim }}
-                                            </div>
-                                            {% endif %}
-                                            <!-- Show student name if no detailed schedule -->
-                                            {% if parts|length == 1 and student.schedule|length < 30 %}
-                                            <div class="teacher-name">
-                                                <i class="fa-solid fa-user mr-1"></i>{{ student.first_name }} {{ student.last_name }}
-                                            </div>
-                                            {% endif %}
-                                        </div>
-                                        {% endif %}
-                                    {% endif %}
-                                {% endfor %}
-                            </td>
-                            {% endfor %}
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Student List Section -->
-            <div class="student-list-card">
-                <h3 class="font-medium text-gray-800 mb-3">
-                    <i class="fa-solid fa-users text-accent mr-2"></i>
-                    Students in {{ section.section_name }} ({{ students|length }})
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {% for student in students %}
-                    <div class="student-item">
-                        <div>
-                            <span class="font-medium">{{ student.first_name }} {{ student.last_name }}</span>
-                            {% if student.schedule %}
-                            <span class="text-xs text-gray-500 ml-2">
-                                <i class="fa-regular fa-clock"></i> {{ student.schedule|truncate(40) }}
-                            </span>
-                            {% endif %}
-                        </div>
-                        {% if student.email %}
-                        <a href="mailto:{{ student.email }}" class="text-blue-500 text-xs">
-                            <i class="fa-regular fa-envelope"></i>
-                        </a>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
+            <div id="scheduleContent">
+                <div class="loading-spinner">
+                    <i class="fa-solid fa-spinner"></i>
+                    <p class="mt-2 text-gray-500">Loading schedule...</p>
                 </div>
             </div>
-            
-            {% else %}
-            <div class="text-center py-5">
-                <div class="text-6xl mb-4">
-                    <i class="fa-regular fa-calendar-circle-exclamation text-gray-400"></i>
-                </div>
-                <h3 class="text-xl font-semibold text-gray-700">No Students Found</h3>
-                <p class="text-gray-500 mt-2">No students have been assigned to this section yet.</p>
-            </div>
-            {% endif %}
         </div>
     </div>
 </div>
 
 <script>
-function exportToCSV() {
-    let csvContent = "TIME,MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY,SUNDAY\n";
+    let scheduleData = null;
+    const sectionId = {{ section_id }};
     
-    const rows = document.querySelectorAll('.weekly-schedule tbody tr');
-    rows.forEach(row => {
-        const cells = row.querySelectorAll('td');
-        const rowData = [];
-        cells.forEach((cell, index) => {
-            if (index === 0) {
-                // Time cell
-                rowData.push(`"${cell.innerText.trim()}"`);
+    // Days of the week (Monday to Friday only)
+    const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    
+    // Time slots (hourly from 7 AM to 5 PM)
+    const TIME_SLOTS = [
+        '07:00', '08:00', '09:00', '10:00', '11:00', 
+        '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'
+    ];
+    
+    function formatTime(time) {
+        if (!time) return '';
+        // Convert "07:00" to "7:00 AM"
+        let hour = parseInt(time.split(':')[0]);
+        const minute = time.split(':')[1];
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        hour = hour % 12 || 12;
+        return `${hour}:${minute} ${ampm}`;
+    }
+    
+    function getTimeSlotLabel(startTime) {
+        const hour = parseInt(startTime.split(':')[0]);
+        const nextHour = hour + 1;
+        const startFormatted = formatTime(startTime);
+        const endFormatted = formatTime(`${String(nextHour).padStart(2, '0')}:00`);
+        return `${startFormatted} - ${endFormatted}`;
+    }
+    
+    async function loadSchedule() {
+        try {
+            const response = await fetch(`/admin/api/schedule_data/${sectionId}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                scheduleData = data;
+                
+                // Update header
+                document.getElementById('sectionTitle').innerHTML = `
+                    <i class="fa-solid fa-calendar-week text-accent"></i>
+                    ${escapeHtml(data.section.name)} - Weekly Schedule
+                `;
+                document.getElementById('sectionInfo').innerHTML = `
+                    Year ${escapeHtml(data.section.year_level) || 'N/A'} | 
+                    ${data.schedules.length} schedule(s) | 
+                    ${data.students.length} student(s)
+                `;
+                
+                renderScheduleTable();
+                renderStudentList();
             } else {
-                // Schedule cells - extract text without icons
-                const blocks = cell.querySelectorAll('.schedule-block');
-                let cellText = '';
-                blocks.forEach(block => {
-                    const course = block.querySelector('.course-code')?.innerText.trim() || '';
-                    const teacher = block.querySelector('.teacher-name')?.innerText.replace(/[●]/g, '').trim() || '';
-                    const room = block.querySelector('.room')?.innerText.replace(/[●]/g, '').trim() || '';
-                    if (course) cellText += `${course}\n`;
-                    if (teacher) cellText += `${teacher}\n`;
-                    if (room) cellText += `${room}\n`;
-                    cellText += '---\n';
-                });
-                rowData.push(`"${cellText.replace(/"/g, '""').trim()}"`);
+                document.getElementById('scheduleContent').innerHTML = `
+                    <div class="empty-schedule">
+                        <i class="fa-regular fa-calendar-circle-exclamation text-4xl mb-3"></i>
+                        <p>${data.error || 'Failed to load schedule'}</p>
+                    </div>
+                `;
             }
+        } catch (error) {
+            console.error('Error loading schedule:', error);
+            document.getElementById('scheduleContent').innerHTML = `
+                <div class="empty-schedule">
+                    <i class="fa-solid fa-circle-exclamation text-4xl mb-3"></i>
+                    <p>Network error. Please try again.</p>
+                </div>
+            `;
+        }
+    }
+    
+    function renderScheduleTable() {
+        if (!scheduleData || !scheduleData.schedules) return;
+        
+        // Create a map for quick lookup: day + time_slot
+        const scheduleMap = {};
+        scheduleData.schedules.forEach(sch => {
+            const hour = sch.time.split(':')[0];
+            const key = `${sch.day}|${hour}`;
+            if (!scheduleMap[key]) {
+                scheduleMap[key] = [];
+            }
+            scheduleMap[key].push(sch);
         });
-        csvContent += rowData.join(',') + '\n';
-    });
+        
+        // Build HTML
+        let html = `
+            <div class="schedule-table-container fade-in">
+                <table class="weekly-schedule">
+                    <thead>
+                        <tr>
+                            <th class="day-header">TIME</th>
+                            <th class="day-header">MONDAY</th>
+                            <th class="day-header">TUESDAY</th>
+                            <th class="day-header">WEDNESDAY</th>
+                            <th class="day-header">THURSDAY</th>
+                            <th class="day-header">FRIDAY</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        for (const timeSlot of TIME_SLOTS) {
+            const hour = timeSlot.split(':')[0];
+            const timeLabel = getTimeSlotLabel(timeSlot);
+            
+            html += `<tr>`;
+            html += `<td class="time-cell">${escapeHtml(timeLabel)}</td>`;
+            
+            for (const day of DAYS) {
+                const key = `${day}|${hour}`;
+                const schedules = scheduleMap[key] || [];
+                
+                html += `<td class="schedule-cell">`;
+                
+                if (schedules.length > 0) {
+                    schedules.forEach(sch => {
+                        html += `
+                            <div class="schedule-block">
+                                <div class="subject-code">
+                                    <i class="fa-regular fa-bookmark mr-1"></i>
+                                    ${escapeHtml(sch.subject)}
+                                </div>
+                                ${sch.teacher_name ? `
+                                <div class="teacher-name">
+                                    <i class="fa-solid fa-user-graduate mr-1"></i>
+                                    ${escapeHtml(sch.teacher_name)}
+                                </div>
+                                ` : ''}
+                                ${sch.room_name ? `
+                                <div class="room">
+                                    <i class="fa-solid fa-location-dot mr-1"></i>
+                                    ${escapeHtml(sch.room_name)}
+                                </div>
+                                ` : ''}
+                                <div class="time-badge">
+                                    <i class="fa-regular fa-clock"></i>
+                                    ${escapeHtml(sch.time)}
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += `<div style="height: 60px;"></div>`;
+                }
+                
+                html += `</td>`;
+            }
+            
+            html += `</tr>`;
+        }
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        document.getElementById('scheduleContent').innerHTML = html;
+    }
     
-    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = '{{ section.section_name }}_weekly_schedule.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+    function renderStudentList() {
+        if (!scheduleData || !scheduleData.students || scheduleData.students.length === 0) return;
+        
+        const studentListHtml = `
+            <div class="student-list-card fade-in mt-3">
+                <h3 class="font-medium text-gray-800 mb-3">
+                    <i class="fa-solid fa-users text-accent mr-2"></i>
+                    Students in ${escapeHtml(scheduleData.section.name)} (${scheduleData.students.length})
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    ${scheduleData.students.map(student => `
+                        <div class="student-item">
+                            <div>
+                                <span class="font-medium">${escapeHtml(student.name)}</span>
+                                ${student.contact ? `
+                                <span class="text-xs text-gray-500 ml-2">
+                                    <i class="fa-solid fa-phone"></i> ${escapeHtml(student.contact)}
+                                </span>
+                                ` : ''}
+                            </div>
+                            ${student.email ? `
+                            <a href="mailto:${escapeHtml(student.email)}" class="text-blue-500 text-xs hover:text-blue-700">
+                                <i class="fa-regular fa-envelope"></i>
+                            </a>
+                            ` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('scheduleContent').innerHTML += studentListHtml;
+    }
     
-    // Show success message
-    alert('Schedule exported successfully!');
-}
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    function exportToCSV() {
+        if (!scheduleData || !scheduleData.schedules) {
+            alert('No schedule data to export');
+            return;
+        }
+        
+        let csvContent = "TIME,MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY\n";
+        
+        for (const timeSlot of TIME_SLOTS) {
+            const hour = timeSlot.split(':')[0];
+            const timeLabel = getTimeSlotLabel(timeSlot);
+            const row = [timeLabel];
+            
+            for (const day of DAYS) {
+                const key = `${day}|${hour}`;
+                const schedules = scheduleMapForExport[key] || [];
+                
+                if (schedules.length > 0) {
+                    const scheduleText = schedules.map(sch => 
+                        `${sch.subject} | ${sch.teacher_name || ''} | ${sch.room_name || ''}`
+                    ).join('; ');
+                    row.push(`"${scheduleText.replace(/"/g, '""')}"`);
+                } else {
+                    row.push('"---"');
+                }
+            }
+            
+            csvContent += row.join(',') + '\n';
+        }
+        
+        // Create map for export
+        const scheduleMapForExport = {};
+        scheduleData.schedules.forEach(sch => {
+            const hour = sch.time.split(':')[0];
+            const key = `${sch.day}|${hour}`;
+            if (!scheduleMapForExport[key]) {
+                scheduleMapForExport[key] = [];
+            }
+            scheduleMapForExport[key].push(sch);
+        });
+        
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${scheduleData.section.name}_weekly_schedule.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        alert('Schedule exported successfully!');
+    }
+    
+    // Load schedule on page load
+    document.addEventListener('DOMContentLoaded', loadSchedule);
 </script>
 {% endblock %}

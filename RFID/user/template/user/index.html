@@ -1,287 +1,646 @@
-{% extends "user/base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>RFID Attendance | Don Manuel Rivera School</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        * { 
+            font-family: 'Inter', sans-serif; 
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        /* BOLD TEXT FOR EVERYTHING */
+        html, body, p, span, div, h1, h2, h3, h4, button, input, label, .text, .info-label, .countdown-text, .sub-waiting-text, .teacher-text, .schedule-text, .success-message, .waiting-text, .student-name, .section-badge, .time-text, .countdown-number, .header-title, .header-subtitle, .footer-text, .manual-input, .manual-btn {
+            font-weight: 700 !important;
+        }
+        
+        .sub-waiting-text, .teacher-text, .countdown-text {
+            font-weight: 600 !important;
+        }
+        
+        /* SCHEDULE LABEL */
+        .schedule-label {
+            font-size: 1rem !important;
+            letter-spacing: 1px !important;
+            text-transform: uppercase;
+            color: #64748b;
+            font-weight: 700 !important;
+            margin-bottom: 0.75rem !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
+        }
+        
+        @media (orientation: landscape) {
+            .schedule-label {
+                font-size: 1.1rem !important;
+                margin-bottom: 1rem !important;
+            }
+        }
+        
+        html, body {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+        
+        body {
+            background-image: url("{{ url_for('static', filename='images/bg.png') }}");
+            background-size: cover;
+            background-position: center;
+            background-color: #1e293b;
+        }
+        
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(to bottom, rgba(30,41,59,0.85), rgba(15,23,42,0.92));
+            z-index: 0;
+        }
+        
+        /* Main Card */
+        .main-card {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255,255,255,0.96);
+            backdrop-filter: blur(16px);
+            width: 95vw;
+            height: auto;
+            border-radius: 32px;
+            overflow-y: auto;
+            z-index: 10;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+        }
+        
+        /* IDLE MODE - MINIMIZED */
+        .main-card.idle-mode {
+            width: 380px !important;
+            max-height: 220px !important;
+            transition: all 0.3s ease;
+        }
+        
+        /* ACTIVE MODE - EXPANDED */
+        .main-card.active-mode {
+            width: 95vw !important;
+            max-height: 92vh !important;
+            transition: all 0.3s ease;
+        }
+        
+        @media (orientation: landscape) {
+            .main-card.active-mode {
+                width: 88vw !important;
+                max-width: 1200px !important;
+            }
+            .main-card.idle-mode {
+                width: 450px !important;
+                max-height: 250px !important;
+            }
+        }
+        
+        @media (orientation: portrait) {
+            .main-card.idle-mode {
+                width: 85% !important;
+                max-height: 200px !important;
+            }
+        }
+        
+        .main-card::-webkit-scrollbar {
+            width: 0;
+            background: transparent;
+        }
+        
+        .content-full {
+            padding: 1rem 1.5rem;
+            transition: padding 0.3s ease;
+        }
+        
+        /* IDLE MODE CONTENT - HIDE EXTRA CONTENT */
+        .idle-mode .manual-input-group,
+        .idle-mode .sub-waiting-text,
+        .idle-mode .footer {
+            display: none !important;
+        }
+        
+        .idle-mode .rfid-waiting {
+            width: 70px !important;
+            height: 70px !important;
+            margin: 0 auto 0.5rem !important;
+        }
+        
+        .idle-mode .rfid-icon {
+            font-size: 32px !important;
+        }
+        
+        .idle-mode .waiting-text {
+            font-size: 1rem !important;
+            margin-bottom: 0 !important;
+        }
+        
+        .idle-mode .content-full {
+            padding: 0.8rem 1rem !important;
+        }
+        
+        .idle-mode .header {
+            padding: 0.6rem 1.2rem !important;
+        }
+        
+        .idle-mode .header-logo {
+            width: 32px !important;
+            height: 32px !important;
+        }
+        
+        .idle-mode .header-title {
+            font-size: 0.9rem !important;
+        }
+        
+        .idle-mode .header-subtitle {
+            font-size: 0.55rem !important;
+        }
+        
+        /* Landscape optimized idle mode */
+        @media (orientation: landscape) {
+            .idle-mode .rfid-waiting {
+                width: 60px !important;
+                height: 60px !important;
+            }
+            .idle-mode .waiting-text {
+                font-size: 0.9rem !important;
+            }
+        }
+        
+        /* RFID Scanner Animation */
+        .rfid-waiting {
+            width: 130px;
+            height: 130px;
+            margin: 0 auto 1rem;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .rfid-pulse {
+            position: absolute;
+            inset: 0;
+            border: 4px solid #3b82f6;
+            border-radius: 9999px;
+            animation: pulse-ring 2s ease-out infinite;
+        }
+        .rfid-pulse:nth-child(2) { animation-delay: 0.6s; }
+        .rfid-pulse:nth-child(3) { animation-delay: 1.2s; }
+        
+        .rfid-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 60px;
+            color: #1e40af;
+            animation: rfidScan 2s linear infinite;
+            transition: all 0.3s ease;
+        }
+        
+        @keyframes pulse-ring {
+            0% { transform: scale(0.6); opacity: 0.8; }
+            100% { transform: scale(1.6); opacity: 0; }
+        }
+        
+        @keyframes rfidScan {
+            0%,100% { transform: translate(-50%,-50%) scale(1); }
+            50% { transform: translate(-50%,-50%) scale(1.1); }
+        }
+        
+        .hidden { display: none !important; }
+        
+        /* Text Sizes */
+        .student-name { 
+            font-size: 2rem; 
+            color: #1e293b; 
+            line-height: 1.2;
+            margin-bottom: 0.5rem;
+            word-break: break-word;
+        }
+        
+        @media (orientation: landscape) {
+            .student-name { 
+                font-size: 2.3rem; 
+            }
+        }
+        
+        .section-badge { 
+            background: #dbeafe; 
+            color: #1e40af; 
+            padding: 0.5rem 1.5rem; 
+            border-radius: 1rem; 
+            font-size: 1rem; 
+            display: inline-block; 
+            margin-bottom: 0.5rem;
+        }
+        
+        .teacher-text { 
+            font-size: 1rem; 
+            color: #475569;
+            margin-bottom: 0.75rem;
+        }
+        
+        .schedule-text { 
+            font-size: 1rem; 
+            line-height: 1.8; 
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: none !important;
+            overflow: visible !important;
+        }
+        
+        .time-text { 
+            font-size: 1.4rem; 
+            color: #1e293b;
+        }
+        
+        .waiting-text { 
+            font-size: 1.6rem; 
+            color: #475569; 
+        }
+        
+        .sub-waiting-text { 
+            font-size: 1rem; 
+            color: #64748b; 
+        }
+        
+        .success-message { 
+            font-size: 1.1rem; 
+        }
+        
+        .countdown-text { 
+            font-size: 0.9rem; 
+            color: #64748b;
+        }
+        
+        .countdown-number { 
+            font-size: 1.2rem; 
+            color: #f59e0b;
+        }
+        
+        .info-label { 
+            font-size: 0.9rem; 
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+        
+        /* Cards */
+        .info-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .schedule-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.2rem;
+        }
+        
+        .manual-input-group {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        /* Landscape two columns */
+        @media (orientation: landscape) {
+            .landscape-two-columns {
+                display: flex;
+                gap: 2rem;
+                text-align: left;
+            }
+            .left-column {
+                flex: 1;
+                text-align: center;
+            }
+            .right-column {
+                flex: 1;
+                text-align: left;
+            }
+        }
+        
+        /* Header */
+        .header {
+            padding: 1rem 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .header-logo {
+            width: 44px;
+            height: 44px;
+            transition: all 0.3s ease;
+        }
+        
+        .header-title {
+            font-size: 1.2rem;
+        }
+        
+        .header-subtitle {
+            font-size: 0.7rem;
+        }
+        
+        .footer {
+            padding: 0.6rem 1.5rem;
+            font-size: 0.75rem;
+            transition: all 0.3s ease;
+        }
+        
+        /* Buttons */
+        .manual-input {
+            font-size: 1rem;
+            padding: 0.8rem 1rem;
+        }
+        
+        .manual-btn {
+            font-size: 1rem;
+            padding: 0.8rem 1.5rem;
+        }
+        
+        .no-scroll {
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="no-scroll">
+    <div class="overlay"></div>
 
-{% block title %}RFID Card Reader{% endblock %}
+    <div class="main-card idle-mode" id="mainCard">
+        <!-- Header -->
+        <div class="header bg-gradient-to-r from-blue-700 to-indigo-700 text-white flex items-center gap-3">
+            <img src="{{ url_for('static', filename='images/cropted.png') }}" alt="Logo" class="header-logo object-contain bg-white rounded-xl p-1">
+            <div>
+                <h1 class="header-title font-bold">RFID Attendance</h1>
+                <p class="header-subtitle text-blue-100">Don Manuel Rivera Memorial NHS</p>
+            </div>
+        </div>
 
-{% block content %}
+        <!-- Content -->
+        <div class="content-full">
+            
+            <!-- Waiting State -->
+            <div id="scanner-area">
+                <div class="rfid-waiting">
+                    <div class="rfid-pulse"></div>
+                    <div class="rfid-pulse"></div>
+                    <div class="rfid-pulse"></div>
+                    <i class="fas fa-rfid rfid-icon"></i>
+                </div>
+                <p class="waiting-text font-bold">Waiting for RFID tap...</p>
+                <p class="sub-waiting-text mt-1 font-semibold">Place your card near the reader</p>
+            </div>
 
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+            <!-- Success Result -->
+            <div id="result-area" class="hidden">
+                <div class="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-4">
+                    <!-- Two columns for landscape -->
+                    <div class="landscape-two-columns">
+                        <!-- Left Column - Student Info -->
+                        <div class="left-column">
+                            <i class="fas fa-check-circle text-5xl text-emerald-500 mb-3"></i>
+                            <h2 id="student-name" class="student-name font-extrabold"></h2>
+                            <div class="mb-3">
+                                <span id="section-name" class="section-badge font-bold"></span>
+                            </div>
+                            <div id="teacher-name" class="teacher-text font-bold mb-3"></div>
+                            <p id="status-message" class="success-message font-bold mb-4">✓ Successfully checked in</p>
+                            
+                            <!-- Time In Card -->
+                            <div class="info-card">
+                                <div class="flex justify-between items-center">
+                                    <span class="info-label font-semibold">TIME IN</span>
+                                    <span id="time-in" class="time-text font-mono font-extrabold"></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right Column - Schedule -->
+                        <div class="right-column">
+                            <div class="schedule-card" style="height: 100%;">
+                                <div class="schedule-label">
+                                    <i class="fa-regular fa-calendar text-accent"></i> 
+                                    <span>TODAY'S SCHEDULE</span>
+                                </div>
+                                <div id="schedule-text" class="schedule-text font-bold text-gray-700 whitespace-pre-wrap leading-relaxed"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Countdown -->
+                    <div class="mt-4 pt-3 flex justify-center items-center gap-2 text-gray-400">
+                        <i class="fa-regular fa-clock"></i>
+                        <span class="countdown-text font-semibold">Auto-hiding in</span>
+                        <span id="countdown" class="countdown-number font-extrabold">15</span>
+                        <span class="countdown-text font-semibold">seconds</span>
+                    </div>
+                </div>
+            </div>
 
-  :root {
-    --bg: #ffffff;
-    --panel: #ffffff;
-    --border: #e5e7eb;
-    --accent: #2563eb;
-    --success: #16a34a;
-    --danger: #dc2626;
-    --text: #111827;
-    --muted: #6b7280;
+            <!-- Manual Testing -->
+            <div class="manual-input-group">
+                <p class="info-label text-gray-400 mb-3 text-center font-semibold">MANUAL TEST ENTRY</p>
+                <div class="flex gap-3">
+                    <input type="text" id="manual-uid" 
+                           class="manual-input flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl font-mono font-bold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                           placeholder="Enter 8-digit UID" maxlength="8">
+                    <button onclick="manualTap()" 
+                            class="manual-btn px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition">
+                        Tap
+                    </button>
+                </div>
+            </div>
+        </div>
 
-    --font-mono: 'Share Tech Mono', monospace;
-    --font-ui: 'Rajdhani', sans-serif;
-  }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-ui);
-  }
-
-  .container {
-    width: 100%;
-    max-width: 680px;
-    margin: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .header {
-    text-align: center;
-  }
-
-  .header .label {
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    letter-spacing: 0.3em;
-    color: var(--muted);
-    text-transform: uppercase;
-  }
-
-  .header h1 {
-    font-size: 2.2rem;
-    font-weight: 700;
-  }
-
-  .header h1 span {
-    color: var(--accent);
-  }
-
-  .scan-zone {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1.5rem;
-  }
-
-  .card-icon {
-    width: 100px;
-    height: 70px;
-    border: 2px solid var(--accent);
-    border-radius: 10px;
-    position: relative;
-  }
-
-  .card-icon.success { border-color: var(--success); }
-  .card-icon.error { border-color: var(--danger); }
-
-  .card-icon::after {
-    content: '';
-    width: 30px;
-    height: 20px;
-    border: 2px solid currentColor;
-    border-radius: 4px;
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-  }
-
-  .card-icon .chip {
-    width: 20px;
-    height: 16px;
-    background: #ddd;
-    border-radius: 3px;
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-  }
-
-  .uid-label {
-    font-family: var(--font-mono);
-    font-size: 0.7rem;
-    color: var(--muted);
-  }
-
-  .uid-value {
-    font-family: var(--font-mono);
-    font-size: 1.4rem;
-    color: var(--accent);
-  }
-
-  .uid-value.waiting { color: var(--muted); }
-  .uid-value.success { color: var(--success); }
-  .uid-value.error { color: var(--danger); }
-
-  .status-badge {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.4rem 1rem;
-    border-radius: 999px;
-    font-size: 0.8rem;
-    border: 1px solid var(--border);
-  }
-
-  .status-badge.active {
-    color: var(--success);
-    border-color: var(--success);
-  }
-
-  .status-badge.reading {
-    color: var(--accent);
-    border-color: var(--accent);
-  }
-
-  .status-badge.error {
-    color: var(--danger);
-    border-color: var(--danger);
-  }
-
-  .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: currentColor;
-  }
-
-  .info-panel {
-    display: none;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 1rem;
-  }
-
-  .info-panel.visible { display: block; }
-
-  .row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.85rem;
-  }
-
-  .row-label {
-    font-family: var(--font-mono);
-    color: var(--muted);
-  }
-
-  .manual {
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 1rem;
-  }
-
-  .manual-row {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .manual input {
-    flex: 1;
-    padding: 0.5rem;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-  }
-
-  .manual button {
-    background: var(--accent);
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-
-  .log {
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 0.8rem;
-    max-height: 150px;
-    overflow-y: auto;
-    font-family: var(--font-mono);
-    font-size: 0.8rem;
-  }
-</style>
-
-<div class="container">
-
-  <div class="header">
-    <div class="label">System Status</div>
-    <h1>RFID <span>Scanner</span></h1>
-  </div>
-
-  <div class="scan-zone">
-    <div class="card-icon" id="cardIcon">
-      <div class="chip"></div>
+        <!-- Footer -->
+        <div class="footer bg-white/70 text-center border-t">
+            <span class="inline-flex items-center gap-2 text-gray-500 font-semibold">
+                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                System Ready • RFID Online
+            </span>
+        </div>
     </div>
 
-    <div>
-      <div class="uid-label">Last Scanned UID</div>
-      <div class="uid-value waiting" id="uidDisplay">Waiting...</div>
-    </div>
+    <script>
+        let lastUid = '';
+        let countdownInterval = null;
+        let isResultVisible = false;
+        let currentDisplayedUid = null;
+        
+        const mainCard = document.getElementById('mainCard');
+        const scannerArea = document.getElementById('scanner-area');
+        const resultArea = document.getElementById('result-area');
+        const studentNameEl = document.getElementById('student-name');
+        const sectionNameEl = document.getElementById('section-name');
+        const teacherNameEl = document.getElementById('teacher-name');
+        const scheduleTextEl = document.getElementById('schedule-text');
+        const timeInEl = document.getElementById('time-in');
+        const countdownEl = document.getElementById('countdown');
+        const statusMessageEl = document.getElementById('status-message');
 
-    <div class="status-badge reading" id="statusBadge">
-      <span class="dot"></span>
-      <span id="statusText">Listening</span>
-    </div>
-  </div>
+        // Set IDLE mode (minimized)
+        function setIdleMode() {
+            mainCard.classList.add('idle-mode');
+            mainCard.classList.remove('active-mode');
+        }
+        
+        // Set ACTIVE mode (expanded)
+        function setActiveMode() {
+            mainCard.classList.add('active-mode');
+            mainCard.classList.remove('idle-mode');
+        }
 
-  <div class="info-panel" id="infoPanel">
-    <div class="row">
-      <span class="row-label">Record ID</span>
-      <span id="infoId">—</span>
-    </div>
-    <div class="row">
-      <span class="row-label">UID</span>
-      <span id="infoUid">—</span>
-    </div>
-    <div class="row">
-      <span class="row-label">Tapped At</span>
-      <span id="infoTime">—</span>
-    </div>
-  </div>
+        function stopCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+        }
+        
+        function startCountdown() {
+            stopCountdown();
+            let seconds = 15;
+            if (countdownEl) countdownEl.textContent = seconds;
+            
+            countdownInterval = setInterval(() => {
+                seconds--;
+                if (countdownEl) countdownEl.textContent = seconds;
+                if (seconds <= 0) {
+                    stopCountdown();
+                    hideResultArea();
+                }
+            }, 1000);
+        }
 
-  <div class="manual">
-    <div class="manual-row">
-      <input type="text" id="manualUid" placeholder="Enter UID"/>
-      <button onclick="manualTap()">Tap</button>
-    </div>
-  </div>
+        function hideResultArea() {
+            resultArea.classList.add('hidden');
+            scannerArea.classList.remove('hidden');
+            isResultVisible = false;
+            currentDisplayedUid = null;
+            stopCountdown();
+            // Switch to IDLE mode (minimized)
+            setIdleMode();
+        }
+        
+        function showResultArea(data) {
+            // Don't show if already showing the same UID
+            if (isResultVisible && currentDisplayedUid === data.uid) {
+                return;
+            }
+            
+            // Switch to ACTIVE mode (expanded)
+            setActiveMode();
+            
+            currentDisplayedUid = data.uid;
+            isResultVisible = true;
+            
+            studentNameEl.textContent = data.student_name || 'Unknown Student';
+            sectionNameEl.textContent = data.section_name || 'No Section';
+            
+            if (data.status === 'duplicate') {
+                statusMessageEl.innerHTML = '⚠️ Already checked in today';
+                statusMessageEl.className = 'success-message text-amber-600 font-bold mb-4';
+            } else if (data.status === 'not_found') {
+                statusMessageEl.innerHTML = '❌ UID not registered';
+                statusMessageEl.className = 'success-message text-red-600 font-bold mb-4';
+            } else {
+                statusMessageEl.innerHTML = '✓ Successfully checked in';
+                statusMessageEl.className = 'success-message text-emerald-600 font-bold mb-4';
+            }
+            
+            if (data.teacher_name) {
+                teacherNameEl.innerHTML = `<i class="fa-solid fa-chalkboard-user mr-2"></i> Adviser: ${data.teacher_name}`;
+            } else {
+                teacherNameEl.innerHTML = '';
+            }
+            
+            let schedule = data.schedule || 'No schedule available';
+            scheduleTextEl.innerHTML = schedule.replace(/\n/g, '<br>');
+            timeInEl.textContent = data.time_in || new Date().toLocaleTimeString();
+            
+            resultArea.classList.remove('hidden');
+            scannerArea.classList.add('hidden');
+            startCountdown();
+        }
 
-  <div class="log" id="log">No events yet…</div>
+        async function fetchStatus() {
+            try {
+                const res = await fetch('/user/status');
+                const data = await res.json();
+                
+                if (data.uid && 
+                    data.uid !== 'Waiting...' && 
+                    data.uid !== lastUid &&
+                    (data.student_name || data.status === 'not_found')) {
+                    
+                    if (isResultVisible && currentDisplayedUid !== data.uid) {
+                        resultArea.classList.add('hidden');
+                        scannerArea.classList.remove('hidden');
+                        stopCountdown();
+                    }
+                    
+                    lastUid = data.uid;
+                    showResultArea(data);
+                }
+            } catch (e) {
+                console.error("Fetch error:", e);
+            }
+        }
 
-</div>
+        async function manualTap() {
+            const uid = document.getElementById('manual-uid').value.trim().toUpperCase();
+            if (!uid) {
+                alert('Please enter a UID');
+                return;
+            }
+            document.getElementById('manual-uid').value = '';
+            
+            try {
+                const res = await fetch(`/user/tap_relay/${uid}`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    setTimeout(() => fetchStatus(), 200);
+                } else {
+                    alert('UID not found in database');
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
 
-<script>
-let lastUid = null;
+        // Initialize - start in IDLE mode
+        async function init() {
+            await fetch('/user/clear');
+            lastUid = '';
+            isResultVisible = false;
+            currentDisplayedUid = null;
+            hideResultArea();
+            setIdleMode(); // Start minimized
+            
+            setInterval(fetchStatus, 500);
+            fetchStatus();
+        }
 
-/* LOG */
-function logEvent(msg) {
-  const log = document.getElementById('log');
-  const entry = document.createElement('div');
-  entry.textContent = new Date().toLocaleTimeString() + " - " + msg;
-  log.prepend(entry);
-}
+        document.getElementById('manual-uid').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') manualTap();
+        });
 
-/* SUCCESS */
-function setSuccess(uid) {
-  document.getElementById('uidDisplay').textContent = uid;
-  document.getElementById('uidDisplay').className = 'uid-value success';
-  document.getElementById('cardIcon').className = 'card-icon success';
-  logEvent("UID " + uid + " scanned");
-}
-
-/* MANUAL TAP */
-function manualTap() {
-  const uid = document.getElementById('manualUid').value;
-  if (!uid) return;
-  setSuccess(uid);
-}
-</script>
-
-{% endblock %}
+        document.body.style.overflow = 'hidden';
+        
+        init();
+    </script>
+</body>
+</html>

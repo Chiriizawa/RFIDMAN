@@ -61,6 +61,7 @@ try:
     time.sleep(2)
 except Exception as e:
     print(f"Serial connection error: {e}")
+    print("Running in demo mode - RFID disabled")
 
 # =========================
 # HELPER FUNCTIONS
@@ -142,7 +143,7 @@ def get_student_name_by_uid(uid):
         cur.execute("""
             SELECT first_name, middle_name, last_name, extension
             FROM students
-            WHERE UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(uid, '')), ' ', ''), '-', ''), ':', '')) = %s
+            WHERE uid = %s
             LIMIT 1;
         """, (uid,))
         row = cur.fetchone()
@@ -158,561 +159,48 @@ def get_student_name_by_uid(uid):
             conn.close()
 
 def save_uid_to_db(uid):
-    conn = get_connection()
-    if conn is None:
-        return
+    if not uid:
+        return False
+    
     uid = normalize_uid(uid)
+    today = datetime.now().date()
+
+    conn = get_db_connection()
+    if not conn:
+        return False
+
     try:
         cur = conn.cursor()
+
         cur.execute("""
-            SELECT id FROM rfid_cards
-            WHERE UPPER(REPLACE(REPLACE(REPLACE(TRIM(uid), ' ', ''), '-', ''), ':', '')) = %s
-            LIMIT 1;
-        """, (uid,))
+            SELECT id FROM rfid_cards 
+            WHERE DATE(tapped_at) = %s AND uid = %s 
+            LIMIT 1
+        """, (today, uid))
+
         if cur.fetchone():
-            cur.close()
-            return
-        cur.execute("INSERT INTO rfid_cards (uid) VALUES (%s);", (uid,))
+            print(f"[RFID] Duplicate ignored - UID {uid} already tapped today")
+            return False
+
+        cur.execute("""
+            INSERT INTO rfid_cards (uid, tapped_at) 
+            VALUES (%s, NOW())
+        """, (uid,))
+
         conn.commit()
-        cur.close()
+        print(f"[RFID] Attendance recorded for UID: {uid}")
+        return True
+
     except Exception as e:
-        print(f"Database insert error: {e}")
+        print(f"[RFID] Insert error: {e}")
+        conn.rollback()
+        return False
     finally:
-        if conn:
-            conn.close()
-
-# =========================
-# LOGIN REQUIRED DECORATOR
-# =========================
-def login_required(f):
-    def decorated_function(*args, **kwargs):
-        if not session.get('teacher_logged_in'):
-            flash('Please login first.', 'error')
-            return redirect(url_for('admin_bp.teacher_login'))
-        return f(*args, **kwargs)
-    decorated_function.__name__ = f.__name__
-    return decorated_function
-
-# =========================
-# RFID LISTEN THREAD
-# =========================
-def listen():
-    global latest_scan
-    while True:
-        try:
-            if ser and ser.is_open and ser.in_waiting > 0:
-                raw = ser.readline().decode('utf-8', errors='ignore').strip()
-                if not raw or not raw.upper().startswith("UID:"):
-                    time.sleep(0.2)
-                    continue
-                uid = normalize_uid(raw.split(":", 1)[1].strip())
-                if not is_valid_uid(uid):
-                    continue
-                save_uid_to_db(uid)
-                student_name = get_student_name_by_uid(uid)
-                latest_scan = {
-                    "message": "Card scanned successfully",
-                    "uid": format_uid(uid),
-                    "name": student_name if student_name else "No linked student",
-                    "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                }
-        except Exception as e:
-            print(f"Serial read error: {e}")
-        time.sleep(0.2)
-
-if ser and ser.is_open:
-    threading.Thread(target=listen, daemon=True).start()
-    print("RFID listener thread started")
-else:
-    print("RFID listener not started - no serial connection")
-
-# =========================
-# BASIC ROUTES
-# =========================
-@admin_bp.route('/')
-@admin_bp.route('/admin/')
-def index():
-    if not session.get('teacher_logged_in'):
-        return redirect(url_for('admin_bp.teacher_login'))
-    return render_template('dashboard.html')
-
-@admin_bp.route('/get_latest')
-def get_latest():
-    return jsonify(latest_scan)
-
-@admin_bp.route('/test_db')
-def test_db():
-    try:
-        conn = get_connection()
-        if conn is None:
-            return jsonify({"status": "error", "message": "Database connection failed"})
-        cur = conn.cursor()
-        cur.execute("SELECT NOW();")
-        result = cur.fetchone()
         cur.close()
         conn.close()
-        return jsonify({"status": "success", "message": "Connected", "server_time": str(result[0])})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
 
 # =========================
-# SECTIONS MANAGEMENT
-# =========================
-@admin_bp.route('/sections')
-@login_required
-def manage_sections():
-    conn = get_connection()
-    teachers = []
-    if conn:
-        try:
-            cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-            cur.execute("SELECT id, first_name, last_name, email FROM teachers ORDER BY last_name, first_name")
-            teachers = cur.fetchall()
-            cur.close()
-            conn.close()
-        except Exception as e:
-            print(f"Error fetching teachers: {e}")
-    return render_template('manage_sections.html', teachers=teachers)
-
-@admin_bp.route('/sections/api')
-@login_required
-def sections_api():
-    conn = get_connection()
-    if conn is None:
-        return jsonify({"success": False, "sections": []})
-    try:
-        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("""
-            SELECT 
-                s.id, s.section_name, s.year_level, s.teacher_id, s.created_at,
-                t.first_name, t.last_name, t.email as teacher_email,
-                COUNT(st.id) as student_count
-            FROM sections s
-            LEFT JOIN teachers t ON t.id = s.teacher_id
-            LEFT JOIN students st ON st.section_id = s.id
-            GROUP BY s.id, t.id, t.first_name, t.last_name, t.email
-            ORDER BY s.section_name
-        """)
-        sections = cur.fetchall()
-        cur.close()
-        conn.close()
-        sections_list = []
-        for section in sections:
-            sections_list.append({
-                "id": section["id"],
-                "section_name": section["section_name"],
-                "year_level": section["year_level"],
-                "teacher_id": section["teacher_id"],
-                "first_name": section["first_name"],
-                "last_name": section["last_name"],
-                "teacher_email": section["teacher_email"],
-                "student_count": section["student_count"] or 0,
-                "created_at": section["created_at"].strftime("%Y-%m-%d %H:%M:%S") if section["created_at"] else None
-            })
-        return jsonify({"success": True, "sections": sections_list})
-    except Exception as e:
-        print(f"Sections API error: {e}")
-        return jsonify({"success": False, "sections": []})
-    finally:
-        if conn:
-            conn.close()
-
-@admin_bp.route('/sections/add', methods=['POST'])
-@login_required
-def add_section():
-    try:
-        data = request.get_json()
-        section_name = data.get('section_name', '').strip()
-        year_level = data.get('year_level', '').strip()
-        teacher_id = data.get('teacher_id') or None
-        if not section_name:
-            return jsonify({"success": False, "message": "Section name is required"}), 400
-        conn = get_connection()
-        if conn is None:
-            return jsonify({"success": False, "message": "Database connection failed"}), 500
-        cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO sections (section_name, year_level, teacher_id, created_at)
-            VALUES (%s, %s, %s, NOW()) RETURNING id
-        """, (section_name, year_level, teacher_id))
-        section_id = cur.fetchone()[0]
-        conn.commit()
-        cur.close()
-        conn.close()
-        return jsonify({"success": True, "message": "Section added successfully", "section_id": section_id})
-    except Exception as e:
-        print(f"Add section error: {e}")
-        return jsonify({"success": False, "message": str(e)}), 500
-
-@admin_bp.route('/sections/update/<int:section_id>', methods=['PUT'])
-@login_required
-def update_section(section_id):
-    try:
-        data = request.get_json()
-        section_name = data.get('section_name', '').strip()
-        year_level = data.get('year_level', '').strip()
-        teacher_id = data.get('teacher_id') or None
-        if not section_name:
-            return jsonify({"success": False, "message": "Section name is required"}), 400
-        conn = get_connection()
-        if conn is None:
-            return jsonify({"success": False, "message": "Database connection failed"}), 500
-        cur = conn.cursor()
-        cur.execute("""
-            UPDATE sections SET section_name = %s, year_level = %s, teacher_id = %s
-            WHERE id = %s RETURNING id
-        """, (section_name, year_level, teacher_id, section_id))
-        if cur.rowcount == 0:
-            cur.close()
-            conn.close()
-            return jsonify({"success": False, "message": "Section not found"}), 404
-        conn.commit()
-        cur.close()
-        conn.close()
-        return jsonify({"success": True, "message": "Section updated successfully"})
-    except Exception as e:
-        print(f"Update section error: {e}")
-        return jsonify({"success": False, "message": str(e)}), 500
-
-@admin_bp.route('/sections/delete/<int:section_id>', methods=['DELETE'])
-@login_required
-def delete_section(section_id):
-    try:
-        conn = get_connection()
-        if conn is None:
-            return jsonify({"success": False, "message": "Database connection failed"}), 500
-        cur = conn.cursor()
-        cur.execute("SELECT id FROM sections WHERE id = %s", (section_id,))
-        if not cur.fetchone():
-            cur.close()
-            conn.close()
-            return jsonify({"success": False, "message": "Section not found"}), 404
-        cur.execute("UPDATE students SET section_id = NULL WHERE section_id = %s", (section_id,))
-        cur.execute("DELETE FROM sections WHERE id = %s", (section_id,))
-        conn.commit()
-        cur.close()
-        conn.close()
-        return jsonify({"success": True, "message": "Section deleted successfully"})
-    except Exception as e:
-        print(f"Delete section error: {e}")
-        return jsonify({"success": False, "message": str(e)}), 500
-
-@admin_bp.route('/api/get_sections_for_sidebar')
-@login_required
-def api_get_sections_for_sidebar():
-    conn = get_connection()
-    if conn is None:
-        return jsonify({'success': False, 'sections': []})
-    try:
-        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("""
-            SELECT s.id, s.section_name, s.year_level, COUNT(st.id) as student_count
-            FROM sections s
-            LEFT JOIN students st ON st.section_id = s.id
-            GROUP BY s.id
-            ORDER BY s.section_name
-        """)
-        sections = cur.fetchall()
-        cur.close()
-        conn.close()
-        section_list = []
-        for section in sections:
-            section_list.append({
-                'id': section['id'],
-                'section_name': section['section_name'],
-                'year_level': section['year_level'],
-                'student_count': section['student_count'] or 0
-            })
-        return jsonify({'success': True, 'sections': section_list})
-    except Exception as e:
-        print(f"API get sections error: {e}")
-        if conn:
-            conn.close()
-        return jsonify({'success': False, 'sections': []})
-
-@admin_bp.route('/class_section/<section_id>')
-@login_required
-def class_section(section_id):
-    conn = get_connection()
-    if conn is None:
-        flash('Database connection error', 'error')
-        return render_template('class_dashboard.html', section=section_id, section_info={}, students=[])
-    try:
-        is_numeric = section_id.isdigit()
-        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        if is_numeric:
-            cur.execute("""
-                SELECT s.*, t.first_name as teacher_first_name, t.last_name as teacher_last_name, t.email as teacher_email
-                FROM sections s LEFT JOIN teachers t ON t.id = s.teacher_id WHERE s.id = %s
-            """, (int(section_id),))
-        else:
-            cur.execute("""
-                SELECT s.*, t.first_name as teacher_first_name, t.last_name as teacher_last_name, t.email as teacher_email
-                FROM sections s LEFT JOIN teachers t ON t.id = s.teacher_id WHERE s.section_name = %s
-            """, (section_id,))
-        section = cur.fetchone()
-        if not section:
-            flash('Section not found', 'error')
-            return redirect(url_for('admin_bp.manage_sections'))
-        cur.execute("""
-            SELECT id, uid, first_name, middle_name, last_name, extension, contact_number, email, schedule, section_id, created_at
-            FROM students WHERE section_id = %s ORDER BY last_name ASC, first_name ASC
-        """, (section['id'],))
-        rows = cur.fetchall()
-        cur.close()
-        student_list = []
-        today = datetime.now().strftime('%Y-%m-%d')
-        for row in rows:
-            full_name = build_full_name(row['first_name'], row['middle_name'], row['last_name'], row['extension'])
-            cur2 = conn.cursor()
-            cur2.execute("""
-                SELECT created_at FROM rfid_cards 
-                WHERE DATE(created_at) = %s 
-                AND UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(uid, '')), ' ', ''), '-', ''), ':', '')) 
-                = UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(%s, '')), ' ', ''), '-', ''), ':', ''))
-                LIMIT 1
-            """, (today, row['uid']))
-            attendance = cur2.fetchone()
-            cur2.close()
-            student_list.append({
-                "id": row['id'],
-                "uid": format_uid(row['uid']) if row['uid'] else "—",
-                "full_name": full_name if full_name else "—",
-                "first_name": row['first_name'] or "—",
-                "middle_name": row['middle_name'] or "—",
-                "last_name": row['last_name'] or "—",
-                "extension": row['extension'] or "—",
-                "contact_number": row['contact_number'] or "—",
-                "email": row['email'] or "—",
-                "schedule": row['schedule'] or "—",
-                "present_today": attendance is not None,
-                "scan_time": attendance[0].strftime("%I:%M:%S %p") if attendance else "—"
-            })
-        conn.close()
-        adviser_name = ""
-        if section['teacher_first_name'] and section['teacher_last_name']:
-            adviser_name = f"{section['teacher_first_name']} {section['teacher_last_name']}"
-        elif section['teacher_first_name']:
-            adviser_name = section['teacher_first_name']
-        elif section['teacher_last_name']:
-            adviser_name = section['teacher_last_name']
-        else:
-            adviser_name = "Not Assigned"
-        section_info = {
-            'name': section['section_name'],
-            'adviser': adviser_name,
-            'room': "TBD",
-            'total_students': len(student_list),
-            'present_today': sum(1 for s in student_list if s['present_today'])
-        }
-        return render_template('class_dashboard.html', section=section['id'], section_info=section_info, students=student_list)
-    except Exception as e:
-        print(f"Class section error: {e}")
-        flash(f'Error loading class section: {str(e)}', 'error')
-        if conn:
-            conn.close()
-        return render_template('class_dashboard.html', section=section_id, section_info={'name': 'Error', 'adviser': 'Error', 'room': 'Error', 'total_students': 0, 'present_today': 0}, students=[])
-
-# =========================
-# STUDENT MANAGEMENT
-# =========================
-@admin_bp.route('/registered_students')
-@login_required
-def registered_students():
-    students = get_all_students()
-    student_list = []
-    for row in students:
-        full_name = build_full_name(row['first_name'], row['middle_name'], row['last_name'], row['extension'])
-        student_list.append({
-            "id": row['id'],
-            "uid": format_uid(row['uid']) if row['uid'] else "—",
-            "first_name": row['first_name'] or "—",
-            "middle_name": row['middle_name'] or "—",
-            "last_name": row['last_name'] or "—",
-            "extension": row['extension'] or "—",
-            "full_name": full_name if full_name else "—",
-            "contact_number": row['contact_number'] or "—",
-            "email": row['email'] or "—",
-            "schedule": row['schedule'] or "—",
-            "section_id": row['section_id'],
-            "section_name": row['section_name'] or "—",
-            "created_at": row['created_at'].strftime("%b %d, %Y  %I:%M %p") if row['created_at'] else "—"
-        })
-    return render_template('registered_students.html', students=student_list)
-
-@admin_bp.route('/registered_students/api')
-@login_required
-def registered_students_api():
-    try:
-        conn = get_connection()
-        if conn is None:
-            return jsonify({"success": False, "total": 0})
-        cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM students")
-        count = cur.fetchone()[0]
-        cur.close()
-        conn.close()
-        return jsonify({"success": True, "total": count})
-    except Exception as e:
-        print(f"Error fetching student count: {e}")
-        return jsonify({"success": False, "total": 0})
-
-@admin_bp.route('/registered_students/data')
-@login_required
-def registered_students_data():
-    students = get_all_students()
-    student_list = []
-    for row in students:
-        full_name = build_full_name(row['first_name'], row['middle_name'], row['last_name'], row['extension'])
-        student_list.append({
-            "id": row['id'],
-            "uid": format_uid(row['uid']) if row['uid'] else "—",
-            "full_name": full_name if full_name else "—",
-            "contact_number": row['contact_number'] or "—",
-            "email": row['email'] or "—",
-            "schedule": row['schedule'] or "—",
-            "section_id": row['section_id'],
-            "section_name": row['section_name'] or "—",
-            "created_at": row['created_at'].strftime("%Y-%m-%d") if row['created_at'] else "—"
-        })
-    return jsonify({"success": True, "students": student_list})
-
-@admin_bp.route('/schedules')
-@login_required
-def schedules():
-    conn = get_connection()
-    if conn is None:
-        return render_template('schedules.html', schedules=[])
-    try:
-        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("""
-            SELECT s.id, s.uid, s.first_name, s.middle_name, s.last_name, s.extension,
-                   s.contact_number, s.email, s.schedule, s.section_id, s.created_at, sec.section_name
-            FROM students s LEFT JOIN sections sec ON s.section_id = sec.id
-            WHERE s.schedule IS NOT NULL AND TRIM(s.schedule) != ''
-            ORDER BY s.last_name ASC, s.first_name ASC, s.middle_name ASC;
-        """)
-        rows = cur.fetchall()
-        cur.close()
-        schedule_list = []
-        for row in rows:
-            full_name = build_full_name(row['first_name'], row['middle_name'], row['last_name'], row['extension'])
-            schedule_list.append({
-                "id": row['id'],
-                "uid": format_uid(row['uid']) if row['uid'] else "—",
-                "full_name": full_name if full_name else "—",
-                "contact_number": row['contact_number'] or "—",
-                "email": row['email'] or "—",
-                "schedule": row['schedule'] or "—",
-                "section_name": row['section_name'] or "—",
-                "created_at": row['created_at'].strftime("%b %d, %Y  %I:%M %p") if row['created_at'] else "—"
-            })
-        return render_template('schedules.html', schedules=schedule_list)
-    except Exception as e:
-        print(f"Schedules error: {e}")
-        return render_template('schedules.html', schedules=[])
-    finally:
-        if conn:
-            conn.close()
-
-@admin_bp.route('/history')
-@login_required
-def history():
-    return render_template('history.html')
-
-@admin_bp.route('/history/api')
-@login_required
-def history_api():
-    conn = get_connection()
-    if conn is None:
-        return jsonify({"success": False, "message": "Database not connected", "history": []})
-    try:
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT r.id, r.uid,
-                COALESCE(NULLIF(TRIM(CONCAT(COALESCE(s.first_name, ''), ' ',
-                    COALESCE(s.middle_name, ''), ' ', COALESCE(s.last_name, ''), ' ',
-                    COALESCE(s.extension, ''))), ''), 'Unregistered Card') AS full_name,
-                r.created_at
-            FROM rfid_cards r
-            LEFT JOIN students s ON UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(r.uid, '')), ' ', ''), '-', ''), ':', ''))
-                = UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(s.uid, '')), ' ', ''), '-', ''), ':', ''))
-            ORDER BY r.created_at DESC LIMIT 500;
-        """)
-        rows = cur.fetchall()
-        cur.close()
-        seen_keys = set()
-        history_list = []
-        for row in rows:
-            student_id = row[1]
-            scan_date = row[3].date() if row[3] else None
-            if scan_date:
-                key = f"{student_id}_{scan_date}"
-                if key not in seen_keys:
-                    seen_keys.add(key)
-                    history_list.append({
-                        "id": row[0],
-                        "uid": format_uid(row[1]) if row[1] else "—",
-                        "full_name": row[2] or "Unregistered Card",
-                        "scan_date": scan_date.strftime("%B %d, %Y") if scan_date else "—",
-                        "scan_time": row[3].strftime("%I:%M:%S %p") if row[3] else "—"
-                    })
-        return jsonify({"success": True, "history": history_list})
-    except Exception as e:
-        print(f"History API error: {e}")
-        return jsonify({"success": False, "message": str(e), "history": []})
-    finally:
-        if conn:
-            conn.close()
-
-@admin_bp.route('/history/filter')
-@login_required
-def history_filter():
-    conn = get_connection()
-    selected_date = request.args.get('date')
-    if not selected_date:
-        return jsonify([])
-    try:
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT r.id, r.uid,
-                COALESCE(NULLIF(TRIM(CONCAT(COALESCE(s.first_name, ''), ' ',
-                    COALESCE(s.middle_name, ''), ' ', COALESCE(s.last_name, ''), ' ',
-                    COALESCE(s.extension, ''))), ''), 'Unregistered Card') AS full_name,
-                r.created_at
-            FROM rfid_cards r
-            LEFT JOIN students s ON UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(r.uid, '')), ' ', ''), '-', ''), ':', ''))
-                = UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(s.uid, '')), ' ', ''), '-', ''), ':', ''))
-            WHERE DATE(r.created_at) = %s ORDER BY r.created_at DESC;
-        """, (selected_date,))
-        rows = cur.fetchall()
-        cur.close()
-        seen_keys = set()
-        result = []
-        for row in rows:
-            student_id = row[1]
-            scan_date = row[3].date() if row[3] else None
-            if scan_date:
-                key = f"{student_id}_{scan_date}"
-                if key not in seen_keys:
-                    seen_keys.add(key)
-                    result.append({
-                        "id": row[0],
-                        "uid": format_uid(row[1]) if row[1] else "—",
-                        "full_name": row[2] or "Unregistered Card",
-                        "scan_date": scan_date.strftime("%B %d, %Y") if scan_date else "—",
-                        "scan_time": row[3].strftime("%I:%M:%S %p") if row[3] else "—"
-                    })
-        return jsonify(result)
-    except Exception as e:
-        print(f"History filter error: {e}")
-        return jsonify([])
-    finally:
-        if conn:
-            conn.close()
-
-# =========================
-# TEACHER AUTHENTICATION
+# TEACHER AUTHENTICATION FUNCTIONS
 # =========================
 def get_teacher_by_email(email):
     conn = get_connection()
@@ -933,8 +421,13 @@ def send_reset_email(to_email, reset_token):
             return False
 
         base_url = os.getenv("BASE_URL", "http://127.0.0.1:5000")
+<<<<<<< HEAD
         reset_link = f"{base_url}/admin/reset_password/{reset_token}"
 
+=======
+        reset_link = f"{base_url}/admin/teacher/login?token={reset_token}"
+        
+>>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
         subject = "Password Reset Request - Tap & Know System"
 
         html_content = f"""
@@ -998,8 +491,518 @@ def send_reset_email(to_email, reset_token):
         print(f"❌ Email error: {e}")
         return False
 
+def update_teacher_email(teacher_db_id, new_email):
+    """Update teacher's email address"""
+    conn = get_connection()
+    if conn is None:
+        raise Exception("Database not connected")
+    try:
+        cur = conn.cursor()
+        
+        # Check if email already exists (case insensitive)
+        cur.execute("""
+            SELECT id FROM teacher_accounts 
+            WHERE LOWER(TRIM(email)) = LOWER(TRIM(%s)) 
+            AND teacher_id != %s
+            LIMIT 1
+        """, (new_email, teacher_db_id))
+        
+        if cur.fetchone():
+            raise Exception("Email address already in use by another account")
+        
+        # Update email in teacher_accounts table
+        cur.execute("""
+            UPDATE teacher_accounts SET email = %s
+            WHERE teacher_id = %s
+        """, (new_email, teacher_db_id))
+        
+        # Also update email in teachers table if it exists
+        cur.execute("""
+            UPDATE teachers SET email = %s
+            WHERE id = %s
+        """, (new_email, teacher_db_id))
+        
+        conn.commit()
+        cur.close()
+        return True
+    except Exception as e:
+        print(f"update_teacher_email error: {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
+
 # =========================
-# TEACHER LOGIN & PROFILE
+# LOGIN REQUIRED DECORATOR
+# =========================
+def login_required(f):
+    def decorated_function(*args, **kwargs):
+        if not session.get('teacher_logged_in'):
+            flash('Please login first.', 'error')
+            return redirect(url_for('admin_bp.teacher_login'))
+        return f(*args, **kwargs)
+    decorated_function.__name__ = f.__name__
+    return decorated_function
+
+# =========================
+# RFID LISTEN THREAD
+# =========================
+def listen():
+    global latest_scan
+    while True:
+        try:
+            if ser and ser.is_open and ser.in_waiting > 0:
+                raw = ser.readline().decode('utf-8', errors='ignore').strip()
+                if not raw or not raw.upper().startswith("UID:"):
+                    time.sleep(0.2)
+                    continue
+                uid = normalize_uid(raw.split(":", 1)[1].strip())
+                if not is_valid_uid(uid):
+                    continue
+                save_uid_to_db(uid)
+                student_name = get_student_name_by_uid(uid)
+                latest_scan = {
+                    "message": "Card scanned successfully",
+                    "uid": format_uid(uid),
+                    "name": student_name if student_name else "No linked student",
+                    "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+        except Exception as e:
+            print(f"Serial read error: {e}")
+        time.sleep(0.2)
+
+if ser and ser.is_open:
+    threading.Thread(target=listen, daemon=True).start()
+    print("RFID listener thread started")
+else:
+    print("RFID listener not started - no serial connection")
+
+# =========================
+# BASIC ROUTES
+# =========================
+@admin_bp.route('/')
+@admin_bp.route('/admin/')
+def index():
+    if not session.get('teacher_logged_in'):
+        return redirect(url_for('admin_bp.teacher_login'))
+    return render_template('dashboard.html')
+
+@admin_bp.route('/dashboard')
+@login_required
+def dashboard():
+    return render_template('dashboard.html')
+
+@admin_bp.route('/get_latest')
+def get_latest():
+    return jsonify(latest_scan)
+
+@admin_bp.route('/test_db')
+def test_db():
+    try:
+        conn = get_connection()
+        if conn is None:
+            return jsonify({"status": "error", "message": "Database connection failed"})
+        cur = conn.cursor()
+        cur.execute("SELECT NOW();")
+        result = cur.fetchone()
+        cur.close()
+        conn.close()
+        return jsonify({"status": "success", "message": "Connected", "server_time": str(result[0])})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+# =========================
+# TOGGLE ATTENDANCE ROUTE
+# =========================
+@admin_bp.route('/toggle_attendance/<int:student_id>', methods=['POST'])
+@login_required
+def toggle_attendance(student_id):
+    """Toggle student attendance for today (mark present/absent)"""
+    teacher_id = session.get('teacher_id')
+    if not teacher_id:
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+    
+    try:
+        data = request.get_json()
+        present = data.get('present', False)
+        section_id = data.get('section_id')
+        
+        if not section_id:
+            return jsonify({"success": False, "message": "Section ID required"}), 400
+        
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({"success": False, "message": "Database connection failed"}), 500
+        
+        cur = conn.cursor()
+        
+        # Get student UID and verify teacher access
+        cur.execute("""
+            SELECT st.id, st.uid, st.first_name, st.last_name
+            FROM students st
+            JOIN sections sec ON st.section_id = sec.id
+            WHERE st.id = %s AND sec.teacher_id = %s
+        """, (student_id, teacher_id))
+        
+        student = cur.fetchone()
+        if not student:
+            cur.close()
+            conn.close()
+            return jsonify({"success": False, "message": "Unauthorized or student not found"}), 403
+        
+        today = datetime.now().strftime('%Y-%m-%d')
+        student_uid = student[1] if student[1] else ""
+        
+        # Check what columns exist in rfid_cards table
+        cur.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'rfid_cards'
+        """)
+        columns = [row[0] for row in cur.fetchall()]
+        
+        # Determine which date column to use
+        date_column = None
+        if 'tapped_at' in columns:
+            date_column = 'tapped_at'
+        elif 'created_at' in columns:
+            date_column = 'created_at'
+        else:
+            cur.close()
+            conn.close()
+            return jsonify({"success": False, "message": "No date column found in rfid_cards"}), 500
+        
+        if present:
+            # Check if already marked present today
+            cur.execute(f"""
+                SELECT id FROM rfid_cards 
+                WHERE DATE({date_column}) = %s AND uid = %s
+                LIMIT 1
+            """, (today, student_uid))
+            
+            existing = cur.fetchone()
+            if not existing:
+                # Insert attendance record
+                cur.execute(f"""
+                    INSERT INTO rfid_cards (uid, {date_column}) 
+                    VALUES (%s, NOW())
+                """, (student_uid,))
+                conn.commit()
+                message = "Student marked as present"
+                print(f"[ATTENDANCE] ✅ Marked {student[2]} {student[3]} as PRESENT")
+            else:
+                message = "Student already marked as present today"
+                print(f"[ATTENDANCE] ⏭️ {student[2]} {student[3]} already present")
+        else:
+            # Mark as absent: Remove today's attendance record
+            cur.execute(f"""
+                DELETE FROM rfid_cards 
+                WHERE DATE({date_column}) = %s AND uid = %s
+            """, (today, student_uid))
+            conn.commit()
+            message = "Student marked as absent"
+            print(f"[ATTENDANCE] ❌ Marked {student[2]} {student[3]} as ABSENT")
+        
+        cur.close()
+        conn.close()
+        
+        student_name = ""
+        if student[2] and student[3]:
+            student_name = f"{student[2]} {student[3]}"
+        elif student[2]:
+            student_name = student[2]
+        else:
+            student_name = f"Student #{student_id}"
+        
+        return jsonify({
+            "success": True, 
+            "message": message,
+            "present": present,
+            "student_name": student_name
+        })
+        
+    except Exception as e:
+        print(f"Toggle attendance error: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# =========================
+# SECTIONS MANAGEMENT (FILTERED BY TEACHER)
+# =========================
+@admin_bp.route('/sections')
+@login_required
+def manage_sections():
+    return render_template('manage_sections.html')
+
+@admin_bp.route('/sections/api')
+@login_required
+def sections_api():
+    teacher_id = session.get('teacher_id')
+    conn = get_connection()
+    if conn is None:
+        return jsonify({"success": False, "sections": []})
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+        cur.execute("""
+            SELECT 
+                s.id, s.section_name, s.year_level, s.teacher_id, s.created_at, s.schedule,
+                t.first_name, t.last_name, t.email as teacher_email,
+                COUNT(st.id) as student_count
+            FROM sections s
+            LEFT JOIN teachers t ON t.id = s.teacher_id
+            LEFT JOIN students st ON st.section_id = s.id
+            WHERE s.teacher_id = %s
+            GROUP BY s.id, t.id, t.first_name, t.last_name, t.email
+            ORDER BY s.section_name
+        """, (teacher_id,))
+        
+        sections = cur.fetchall()
+        cur.close()
+        conn.close()
+        sections_list = []
+        for section in sections:
+            sections_list.append({
+                "id": section["id"],
+                "section_name": section["section_name"],
+                "year_level": section["year_level"],
+                "teacher_id": section["teacher_id"],
+                "first_name": section["first_name"],
+                "last_name": section["last_name"],
+                "teacher_email": section["teacher_email"],
+                "student_count": section["student_count"] or 0,
+                "schedule": section["schedule"] or "",
+                "created_at": section["created_at"].strftime("%Y-%m-%d") if section["created_at"] else None
+            })
+        return jsonify({"success": True, "sections": sections_list})
+    except Exception as e:
+        print(f"Sections API error: {e}")
+        return jsonify({"success": False, "sections": []})
+    finally:
+        if conn:
+            conn.close()
+
+@admin_bp.route('/sections/add', methods=['POST'])
+@login_required
+def add_section():
+    try:
+        data = request.get_json()
+        section_name = data.get('section_name', '').strip()
+        year_level = data.get('year_level', '').strip()
+        schedule = data.get('schedule', '').strip()
+        teacher_id = session.get('teacher_id')
+        
+        if not section_name:
+            return jsonify({"success": False, "message": "Section name is required"}), 400
+        
+        conn = get_connection()
+        if conn is None:
+            return jsonify({"success": False, "message": "Database connection failed"}), 500
+        
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO sections (section_name, year_level, teacher_id, schedule, created_at)
+            VALUES (%s, %s, %s, %s, NOW()) RETURNING id
+        """, (section_name, year_level, teacher_id, schedule))
+        section_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"success": True, "message": "Section added successfully", "section_id": section_id})
+    except Exception as e:
+        print(f"Add section error: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@admin_bp.route('/sections/update/<int:section_id>', methods=['PUT'])
+@login_required
+def update_section(section_id):
+    try:
+        data = request.get_json()
+        section_name = data.get('section_name', '').strip()
+        year_level = data.get('year_level', '').strip()
+        schedule = data.get('schedule', '').strip()
+        teacher_id = session.get('teacher_id')
+        
+        if not section_name:
+            return jsonify({"success": False, "message": "Section name is required"}), 400
+        
+        conn = get_connection()
+        if conn is None:
+            return jsonify({"success": False, "message": "Database connection failed"}), 500
+        
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE sections SET section_name = %s, year_level = %s, schedule = %s
+            WHERE id = %s AND teacher_id = %s RETURNING id
+        """, (section_name, year_level, schedule, section_id, teacher_id))
+        
+        if cur.rowcount == 0:
+            cur.close()
+            conn.close()
+            return jsonify({"success": False, "message": "Section not found or unauthorized"}), 404
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"success": True, "message": "Section updated successfully"})
+    except Exception as e:
+        print(f"Update section error: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@admin_bp.route('/sections/delete/<int:section_id>', methods=['DELETE'])
+@login_required
+def delete_section(section_id):
+    try:
+        teacher_id = session.get('teacher_id')
+        conn = get_connection()
+        if conn is None:
+            return jsonify({"success": False, "message": "Database connection failed"}), 500
+        
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM sections WHERE id = %s AND teacher_id = %s", (section_id, teacher_id))
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return jsonify({"success": False, "message": "Section not found or unauthorized"}), 404
+        
+        cur.execute("UPDATE students SET section_id = NULL WHERE section_id = %s", (section_id,))
+        cur.execute("DELETE FROM sections WHERE id = %s", (section_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"success": True, "message": "Section deleted successfully"})
+    except Exception as e:
+        print(f"Delete section error: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@admin_bp.route('/api/get_sections_for_sidebar')
+@login_required
+def api_get_sections_for_sidebar():
+    teacher_id = session.get('teacher_id')
+    conn = get_connection()
+    if conn is None:
+        return jsonify({'success': False, 'sections': []})
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("""
+            SELECT s.id, s.section_name, s.year_level, COUNT(st.id) as student_count
+            FROM sections s
+            LEFT JOIN students st ON st.section_id = s.id
+            WHERE s.teacher_id = %s
+            GROUP BY s.id
+            ORDER BY s.section_name
+        """, (teacher_id,))
+        sections = cur.fetchall()
+        cur.close()
+        conn.close()
+        section_list = []
+        for section in sections:
+            section_list.append({
+                'id': section['id'],
+                'section_name': section['section_name'],
+                'year_level': section['year_level'],
+                'student_count': section['student_count'] or 0
+            })
+        return jsonify({'success': True, 'sections': section_list})
+    except Exception as e:
+        print(f"API get sections error: {e}")
+        if conn:
+            conn.close()
+        return jsonify({'success': False, 'sections': []})
+
+@admin_bp.route('/class_section/<section_id>')
+@login_required
+def class_section(section_id):
+    teacher_id = session.get('teacher_id')
+    conn = get_connection()
+    if conn is None:
+        flash('Database connection error', 'error')
+        return render_template('class_dashboard.html', section=section_id, section_info={}, students=[])
+    try:
+        is_numeric = section_id.isdigit()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+        if is_numeric:
+            cur.execute("""
+                SELECT s.*, t.first_name as teacher_first_name, t.last_name as teacher_last_name, t.email as teacher_email
+                FROM sections s 
+                LEFT JOIN teachers t ON t.id = s.teacher_id 
+                WHERE s.id = %s AND s.teacher_id = %s
+            """, (int(section_id), teacher_id))
+        else:
+            cur.execute("""
+                SELECT s.*, t.first_name as teacher_first_name, t.last_name as teacher_last_name, t.email as teacher_email
+                FROM sections s 
+                LEFT JOIN teachers t ON t.id = s.teacher_id 
+                WHERE s.section_name = %s AND s.teacher_id = %s
+            """, (section_id, teacher_id))
+        
+        section = cur.fetchone()
+        if not section:
+            flash('Section not found or unauthorized', 'error')
+            return redirect(url_for('admin_bp.manage_sections'))
+        
+        cur.execute("""
+            SELECT id, uid, first_name, middle_name, last_name, extension, contact_number, email, schedule, section_id, created_at
+            FROM students WHERE section_id = %s ORDER BY last_name ASC, first_name ASC
+        """, (section['id'],))
+        rows = cur.fetchall()
+        cur.close()
+        
+        student_list = []
+        today = datetime.now().strftime('%Y-%m-%d')
+        for row in rows:
+            full_name = build_full_name(row['first_name'], row['middle_name'], row['last_name'], row['extension'])
+            cur2 = conn.cursor()
+            cur2.execute("""
+                SELECT tapped_at FROM rfid_cards 
+                WHERE DATE(tapped_at) = %s AND uid = %s
+                LIMIT 1
+            """, (today, row['uid']))
+            attendance = cur2.fetchone()
+            cur2.close()
+            student_list.append({
+                "id": row['id'],
+                "uid": format_uid(row['uid']) if row['uid'] else "—",
+                "full_name": full_name if full_name else "—",
+                "first_name": row['first_name'] or "—",
+                "middle_name": row['middle_name'] or "—",
+                "last_name": row['last_name'] or "—",
+                "extension": row['extension'] or "—",
+                "contact_number": row['contact_number'] or "—",
+                "email": row['email'] or "—",
+                "schedule": row['schedule'] or "—",
+                "present_today": attendance is not None,
+                "scan_time": attendance[0].strftime("%I:%M:%S %p") if attendance else "—"
+            })
+        conn.close()
+        
+        adviser_name = ""
+        if section['teacher_first_name'] and section['teacher_last_name']:
+            adviser_name = f"{section['teacher_first_name']} {section['teacher_last_name']}"
+        elif section['teacher_first_name']:
+            adviser_name = section['teacher_first_name']
+        elif section['teacher_last_name']:
+            adviser_name = section['teacher_last_name']
+        else:
+            adviser_name = "Not Assigned"
+            
+        section_info = {
+            'name': section['section_name'],
+            'adviser': adviser_name,
+            'room': "TBD",
+            'total_students': len(student_list),
+            'present_today': sum(1 for s in student_list if s['present_today'])
+        }
+        return render_template('class_dashboard.html', section=section['id'], section_info=section_info, students=student_list)
+    except Exception as e:
+        print(f"Class section error: {e}")
+        flash(f'Error loading class section: {str(e)}', 'error')
+        if conn:
+            conn.close()
+        return render_template('class_dashboard.html', section=section_id, section_info={'name': 'Error', 'adviser': 'Error', 'room': 'Error', 'total_students': 0, 'present_today': 0}, students=[])
+
+# =========================
+# TEACHER LOGIN & PROFILE ROUTES
 # =========================
 @admin_bp.route('/teacher/login', methods=['GET', 'POST'])
 def teacher_login():
@@ -1023,12 +1026,12 @@ def teacher_login():
                 # cookie past the 4 KB browser limit. Fetch it from the DB
                 # on each request via get_teacher_by_id() instead.
                 session['teacher_logged_in'] = True
-                session['teacher_id'] = teacher['id']
+                session['teacher_id'] = teacher['teacher_id']
                 session['teacher_account_id'] = teacher['account_id']
                 session['teacher_email'] = teacher['email']
                 session['teacher_name'] = teacher['full_name']
                 flash('Login successful!', 'success')
-                return redirect(url_for('admin_bp.teacher_profile'))
+                return redirect(url_for('admin_bp.dashboard'))
             else:
                 flash('Invalid email or password.', 'error')
         else:
@@ -1055,21 +1058,84 @@ def update_teacher_profile():
         teacher_id = session.get('teacher_id')
         if not teacher_id:
             return jsonify({"success": False, "message": "Not logged in"}), 401
+        
         fields = {}
         for field in ['first_name', 'middle_name', 'last_name', 'extension', 'contact_number']:
             if field in data:
                 fields[field] = data[field]
-        if not fields:
-            return jsonify({"success": False, "message": "No fields to update"}), 400
-        update_teacher_in_db(teacher_id, fields)
+        
+        # Handle email update separately
+        email_changed = False
+        new_email = None
+        if 'email' in data and data['email']:
+            new_email = data['email'].strip().lower()
+            # Validate email format
+            import re
+            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            if not re.match(email_pattern, new_email):
+                return jsonify({"success": False, "message": "Invalid email format"}), 400
+            email_changed = True
+        
+        # Update personal info
+        if fields:
+            update_teacher_in_db(teacher_id, fields)
+        
+        # Update email if changed
+        if email_changed:
+            update_teacher_email(teacher_id, new_email)
+            session['teacher_email'] = new_email
+        
+        # Update session name if name changed
         if 'first_name' in data or 'middle_name' in data or 'last_name' in data or 'extension' in data:
             updated_teacher = get_teacher_by_id(teacher_id)
             if updated_teacher:
                 session['teacher_name'] = updated_teacher['full_name']
-        return jsonify({"success": True, "message": "Profile updated successfully"})
+        
+        return jsonify({"success": True, "message": "Profile updated successfully", "email_changed": email_changed})
     except Exception as e:
         print(f"update_teacher_profile error: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
+
+@admin_bp.route('/teacher/update_password', methods=['POST'])
+@login_required
+def update_teacher_password():
+    """Update teacher password directly from profile page"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        new_password = data.get('password')
+        
+        if not email or not new_password:
+            return jsonify({"success": False, "message": "Email and password required"}), 400
+        
+        if len(new_password) < 6:
+            return jsonify({"success": False, "message": "Password must be at least 6 characters"}), 400
+        
+        # Get teacher by email to verify
+        teacher = get_teacher_by_email(email)
+        if not teacher:
+            return jsonify({"success": False, "message": "Teacher not found"}), 404
+        
+        # Verify the logged-in teacher matches
+        if teacher['teacher_id'] != session.get('teacher_id'):
+            return jsonify({"success": False, "message": "Unauthorized"}), 403
+        
+        # Update password
+        success = update_teacher_account_password_by_email(email, new_password)
+        
+        if success:
+            return jsonify({"success": True, "message": "Password updated successfully"})
+        else:
+            return jsonify({"success": False, "message": "Failed to update password"}), 500
+    except Exception as e:
+        print(f"Update password error: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@admin_bp.route('/teacher/logout')
+def teacher_logout():
+    session.clear()
+    flash('You have been logged out.', 'success')
+    return redirect(url_for('admin_bp.teacher_login'))
 
 # =========================
 # PROFILE IMAGE UPLOAD
@@ -1214,31 +1280,35 @@ def forgot_password_ajax():
 
 @admin_bp.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
-    print(f"Reset password route called with token: {token}")
     email = verify_reset_token(token)
+<<<<<<< HEAD
     print(f"Email from token: {email}")
+=======
+>>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
     if not email:
+        if request.method == 'POST':
+            return jsonify({'success': False, 'message': 'Invalid or expired reset link.'})
         flash('Invalid or expired reset link. Please request a new one.', 'error')
         return redirect(url_for('admin_bp.teacher_login'))
     if request.method == 'POST':
         password = request.form.get('password', '').strip()
         confirm_password = request.form.get('confirm_password', '').strip()
         if not password:
-            flash('Please enter a password.', 'error')
+            return jsonify({'success': False, 'message': 'Please enter a password.'})
         elif len(password) < 6:
-            flash('Password must be at least 6 characters long.', 'error')
+            return jsonify({'success': False, 'message': 'Password must be at least 6 characters long.'})
         elif password != confirm_password:
-            flash('Passwords do not match.', 'error')
+            return jsonify({'success': False, 'message': 'Passwords do not match.'})
         else:
             try:
                 if update_teacher_account_password_by_email(email, password):
                     clear_reset_token(email)
-                    flash('Password has been reset successfully! Please login with your new password.', 'success')
-                    return redirect(url_for('admin_bp.teacher_login'))
+                    return jsonify({'success': True, 'message': 'Password reset successfully!'})
                 else:
-                    flash('Failed to reset password. Please try again.', 'error')
+                    return jsonify({'success': False, 'message': 'Failed to reset password.'})
             except Exception as e:
                 print(f"Password reset error: {e}")
+<<<<<<< HEAD
                 flash('An error occurred. Please try again.', 'error')
         return render_template('reset_password.html', token=token)
     return render_template('reset_password.html', token=token)
@@ -1251,35 +1321,80 @@ def teacher_logout():
 
 @admin_bp.route('/debug/db_test')
 def debug_db_test():
+=======
+                return jsonify({'success': False, 'message': 'An error occurred.'})
+    
+    return render_template('reset_password.html', token=token)
+
+# =========================
+# OTHER ROUTES
+# =========================
+@admin_bp.route('/registered_students')
+@login_required
+def registered_students():
+    students = get_all_students()
+    student_list = []
+    teacher_id = session.get('teacher_id')
+    
+    for row in students:
+        full_name = build_full_name(row['first_name'], row['middle_name'], row['last_name'], row['extension'])
+        
+        show_student = False
+        if row['section_id']:
+            conn = get_connection()
+            if conn:
+                cur = conn.cursor()
+                cur.execute("SELECT teacher_id FROM sections WHERE id = %s", (row['section_id'],))
+                sec = cur.fetchone()
+                cur.close()
+                conn.close()
+                if sec and sec[0] == teacher_id:
+                    show_student = True
+        else:
+            show_student = True
+            
+        if show_student:
+            student_list.append({
+                "id": row['id'],
+                "uid": format_uid(row['uid']) if row['uid'] else "—",
+                "first_name": row['first_name'] or "—",
+                "middle_name": row['middle_name'] or "—",
+                "last_name": row['last_name'] or "—",
+                "extension": row['extension'] or "—",
+                "full_name": full_name if full_name else "—",
+                "contact_number": row['contact_number'] or "—",
+                "email": row['email'] or "—",
+                "schedule": row['schedule'] or "—",
+                "section_id": row['section_id'],
+                "section_name": row['section_name'] or "—",
+                "created_at": row['created_at'].strftime("%b %d, %Y  %I:%M %p") if row['created_at'] else "—"
+            })
+    return render_template('registered_students.html', students=student_list)
+
+@admin_bp.route('/registered_students/api')
+@login_required
+def registered_students_api():
+>>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
     try:
         conn = get_connection()
         if conn is None:
-            return jsonify({"status": "error", "message": "Cannot connect to database"})
+            return jsonify({"success": False, "total": 0})
         cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM teacher_accounts")
+        cur.execute("SELECT COUNT(*) FROM students")
         count = cur.fetchone()[0]
         cur.close()
         conn.close()
-        return jsonify({"status": "success", "message": "Database connected", "teacher_accounts_count": count})
+        return jsonify({"success": True, "total": count})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+        print(f"Error fetching student count: {e}")
+        return jsonify({"success": False, "total": 0})
 
-@admin_bp.route('/test_email_send')
+@admin_bp.route('/schedules')
 @login_required
-def test_email_send():
-    try:
-        to_email = session.get('teacher_email')
-        if not to_email:
-            return jsonify({"success": False, "message": "No email in session"})
-        test_token = str(uuid.uuid4())
-        result = send_reset_email(to_email, test_token)
-        if result:
-            return jsonify({"success": True, "message": f"Test email sent to {to_email}. Check your inbox/spam folder."})
-        else:
-            return jsonify({"success": False, "message": "Failed to send email. Check console for details."})
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)})
+def schedules():
+    return render_template('schedules.html')
 
+<<<<<<< HEAD
 # =========================
 # TEACHER MY SCHEDULES ROUTES
 # =========================
@@ -1332,9 +1447,16 @@ def teacher_schedules():
         if conn:
             conn.close()
         return render_template('my_schedules.html', sections=[])
-
-@admin_bp.route('/section_weekly_schedule_data/<int:section_id>')
+=======
+@admin_bp.route('/history')
 @login_required
+def history():
+    return render_template('history.html')
+>>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
+
+@admin_bp.route('/history/api')
+@login_required
+<<<<<<< HEAD
 def section_weekly_schedule_data(section_id):
     teacher_id = session.get('teacher_id')
     if not teacher_id:
@@ -1485,16 +1607,55 @@ def update_student(student_id):
         cur.close()
         conn.close()
         return jsonify({"success": True, "message": "Student updated successfully"})
+=======
+def history_api():
+    conn = get_connection()
+    if conn is None:
+        return jsonify({"success": False, "message": "Database not connected", "history": []})
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT r.id, r.uid,
+                COALESCE(NULLIF(TRIM(CONCAT(COALESCE(s.first_name, ''), ' ',
+                    COALESCE(s.middle_name, ''), ' ', COALESCE(s.last_name, ''), ' ',
+                    COALESCE(s.extension, ''))), ''), 'Unregistered Card') AS full_name,
+                r.tapped_at
+            FROM rfid_cards r
+            LEFT JOIN students s ON s.uid = r.uid
+            ORDER BY r.tapped_at DESC LIMIT 500;
+        """)
+        rows = cur.fetchall()
+        cur.close()
+        seen_keys = set()
+        history_list = []
+        for row in rows:
+            uid = row[1]
+            scan_date = row[3].date() if row[3] else None
+            if scan_date:
+                key = f"{uid}_{scan_date}"
+                if key not in seen_keys:
+                    seen_keys.add(key)
+                    history_list.append({
+                        "id": row[0],
+                        "uid": format_uid(row[1]) if row[1] else "—",
+                        "full_name": row[2] or "Unregistered Card",
+                        "scan_date": scan_date.strftime("%B %d, %Y") if scan_date else "—",
+                        "scan_time": row[3].strftime("%I:%M:%S %p") if row[3] else "—"
+                    })
+        return jsonify({"success": True, "history": history_list})
+>>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
     except Exception as e:
-        print(f"Update student error: {e}")
+        print(f"History API error: {e}")
+        return jsonify({"success": False, "message": str(e), "history": []})
+    finally:
         if conn:
             conn.close()
-        return jsonify({"success": False, "message": str(e)}), 500
 
 @admin_bp.route('/student_info/<int:student_id>')
 @login_required
 def student_info(student_id):
     teacher_id = session.get('teacher_id')
+<<<<<<< HEAD
     if not teacher_id:
         flash('Please login first', 'error')
         return redirect(url_for('admin_bp.teacher_login'))
@@ -1510,6 +1671,22 @@ def student_info(student_id):
                 st.extension, st.contact_number, st.email, st.schedule, st.created_at,
                 s.id as section_id, s.section_name, s.year_level,
                 t.id as teacher_id, t.first_name as teacher_first, t.last_name as teacher_last
+=======
+    conn = get_db_connection()
+    if conn is None:
+        flash('Database connection error', 'error')
+        return redirect(url_for('admin_bp.manage_sections'))
+    
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+        cur.execute("""
+            SELECT 
+                st.id, st.uid, st.first_name, st.middle_name, st.last_name, st.extension,
+                st.contact_number, st.email, st.schedule, st.created_at,
+                s.id as section_id, s.section_name, s.year_level,
+                t.id as teacher_id
+>>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
             FROM students st
             LEFT JOIN sections s ON st.section_id = s.id
             LEFT JOIN teachers t ON s.teacher_id = t.id
@@ -1518,24 +1695,30 @@ def student_info(student_id):
         student = cur.fetchone()
         if not student:
             flash('Student not found', 'error')
+<<<<<<< HEAD
             return redirect(url_for('admin_bp.teacher_schedules'))
         if student['teacher_id'] != teacher_id:
             flash('You do not have permission to view this student', 'error')
             return redirect(url_for('admin_bp.teacher_schedules'))
+=======
+            return redirect(url_for('admin_bp.manage_sections'))
+        
+        if student['teacher_id'] != teacher_id:
+            flash('You do not have permission to view this student', 'error')
+            return redirect(url_for('admin_bp.manage_sections'))
+        
+>>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
         cur.execute("""
-            SELECT 
-                DATE(created_at) as scan_date,
-                MIN(created_at) as first_scan,
-                COUNT(*) as scan_count
-            FROM rfid_cards
-            WHERE UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(uid, '')), ' ', ''), '-', ''), ':', '')) 
-                = UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE(%s, '')), ' ', ''), '-', ''), ':', ''))
-            GROUP BY DATE(created_at)
-            ORDER BY scan_date DESC
-            LIMIT 30
+            SELECT DATE(tapped_at) as scan_date, tapped_at
+            FROM rfid_cards WHERE uid = %s
+            ORDER BY tapped_at DESC LIMIT 30
         """, (student['uid'],))
         attendance_history = cur.fetchall()
         conn.close()
+<<<<<<< HEAD
+=======
+        
+>>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
         full_name_parts = [
             student['first_name'] or '',
             student['middle_name'] or '',
@@ -1552,4 +1735,171 @@ def student_info(student_id):
         if conn:
             conn.close()
         flash('Error loading student information', 'error')
-        return redirect(url_for('admin_bp.teacher_schedules'))
+        return redirect(url_for('admin_bp.manage_sections'))
+
+@admin_bp.route('/teacher_schedules')
+@login_required
+def teacher_schedules():
+    """Display sections for the logged-in teacher"""
+    teacher_id = session.get('teacher_id')
+    if not teacher_id:
+        flash('Teacher not found', 'error')
+        return redirect(url_for('admin_bp.teacher_login'))
+    
+    conn = get_db_connection()
+    if conn is None:
+        return render_template('my_schedules.html', sections=[])
+    
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+        cur.execute("""
+            SELECT 
+                s.id as section_id,
+                s.section_name,
+                s.year_level,
+                COUNT(DISTINCT st.id) as student_count
+            FROM sections s
+            LEFT JOIN students st ON st.section_id = s.id
+            WHERE s.teacher_id = %s
+            GROUP BY s.id, s.section_name, s.year_level
+            ORDER BY s.section_name
+        """, (teacher_id,))
+        
+        sections = cur.fetchall()
+        conn.close()
+        
+        sections_data = []
+        for section in sections:
+            sections_data.append({
+                'section_id': section['section_id'],
+                'section_name': section['section_name'],
+                'year_level': section['year_level'],
+                'student_count': section['student_count'] or 0
+            })
+        
+        return render_template('my_schedules.html', sections=sections_data)
+        
+    except Exception as e:
+        print(f"Teacher schedules error: {e}")
+        if conn:
+            conn.close()
+        return render_template('my_schedules.html', sections=[])
+        
+    except Exception as e:
+        print(f"Teacher schedules error: {e}")
+        if conn:
+            conn.close()
+        return render_template('my_schedules.html', sections=[])
+
+print("[Admin] Module loaded successfully")
+@admin_bp.route('/weekly_schedule/<int:section_id>')
+@login_required
+def weekly_schedule(section_id):
+    """Display weekly schedule for a section"""
+    teacher_id = session.get('teacher_id')
+    
+    # Verify teacher has access to this section
+    conn = get_db_connection()
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT id FROM sections WHERE id = %s AND teacher_id = %s", (section_id, teacher_id))
+            if not cur.fetchone():
+                flash('Section not found or unauthorized', 'error')
+                return redirect(url_for('admin_bp.teacher_schedules'))
+            cur.close()
+            conn.close()
+        except:
+            pass
+    
+    return render_template('weekly_schedule.html', section_id=section_id)
+
+@admin_bp.route('/api/schedule_data/<int:section_id>')
+@login_required
+def get_schedule_data(section_id):
+    """Get schedule data for a section from schedules table"""
+    teacher_id = session.get('teacher_id')
+    if not teacher_id:
+        return jsonify({"success": False, "error": "Not logged in"}), 401
+    
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"success": False, "error": "Database connection failed"}), 500
+    
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+        # Verify teacher has access to this section
+        cur.execute("""
+            SELECT s.id, s.section_name, s.year_level
+            FROM sections s
+            WHERE s.id = %s AND s.teacher_id = %s
+        """, (section_id, teacher_id))
+        
+        section = cur.fetchone()
+        if not section:
+            conn.close()
+            return jsonify({"success": False, "error": "Section not found or unauthorized"}), 403
+        
+        # Get all schedules for this section (Monday to Friday only)
+        cur.execute("""
+            SELECT 
+                sch.id,
+                sch.day,
+                sch.time,
+                sch.subject,
+                sch.room_id,
+                r.room_name,
+                t.first_name as teacher_first,
+                t.last_name as teacher_last
+            FROM schedules sch
+            LEFT JOIN rooms r ON sch.room_id = r.id
+            LEFT JOIN teachers t ON sch.teacher_id = t.id
+            WHERE sch.section_id = %s
+            AND sch.day IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+            ORDER BY 
+                CASE sch.day
+                    WHEN 'Monday' THEN 1
+                    WHEN 'Tuesday' THEN 2
+                    WHEN 'Wednesday' THEN 3
+                    WHEN 'Thursday' THEN 4
+                    WHEN 'Friday' THEN 5
+                END,
+                sch.time
+        """, (section_id,))
+        
+        schedules = cur.fetchall()
+        conn.close()
+        
+        schedule_list = []
+        for sch in schedules:
+            teacher_name = ""
+            if sch['teacher_first'] and sch['teacher_last']:
+                teacher_name = f"{sch['teacher_first']} {sch['teacher_last']}"
+            
+            schedule_list.append({
+                'id': sch['id'],
+                'day': sch['day'],
+                'time': sch['time'],
+                'subject': sch['subject'] or 'No Subject',
+                'room_name': sch['room_name'] or 'TBD',
+                'teacher_name': teacher_name
+            })
+        
+        return jsonify({
+            "success": True,
+            "section": {
+                'id': section['id'],
+                'name': section['section_name'],
+                'year_level': section['year_level']
+            },
+            "schedules": schedule_list
+        })
+        
+    except Exception as e:
+        print(f"Schedule data error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        if conn:
+            conn.close()

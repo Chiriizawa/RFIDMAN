@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Manage Sections{% endblock %}
+{% block title %}My Sections - Teacher Dashboard{% endblock %}
 
 {% block content %}
 <style>
@@ -20,55 +20,23 @@
         color: #f59e0b;
     }
     
-    .btn-primary {
-        background: #f59e0b;
+    .btn-view {
+        background: #3b82f6;
         color: white;
         font-weight: 600;
-        padding: 0.5rem 1rem;
+        padding: 0.35rem 0.9rem;
         border-radius: 0.5rem;
-        transition: all 0.2s;
-        cursor: pointer;
-        border: none;
-    }
-    
-    .btn-primary:hover {
-        background: #d97706;
-        transform: translateY(-2px);
-    }
-    
-    .btn-secondary {
-        background: #e2e8f0;
-        color: #1e293b;
-        font-weight: 600;
-        padding: 0.5rem 1rem;
-        border-radius: 0.5rem;
-        transition: all 0.2s;
-        cursor: pointer;
-        border: none;
-    }
-    
-    .btn-secondary:hover {
-        background: #cbd5e1;
-    }
-    
-    .btn-danger {
-        background: #ef4444;
-        color: white;
-        font-weight: 600;
-        padding: 0.5rem 1rem;
-        border-radius: 0.5rem;
-        transition: all 0.2s;
-        cursor: pointer;
-        border: none;
-    }
-    
-    .btn-danger:hover {
-        background: #dc2626;
-    }
-    
-    .btn-sm {
-        padding: 0.25rem 0.75rem;
         font-size: 0.75rem;
+        transition: all 0.2s;
+        cursor: pointer;
+        border: none;
+        text-decoration: none;
+        display: inline-block;
+    }
+    
+    .btn-view:hover {
+        background: #2563eb;
+        transform: translateY(-1px);
     }
     
     .data-table {
@@ -97,45 +65,6 @@
         background: #f8fafc;
     }
     
-    .modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.5);
-        z-index: 1000;
-        justify-content: center;
-        align-items: center;
-    }
-    
-    .modal.show {
-        display: flex;
-    }
-    
-    .modal-content {
-        background: white;
-        border-radius: 1rem;
-        padding: 2rem;
-        max-width: 500px;
-        width: 90%;
-    }
-    
-    .form-input, .form-select, .form-textarea {
-        width: 100%;
-        padding: 0.5rem 0.75rem;
-        border: 1px solid #e2e8f0;
-        border-radius: 0.5rem;
-        margin-bottom: 1rem;
-    }
-    
-    .form-input:focus, .form-select:focus, .form-textarea:focus {
-        outline: none;
-        border-color: #f59e0b;
-        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
-    }
-    
     .badge {
         padding: 0.25rem 0.75rem;
         border-radius: 0.5rem;
@@ -149,35 +78,21 @@
         color: #1e40af;
     }
     
-    .toast {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 9999;
-        min-width: 300px;
-        max-width: 450px;
-        padding: 16px 20px;
-        border-radius: 16px;
-        background: rgba(30, 58, 138, 0.95);
-        backdrop-filter: blur(18px);
-        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        animation: slideInRight 0.3s ease;
-        border: 1px solid rgba(255,255,255,0.15);
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        background: #f8fafc;
+        border-radius: 1rem;
     }
     
-    .toast.success { background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95)); }
-    .toast.error { background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95)); }
+    .empty-state i {
+        font-size: 4rem;
+        color: #cbd5e1;
+        margin-bottom: 1rem;
+    }
     
-    .toast-content { flex: 1; }
-    .toast-message { font-size: 13px; opacity: 0.95; color: white; }
-    .toast-close { cursor: pointer; opacity: 0.7; font-size: 18px; color: white; }
-    
-    @keyframes slideInRight {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
+    .empty-state p {
+        color: #64748b;
     }
     
     @media (max-width: 768px) {
@@ -197,13 +112,10 @@
                 <div>
                     <h1 class="text-2xl font-semibold flex items-center gap-2">
                         <i class="fa-solid fa-layer-group text-accent"></i>
-                        Manage Sections
+                        My Assigned Sections
                     </h1>
-                    <p class="text-white/80 text-sm mt-1">Add, edit, and manage class sections</p>
+                    <p class="text-white/80 text-sm mt-1">Sections assigned to you by the Super Admin</p>
                 </div>
-                <button onclick="openAddModal()" class="btn-primary">
-                    <i class="fa-solid fa-plus mr-2"></i>Add New Section
-                </button>
             </div>
         </div>
         
@@ -214,60 +126,21 @@
                         <th>ID</th>
                         <th>Section Name</th>
                         <th>Year Level</th>
-                        <th>Adviser</th>
-                        <th>Students</th>
+                        <th>No. of Students</th>
                         <th>Schedule</th>
-                        <th>Created</th>
-                        <th>Actions</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody id="sectionsTableBody">
-                    <tr><td colspan="8" class="text-center py-8 text-gray-400">Loading sections...</td></tr>
+                    <tr><td colspan="6" class="text-center py-8"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Loading sections...</p></div></td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 </div>
 
-<!-- Add/Edit Modal -->
-<div id="sectionModal" class="modal">
-    <div class="modal-content">
-        <h2 id="modalTitle" class="text-xl font-bold mb-4">Add New Section</h2>
-        <input type="hidden" id="editSectionId">
-        <input type="text" id="sectionName" placeholder="Section Name (e.g., 1-A, Grade 1-A)" class="form-input">
-        <input type="text" id="yearLevel" placeholder="Year Level (e.g., Grade 1, Grade 7)" class="form-input">
-        <select id="teacherId" class="form-select">
-            <option value="">Select Adviser (Optional)</option>
-            {% for teacher in teachers %}
-            <option value="{{ teacher.id }}">{{ teacher.first_name }} {{ teacher.last_name }} ({{ teacher.email }})</option>
-            {% endfor %}
-        </select>
-        <textarea id="schedule" rows="4" class="form-textarea" placeholder="Class Schedule (e.g., IT 3217&#10;M. Dullamano&#10;AV 3206&#10;Monday 7:00-7:30, 7:30-8:00&#10;Tuesday 14:00-14:30)"></textarea>
-        <div class="flex gap-3 justify-end mt-4">
-            <button onclick="closeModal()" class="btn-secondary">Cancel</button>
-            <button onclick="saveSection()" class="btn-primary">Save</button>
-        </div>
-    </div>
-</div>
-
 <script>
     let sections = [];
-    let teachers = {{ teachers | tojson | safe }};
-    
-    function showToast(message, type = 'success') {
-        const icons = { success: '✅', error: '❌' };
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        toast.innerHTML = `
-            <div class="toast-icon">${icons[type] || 'ℹ️'}</div>
-            <div class="toast-content">
-                <div class="toast-message">${message}</div>
-            </div>
-            <div class="toast-close" onclick="this.parentElement.remove()">✕</div>
-        `;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-    }
     
     async function fetchSections() {
         try {
@@ -276,39 +149,13 @@
             if (data.success) {
                 sections = data.sections;
                 renderSectionsTable();
+            } else {
+                document.getElementById('sectionsTableBody').innerHTML = '<tr><td colspan="6" class="text-center py-8"><div class="empty-state"><i class="fa-solid fa-folder-open"></i><p>No sections assigned to you yet</p><p class="text-xs mt-2">Contact Super Admin to assign sections</p></div></td></tr>';
             }
         } catch (error) {
             console.error('Error fetching sections:', error);
-            showToast('Failed to load sections', 'error');
+            document.getElementById('sectionsTableBody').innerHTML = '<tr><td colspan="6" class="text-center py-8"><div class="empty-state"><i class="fa-solid fa-exclamation-triangle"></i><p>Failed to load sections</p></div></td></tr>';
         }
-    }
-    
-    function renderSectionsTable() {
-        const tbody = document.getElementById('sectionsTableBody');
-        if (!sections || sections.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-400">No sections found</td></tr>';
-            return;
-        }
-        
-        tbody.innerHTML = sections.map(section => `
-            <tr>
-                <td>${section.id}</td>
-                <td><span class="badge badge-info">${escapeHtml(section.section_name)}</span></td>
-                <td>${escapeHtml(section.year_level) || '—'}</td>
-                <td>${section.first_name ? escapeHtml(section.first_name) + ' ' + escapeHtml(section.last_name) : '—'}</td>
-                <td><a href="/admin/class_section/${section.id}" class="text-accent hover:underline">${section.student_count} students</a></td>
-                <td class="text-xs text-gray-500 max-w-xs truncate">${escapeHtml(section.schedule) || '—'}</td>
-                <td>${new Date(section.created_at).toLocaleDateString()}</td>
-                <td>
-                    <button onclick="editSection(${section.id})" class="btn-secondary btn-sm mr-2">
-                        <i class="fa-solid fa-edit"></i> Edit
-                    </button>
-                    <button onclick="deleteSection(${section.id})" class="btn-danger btn-sm">
-                        <i class="fa-solid fa-trash"></i> Delete
-                    </button>
-                </td>
-            </tr>
-        `).join('');
     }
     
     function escapeHtml(text) {
@@ -318,89 +165,27 @@
         return div.innerHTML;
     }
     
-    function openAddModal() {
-        document.getElementById('modalTitle').textContent = 'Add New Section';
-        document.getElementById('editSectionId').value = '';
-        document.getElementById('sectionName').value = '';
-        document.getElementById('yearLevel').value = '';
-        document.getElementById('teacherId').value = '';
-        document.getElementById('schedule').value = '';
-        document.getElementById('sectionModal').classList.add('show');
-    }
-    
-    function editSection(sectionId) {
-        const section = sections.find(s => s.id === sectionId);
-        if (!section) return;
-        
-        document.getElementById('modalTitle').textContent = 'Edit Section';
-        document.getElementById('editSectionId').value = sectionId;
-        document.getElementById('sectionName').value = section.section_name;
-        document.getElementById('yearLevel').value = section.year_level || '';
-        document.getElementById('teacherId').value = section.teacher_id || '';
-        document.getElementById('schedule').value = section.schedule || '';
-        document.getElementById('sectionModal').classList.add('show');
-    }
-    
-    async function saveSection() {
-        const editId = document.getElementById('editSectionId').value;
-        const sectionName = document.getElementById('sectionName').value.trim();
-        const yearLevel = document.getElementById('yearLevel').value.trim();
-        const teacherId = document.getElementById('teacherId').value;
-        const schedule = document.getElementById('schedule').value.trim();
-        
-        if (!sectionName) {
-            showToast('Section name is required', 'error');
+    function renderSectionsTable() {
+        const tbody = document.getElementById('sectionsTableBody');
+        if (!sections || sections.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8"><div class="empty-state"><i class="fa-solid fa-folder-open"></i><p>No sections assigned to you yet</p><p class="text-xs mt-2">Contact Super Admin to assign sections</p></div></td></tr>';
             return;
         }
         
-        const url = editId ? `/admin/sections/update/${editId}` : '/admin/sections/add';
-        const method = editId ? 'PUT' : 'POST';
-        
-        try {
-            const response = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    section_name: sectionName, 
-                    year_level: yearLevel, 
-                    teacher_id: teacherId || null,
-                    schedule: schedule
-                })
-            });
-            const data = await response.json();
-            if (data.success) {
-                showToast(data.message, 'success');
-                closeModal();
-                fetchSections();
-            } else {
-                showToast(data.message, 'error');
-            }
-        } catch (error) {
-            console.error('Error saving section:', error);
-            showToast('Failed to save section', 'error');
-        }
-    }
-    
-    async function deleteSection(sectionId) {
-        if (!confirm('Are you sure you want to delete this section? Students in this section will have their section_id set to NULL.')) return;
-        
-        try {
-            const response = await fetch(`/admin/sections/delete/${sectionId}`, { method: 'DELETE' });
-            const data = await response.json();
-            if (data.success) {
-                showToast(data.message, 'success');
-                fetchSections();
-            } else {
-                showToast(data.message, 'error');
-            }
-        } catch (error) {
-            console.error('Error deleting section:', error);
-            showToast('Failed to delete section', 'error');
-        }
-    }
-    
-    function closeModal() {
-        document.getElementById('sectionModal').classList.remove('show');
+        tbody.innerHTML = sections.map(section => `
+            <tr>
+                <td class="font-medium">${section.id}</td>
+                <td><span class="badge badge-info">${escapeHtml(section.section_name)}</span></td>
+                <td>${escapeHtml(section.year_level) || '—'}</td>
+                <td>${section.student_count || 0}</td>
+                <td class="text-xs text-gray-500 max-w-xs whitespace-pre-wrap">${escapeHtml(section.schedule) || '—'}</td>
+                <td>
+                    <a href="/admin/class_section/${section.id}" class="btn-view">
+                        <i class="fa-solid fa-eye mr-1"></i> View Class
+                    </a>
+                </td>
+            </tr>
+        `).join('');
     }
     
     // Initialize
