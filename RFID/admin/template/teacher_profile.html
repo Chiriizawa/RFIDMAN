@@ -15,7 +15,6 @@
         padding: 2rem 1.25rem 4rem;
     }
 
-    /* ── Toast ────────────────────────────────────────── */
     .toast {
         position: fixed;
         top: 1.25rem;
@@ -47,7 +46,6 @@
     .toast-close   { cursor: pointer; color: rgba(255,255,255,.55); font-size: 1rem; margin-top: 1px; transition: color .2s; flex-shrink: 0; }
     .toast-close:hover { color: #fff; }
 
-    /* ── Page header ──────────────────────────────────── */
     .page-header {
         background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #1e1b4b 100%);
         border-radius: 1.5rem;
@@ -78,7 +76,6 @@
     .header-icon { width: 48px; height: 48px; background: rgba(245,158,11,.18); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .header-icon i { color: #f59e0b; font-size: 1.3rem; }
 
-    /* ── Cards ────────────────────────────────────────── */
     .card {
         background: #fff;
         border-radius: 1.25rem;
@@ -106,7 +103,6 @@
     .card-head-sub   { font-size: .75rem; color: #64748b; margin-top: .1rem; }
     .card-body { padding: 1.5rem; }
 
-    /* ── Profile picture section ──────────────────────── */
     .avatar-section {
         display: flex;
         align-items: center;
@@ -116,11 +112,7 @@
         border-bottom: 1px solid #e2e8f0;
     }
 
-    .avatar-wrap {
-        position: relative;
-        flex-shrink: 0;
-    }
-
+    .avatar-wrap { position: relative; flex-shrink: 0; }
     .avatar-ring {
         width: 96px; height: 96px;
         border-radius: 50%;
@@ -128,78 +120,29 @@
         padding: 3px;
         box-shadow: 0 8px 24px rgba(245,158,11,.35);
     }
-
     .avatar-img {
-        width: 100%;
-<<<<<<< HEAD
-        height: 100%;
+        width: 100%; height: 100%;
         border-radius: 50%;
         object-fit: cover;
         border: 3px solid #fff;
-=======
     }
-    
-    .form-input:focus {
-        outline: none;
-        border-color: #f59e0b;
-        background: white;
-        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
-    }
-    
-    .form-input::placeholder { color: #94a3b8; font-size: 0.85rem; }
-    .form-input.error { border-color: #ef4444; background: #fef2f2; }
-    
-    label { color: #1e293b; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.5rem; display: block; letter-spacing: 0.3px; }
-    .label-required { color: #ef4444; margin-left: 2px; }
-    
-    .btn-primary {
-        background: #f59e0b;
-        color: white;
-        font-weight: 700;
-        transition: all 0.2s ease;
-        font-size: 0.9rem;
-        padding: 0.75rem;
-        border: none;
-        cursor: pointer;
-        border-radius: 0.75rem;
-        width: 100%;
-    }
-    
-    .btn-primary:hover { background: #d97706; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2); }
-    .btn-primary:active { transform: translateY(0); }
-    
-    .btn-secondary {
->>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
-        background: #e2e8f0;
-        display: block;
-    }
-
     .avatar-initials {
         width: 90px; height: 90px;
         border-radius: 50%;
         background: linear-gradient(135deg, #1e3a8a, #1e1b4b);
         border: 3px solid #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.8rem;
-        font-weight: 700;
-        color: #f59e0b;
-        letter-spacing: -.5px;
-        font-family: 'Sora', sans-serif;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.8rem; font-weight: 700; color: #f59e0b;
+        letter-spacing: -.5px; font-family: 'Sora', sans-serif;
         user-select: none;
     }
-
     .avatar-badge {
-        position: absolute;
-        bottom: 2px; right: 2px;
+        position: absolute; bottom: 2px; right: 2px;
         width: 24px; height: 24px;
-        background: #f59e0b;
-        border-radius: 50%;
+        background: #f59e0b; border-radius: 50%;
         border: 2.5px solid #fff;
         display: flex; align-items: center; justify-content: center;
-        cursor: pointer;
-        transition: transform .2s, background .2s;
+        cursor: pointer; transition: transform .2s, background .2s;
         box-shadow: 0 2px 8px rgba(0,0,0,.18);
     }
     .avatar-badge:hover { transform: scale(1.15); background: #d97706; }
@@ -208,118 +151,68 @@
     .avatar-info { flex: 1; }
     .avatar-name { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: .25rem; }
     .avatar-email { font-size: .78rem; color: #64748b; margin-bottom: .75rem; font-family: 'DM Mono', monospace; }
-
     .avatar-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
 
     .btn-upload {
         display: inline-flex; align-items: center; gap: .4rem;
         padding: .45rem .9rem;
         background: linear-gradient(135deg, #1e3a8a, #2563eb);
-        color: #fff;
-        border: none;
-        border-radius: .65rem;
-        font-size: .78rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all .2s;
-        font-family: 'Sora', sans-serif;
+        color: #fff; border: none; border-radius: .65rem;
+        font-size: .78rem; font-weight: 600; cursor: pointer;
+        transition: all .2s; font-family: 'Sora', sans-serif;
     }
     .btn-upload:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(30,58,138,.35); }
 
     .btn-remove {
         display: inline-flex; align-items: center; gap: .4rem;
         padding: .45rem .9rem;
-        background: #fff;
-        color: #ef4444;
-        border: 1.5px solid #fecaca;
-        border-radius: .65rem;
-        font-size: .78rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all .2s;
-        font-family: 'Sora', sans-serif;
+        background: #fff; color: #ef4444;
+        border: 1.5px solid #fecaca; border-radius: .65rem;
+        font-size: .78rem; font-weight: 600; cursor: pointer;
+        transition: all .2s; font-family: 'Sora', sans-serif;
     }
     .btn-remove:hover { background: #fef2f2; transform: translateY(-1px); }
 
     .avatar-hint { font-size: .7rem; color: #94a3b8; margin-top: .4rem; }
     .avatar-hint i { color: #f59e0b; font-size: .65rem; }
 
-    /* Upload overlay on avatar hover */
-    .avatar-ring-wrap {
-        position: relative;
-        width: 96px; height: 96px;
-        cursor: pointer;
-    }
+    .avatar-ring-wrap { position: relative; width: 96px; height: 96px; cursor: pointer; }
     .avatar-overlay {
-        position: absolute;
-        inset: 3px;
-        border-radius: 50%;
-        background: rgba(0,0,0,0);
+        position: absolute; inset: 3px;
+        border-radius: 50%; background: rgba(0,0,0,0);
         display: flex; align-items: center; justify-content: center;
-        transition: background .25s;
-        overflow: hidden;
+        transition: background .25s; overflow: hidden;
     }
     .avatar-ring-wrap:hover .avatar-overlay { background: rgba(0,0,0,.45); }
     .avatar-overlay-label {
-        opacity: 0;
-        color: #fff;
-        font-size: .65rem;
-        font-weight: 600;
-        text-align: center;
-        transition: opacity .25s;
+        opacity: 0; color: #fff; font-size: .65rem; font-weight: 600;
+        text-align: center; transition: opacity .25s;
         display: flex; flex-direction: column; align-items: center; gap: 3px;
     }
     .avatar-ring-wrap:hover .avatar-overlay-label { opacity: 1; }
     .avatar-overlay-label i { font-size: .9rem; }
 
-    /* ── Info strips ──────────────────────────────────── */
-    .info-strip {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-    }
+    .info-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
     .info-box {
         background: linear-gradient(135deg, #0f172a, #1e3a8a);
-        border-radius: .875rem;
-        padding: .875rem 1.125rem;
+        border-radius: .875rem; padding: .875rem 1.125rem;
         border-left: 3px solid #f59e0b;
     }
-<<<<<<< HEAD
     .info-box-label { font-size: .65rem; color: rgba(255,255,255,.6); text-transform: uppercase; letter-spacing: .6px; margin-bottom: .35rem; }
     .info-box-label i { color: #f59e0b; margin-right: .3rem; font-size: .6rem; }
     .info-box-value { font-size: .88rem; color: #fff; font-weight: 600; word-break: break-all; }
 
-    /* ── Form ─────────────────────────────────────────── */
-    .form-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-        margin-bottom: 1rem;
-    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
     .form-group { display: flex; flex-direction: column; }
     .form-group.full { grid-column: 1 / -1; }
 
-    .form-label {
-        font-size: .72rem;
-        font-weight: 700;
-        color: #374151;
-        margin-bottom: .4rem;
-        letter-spacing: .3px;
-        text-transform: uppercase;
-    }
+    .form-label { font-size: .72rem; font-weight: 700; color: #374151; margin-bottom: .4rem; letter-spacing: .3px; text-transform: uppercase; }
     .req { color: #ef4444; }
 
     .form-input {
-        padding: .6rem 1rem;
-        border: 1.5px solid #e2e8f0;
-        border-radius: .75rem;
-        font-size: .87rem;
-        color: #0f172a;
-        background: #fff;
-        font-family: 'Sora', sans-serif;
-        transition: all .2s;
-        outline: none;
+        padding: .6rem 1rem; border: 1.5px solid #e2e8f0; border-radius: .75rem;
+        font-size: .87rem; color: #0f172a; background: #fff;
+        font-family: 'Sora', sans-serif; transition: all .2s; outline: none;
     }
     .form-input:focus { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,.12); }
     .form-input::placeholder { color: #b0bec5; font-size: .82rem; }
@@ -327,110 +220,75 @@
     .form-hint { font-size: .68rem; color: #94a3b8; margin-top: .3rem; }
     .form-hint i { color: #f59e0b; font-size: .62rem; }
 
-    /* ── Buttons ──────────────────────────────────────── */
+    .error-text { font-size: 0.7rem; color: #ef4444; margin-top: 0.25rem; display: none; align-items: center; gap: 0.25rem; }
+    .error-text.show { display: flex; }
+    .valid-text { font-size: 0.7rem; color: #10b981; margin-top: 0.25rem; display: none; align-items: center; gap: 0.25rem; }
+    .valid-text.show { display: flex; }
+
     .btn-primary {
         display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
-        padding: .8rem 1.5rem;
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-        color: #fff;
-        border: none;
-        border-radius: .875rem;
-        font-size: .88rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all .2s;
-        font-family: 'Sora', sans-serif;
-        box-shadow: 0 4px 15px rgba(245,158,11,.3);
-        width: 100%;
+        padding: .8rem 1.5rem; background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: #fff; border: none; border-radius: .875rem;
+        font-size: .88rem; font-weight: 700; cursor: pointer;
+        transition: all .2s; font-family: 'Sora', sans-serif;
+        box-shadow: 0 4px 15px rgba(245,158,11,.3); width: 100%;
     }
     .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(245,158,11,.4); }
     .btn-primary:disabled { opacity: .65; cursor: not-allowed; transform: none; }
 
     .btn-ghost {
         display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
-        padding: .8rem 1.5rem;
-        background: #f1f5f9;
-        color: #334155;
-        border: 1.5px solid #e2e8f0;
-        border-radius: .875rem;
-        font-size: .88rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all .2s;
-        font-family: 'Sora', sans-serif;
-        width: 100%;
+        padding: .8rem 1.5rem; background: #f1f5f9; color: #334155;
+        border: 1.5px solid #e2e8f0; border-radius: .875rem;
+        font-size: .88rem; font-weight: 600; cursor: pointer;
+        transition: all .2s; font-family: 'Sora', sans-serif; width: 100%;
     }
     .btn-ghost:hover:not(:disabled) { background: #e2e8f0; transform: translateY(-1px); }
     .btn-ghost:disabled { opacity: .65; cursor: not-allowed; }
 
-    /* ── Password reset card ──────────────────────────── */
     .reset-card {
         background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-        border: 1.5px solid #bae6fd;
-        border-radius: 1rem;
-        padding: 1.25rem 1.5rem;
+        border: 1.5px solid #bae6fd; border-radius: 1rem; padding: 1.25rem 1.5rem;
     }
     .reset-card p { font-size: .83rem; color: #0c4a6e; margin-bottom: 1rem; line-height: 1.6; }
     .reset-card strong { color: #075985; }
 
-    /* ── Divider ──────────────────────────────────────── */
-    .divider {
-        height: 1px;
-        background: linear-gradient(to right, #f1f5f9, #e2e8f0, #f1f5f9);
-        margin: 1.75rem 0;
-    }
+    .divider { height: 1px; background: linear-gradient(to right, #f1f5f9, #e2e8f0, #f1f5f9); margin: 1.75rem 0; }
 
-    /* ── Spinner ──────────────────────────────────────── */
     .spinner {
         width: 16px; height: 16px;
         border: 2px solid rgba(255,255,255,.35);
-        border-top-color: #fff;
-        border-radius: 50%;
-        animation: spin .65s linear infinite;
-        flex-shrink: 0;
+        border-top-color: #fff; border-radius: 50%;
+        animation: spin .65s linear infinite; flex-shrink: 0;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Preview modal ────────────────────────────────── */
     .modal-bg {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,.65);
-        z-index: 9990;
-        align-items: center;
-        justify-content: center;
-        backdrop-filter: blur(4px);
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,.65); z-index: 9990;
+        align-items: center; justify-content: center; backdrop-filter: blur(4px);
     }
     .modal-bg.open { display: flex; }
     .modal-box {
-        background: #fff;
-        border-radius: 1.25rem;
-        padding: 1.5rem;
-        max-width: 340px;
-        width: 90%;
-        text-align: center;
+        background: #fff; border-radius: 1.25rem; padding: 1.5rem;
+        max-width: 340px; width: 90%; text-align: center;
         box-shadow: 0 30px 80px rgba(0,0,0,.3);
         animation: modalIn .3s cubic-bezier(.22,1,.36,1);
     }
     @keyframes modalIn { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
     .modal-preview-img {
-        width: 140px; height: 140px;
-        border-radius: 50%;
-        object-fit: cover;
-        margin: 0 auto .75rem;
-        border: 4px solid #f59e0b;
+        width: 140px; height: 140px; border-radius: 50%;
+        object-fit: cover; margin: 0 auto .75rem; border: 4px solid #f59e0b;
         display: block;
     }
     .modal-title { font-size: 1rem; font-weight: 700; color: #0f172a; margin-bottom: .35rem; }
     .modal-sub { font-size: .78rem; color: #64748b; margin-bottom: 1.25rem; }
     .modal-actions { display: flex; gap: .75rem; }
 
-    /* ── Responsive ───────────────────────────────────── */
     @media (max-width: 640px) {
         .profile-page { padding: 1rem .75rem 3rem; }
-        .page-header  { padding: 1.25rem 1rem; border-radius: 1rem; }
+        .page-header { padding: 1.25rem 1rem; border-radius: 1rem; }
         .page-header-text h1 { font-size: 1.15rem; }
         .avatar-section { flex-direction: column; align-items: flex-start; gap: 1rem; padding: 1.25rem; }
         .info-strip { grid-template-columns: 1fr; }
@@ -439,177 +297,14 @@
         .card-body { padding: 1.1rem; }
         .avatar-actions { flex-direction: column; }
         .btn-upload, .btn-remove { width: 100%; justify-content: center; }
-=======
-    
-    .info-display-label { font-size: 0.7rem; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.35rem; }
-    .info-display-value { font-size: 0.9rem; color: white; font-weight: 600; }
-    
-    .section-header { font-size: 1rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #f59e0b; display: inline-block; }
-    
-    .btn-loading { position: relative; pointer-events: none; opacity: 0.7; }
-    .btn-loading::after { content: ""; position: absolute; width: 18px; height: 18px; top: 50%; right: 20px; margin-top: -9px; border: 2px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; }
-    
-    @keyframes spin { to { transform: rotate(360deg); } }
-    
-    .info-text { font-size: 0.7rem; color: #64748b; margin-top: 0.3rem; }
-    .info-text i { font-size: 0.65rem; margin-right: 0.25rem; color: #f59e0b; }
-    
-    .divider { height: 1px; background: linear-gradient(to right, #e2e8f0, transparent); margin: 1.5rem 0; }
-    
-    .error-text { font-size: 0.7rem; color: #ef4444; margin-top: 0.25rem; display: none; align-items: center; gap: 0.25rem; }
-    .error-text.show { display: flex; }
-    
-    .valid-text { font-size: 0.7rem; color: #10b981; margin-top: 0.25rem; display: none; align-items: center; gap: 0.25rem; }
-    .valid-text.show { display: flex; }
-    
-    /* Modal Styles - Fixed */
-   /* Modal Styles - Full Screen Blur */
-/* Modal Styles - No Blur */
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    z-index: 99999;
-    justify-content: center;
-    align-items: center;
-    animation: fadeIn 0.3s ease;
-}
-
-.modal.show {
-    display: flex;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-.modal-content {
-    background: rgba(30, 30, 50, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 1.5rem;
-    padding: 2rem;
-    max-width: 450px;
-    width: 90%;
-    animation: modalSlideIn 0.3s ease;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-}
-
-@keyframes modalSlideIn {
-    from { transform: translateY(-30px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-.modal-header {
-    text-align: center;
-    margin-bottom: 1.5rem;
-}
-
-.modal-header i {
-    font-size: 3rem;
-    color: #facc15;
-    margin-bottom: 0.5rem;
-}
-
-.modal-header h3 {
-    color: white;
-    font-size: 1.5rem;
-    font-weight: 600;
-}
-
-.modal-header p {
-    color: #94a3b8;
-    font-size: 0.875rem;
-    margin-top: 0.5rem;
-}
-
-.modal-btn {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    transition: all 0.3s ease;
-}
-
-.modal-btn:hover {
-    background: linear-gradient(135deg, #d97706, #b45309);
-    transform: translateY(-2px);
-}
-
-.modal-close {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    transition: all 0.3s ease;
-}
-
-.modal-close:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-    
-    .password-wrapper {
-        position: relative;
-    }
-    
-    .password-toggle {
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: none;
-        border: none;
-        color: rgba(255, 255, 255, 0.6);
-        cursor: pointer;
-        transition: color 0.2s;
-    }
-    
-    .password-toggle:hover {
-        color: #facc15;
-    }
-    
-    .glass-input-modal {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: #e2e8f0;
-        border-radius: 0.75rem;
-        padding: 0.85rem 1.25rem;
-        width: 100%;
-        outline: none;
-        transition: all 0.2s ease;
-        box-sizing: border-box;
-    }
-    
-    .glass-input-modal:focus {
-        border-color: #facc15;
-        background: rgba(255, 255, 255, 0.15);
-        box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.1);
-    }
-    
-    .glass-input-modal::placeholder {
-        color: rgba(148, 163, 184, 0.7);
-    }
-    
-    @media (max-width: 768px) {
-        .header-gradient { padding: 1rem 1.25rem; }
-        .form-input { font-size: 0.85rem; padding: 0.5rem 0.75rem; }
-        .info-display-value { font-size: 0.8rem; }
-        .section-header { font-size: 0.9rem; }
-        label { font-size: 0.75rem; }
-        .info-display-box { padding: 0.6rem 0.8rem; }
-        .btn-primary, .btn-secondary { padding: 0.6rem; font-size: 0.85rem; }
-        .modal-content { padding: 1.5rem; }
->>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
     }
 </style>
 
 <div class="profile-page">
 
-    <!-- Page Header -->
     <div class="page-header">
         <div class="page-header-inner">
-            <div class="header-icon">
-                <i class="fa-solid fa-user-tie"></i>
-            </div>
+            <div class="header-icon"><i class="fa-solid fa-user-tie"></i></div>
             <div class="page-header-text">
                 <h1>My Profile</h1>
                 <p>Manage your personal information and account settings</p>
@@ -617,7 +312,6 @@
         </div>
     </div>
 
-    <!-- Profile Picture Card -->
     <div class="card">
         <div class="card-head">
             <div class="card-head-icon">📸</div>
@@ -627,18 +321,13 @@
             </div>
         </div>
 
-<<<<<<< HEAD
         <div class="avatar-section">
-            <!-- Avatar -->
             <div class="avatar-wrap">
                 <label for="avatarFileInput" style="cursor:pointer;">
                     <div class="avatar-ring-wrap" title="Click to change photo">
                         <div class="avatar-ring" id="avatarRing">
                             {% if current_teacher.profile_image %}
-                                <img src="{{ current_teacher.profile_image }}"
-                                     alt="Profile"
-                                     class="avatar-img"
-                                     id="avatarImg">
+                                <img src="{{ current_teacher.profile_image }}" alt="Profile" class="avatar-img" id="avatarImg">
                             {% else %}
                                 <div class="avatar-initials" id="avatarInitials">
                                     {{ (current_teacher.first_name or 'T')[0] | upper }}{{ (current_teacher.last_name or 'E')[0] | upper }}
@@ -646,30 +335,8 @@
                             {% endif %}
                         </div>
                         <div class="avatar-overlay">
-                            <span class="avatar-overlay-label">
-                                <i class="fa-solid fa-camera"></i>
-                                Change
-                            </span>
+                            <span class="avatar-overlay-label"><i class="fa-solid fa-camera"></i> Change</span>
                         </div>
-=======
-        <div class="p-6">
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div class="info-display-box">
-                    <div class="info-display-label">
-                        <i class="fa-solid fa-user mr-1 text-yellow-400"></i> Full Name
-                    </div>
-                    <div class="info-display-value" id="teacherNameDisplay">
-                        {{ current_teacher.full_name }}
-                    </div>
-                </div>
-                <div class="info-display-box">
-                    <div class="info-display-label">
-                        <i class="fa-solid fa-envelope mr-1 text-yellow-400"></i> Email Address
-                    </div>
-                    <div class="info-display-value" id="teacherEmailDisplay">
-                        {{ current_teacher.email }}
->>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
                     </div>
                 </label>
                 <div class="avatar-badge" onclick="document.getElementById('avatarFileInput').click()" title="Upload photo">
@@ -677,38 +344,27 @@
                 </div>
             </div>
 
-            <!-- Info + buttons -->
             <div class="avatar-info">
                 <div class="avatar-name" id="avatarNameDisplay">{{ current_teacher.full_name }}</div>
                 <div class="avatar-email">{{ current_teacher.email }}</div>
                 <div class="avatar-actions">
                     <button class="btn-upload" onclick="document.getElementById('avatarFileInput').click()">
-                        <i class="fa-solid fa-arrow-up-from-bracket"></i>
-                        Upload Photo
+                        <i class="fa-solid fa-arrow-up-from-bracket"></i> Upload Photo
                     </button>
                     <button class="btn-remove" id="removePhotoBtn" onclick="confirmRemovePhoto()"
                             {% if not current_teacher.profile_image %}style="display:none"{% endif %}>
-                        <i class="fa-solid fa-trash-can"></i>
-                        Remove
+                        <i class="fa-solid fa-trash-can"></i> Remove
                     </button>
                 </div>
                 <div class="avatar-hint mt-2">
-                    <i class="fa-solid fa-info-circle"></i>
-                    PNG, JPG, GIF or WEBP &bull; Max 5 MB
+                    <i class="fa-solid fa-info-circle"></i> PNG, JPG, GIF or WEBP &bull; Max 5 MB
                 </div>
             </div>
         </div>
 
-<<<<<<< HEAD
-        <!-- Hidden file input -->
-        <input type="file"
-               id="avatarFileInput"
-               accept=".png,.jpg,.jpeg,.gif,.webp"
-               style="display:none"
-               onchange="handleAvatarSelect(event)">
+        <input type="file" id="avatarFileInput" accept=".png,.jpg,.jpeg,.gif,.webp" style="display:none" onchange="handleAvatarSelect(event)">
     </div>
 
-    <!-- Personal Info Card -->
     <div class="card">
         <div class="card-head">
             <div class="card-head-icon">✏️</div>
@@ -720,7 +376,6 @@
 
         <div class="card-body">
 
-            <!-- Quick info strips -->
             <div class="info-strip">
                 <div class="info-box">
                     <div class="info-box-label"><i class="fa-solid fa-user"></i> Full Name</div>
@@ -732,210 +387,67 @@
                 </div>
             </div>
 
-            <!-- Form -->
             <form id="profileForm" onsubmit="return false;">
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">First Name <span class="req">*</span></label>
-=======
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label>First Name <span class="label-required">*</span></label>
->>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
-                        <input type="text" id="first_name" name="first_name"
-                               value="{{ current_teacher.first_name }}"
-                               class="form-input"
-                               placeholder="First name"
-                               maxlength="50">
-                        <div class="info-text">
-                            <i class="fa-solid fa-info-circle"></i> Letters only (A-Z, a-z), spaces, hyphens, apostrophes • 2-50 characters
-                        </div>
-                        <div class="error-text" id="first_name_error">
-                            <i class="fa-solid fa-exclamation-circle"></i> Invalid: Only letters, spaces, hyphens, and apostrophes allowed
-                        </div>
-                        <div class="valid-text" id="first_name_valid">
-                            <i class="fa-solid fa-check-circle"></i> Valid format
-                        </div>
+                        <input type="text" id="first_name" name="first_name" value="{{ current_teacher.first_name }}" class="form-input" placeholder="First name" maxlength="50">
+                        <div class="form-hint"><i class="fa-solid fa-info-circle"></i> Letters, spaces, hyphens, apostrophes • 2-50 characters</div>
+                        <div class="error-text" id="first_name_error"><i class="fa-solid fa-exclamation-circle"></i> Invalid: Only letters, spaces, hyphens, and apostrophes allowed</div>
+                        <div class="valid-text" id="first_name_valid"><i class="fa-solid fa-check-circle"></i> Valid format</div>
                     </div>
-<<<<<<< HEAD
                     <div class="form-group">
                         <label class="form-label">Middle Name</label>
-=======
-                    <div>
-                        <label>Middle Name <span class="label-required" style="color:#64748b;">(Optional)</span></label>
->>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
-                        <input type="text" id="middle_name" name="middle_name"
-                               value="{{ current_teacher.middle_name or '' }}"
-                               class="form-input"
-                               placeholder="Middle name (optional)"
-                               maxlength="50">
-                        <div class="info-text">
-                            <i class="fa-solid fa-info-circle"></i> Letters only (A-Z, a-z), spaces, hyphens, apostrophes • Max 50 characters
-                        </div>
-                        <div class="error-text" id="middle_name_error">
-                            <i class="fa-solid fa-exclamation-circle"></i> Invalid: Only letters, spaces, hyphens, and apostrophes allowed
-                        </div>
-                        <div class="valid-text" id="middle_name_valid">
-                            <i class="fa-solid fa-check-circle"></i> Valid format
-                        </div>
+                        <input type="text" id="middle_name" name="middle_name" value="{{ current_teacher.middle_name or '' }}" class="form-input" placeholder="Middle name (optional)" maxlength="50">
+                        <div class="form-hint"><i class="fa-solid fa-info-circle"></i> Letters, spaces, hyphens, apostrophes • Max 50 characters</div>
+                        <div class="error-text" id="middle_name_error"><i class="fa-solid fa-exclamation-circle"></i> Invalid: Only letters, spaces, hyphens, and apostrophes allowed</div>
+                        <div class="valid-text" id="middle_name_valid"><i class="fa-solid fa-check-circle"></i> Valid format</div>
                     </div>
-<<<<<<< HEAD
                     <div class="form-group">
                         <label class="form-label">Last Name <span class="req">*</span></label>
-=======
-                    <div>
-                        <label>Last Name <span class="label-required">*</span></label>
->>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
-                        <input type="text" id="last_name" name="last_name"
-                               value="{{ current_teacher.last_name }}"
-                               class="form-input"
-                               placeholder="Last name"
-                               maxlength="50">
-                        <div class="info-text">
-                            <i class="fa-solid fa-info-circle"></i> Letters only (A-Z, a-z), spaces, hyphens, apostrophes • 2-50 characters
-                        </div>
-                        <div class="error-text" id="last_name_error">
-                            <i class="fa-solid fa-exclamation-circle"></i> Invalid: Only letters, spaces, hyphens, and apostrophes allowed
-                        </div>
-                        <div class="valid-text" id="last_name_valid">
-                            <i class="fa-solid fa-check-circle"></i> Valid format
-                        </div>
+                        <input type="text" id="last_name" name="last_name" value="{{ current_teacher.last_name }}" class="form-input" placeholder="Last name" maxlength="50">
+                        <div class="form-hint"><i class="fa-solid fa-info-circle"></i> Letters, spaces, hyphens, apostrophes • 2-50 characters</div>
+                        <div class="error-text" id="last_name_error"><i class="fa-solid fa-exclamation-circle"></i> Invalid: Only letters, spaces, hyphens, and apostrophes allowed</div>
+                        <div class="valid-text" id="last_name_valid"><i class="fa-solid fa-check-circle"></i> Valid format</div>
                     </div>
-<<<<<<< HEAD
                     <div class="form-group">
                         <label class="form-label">Suffix / Extension</label>
-=======
-                    <div>
-                        <label>Extension <span class="label-required" style="color:#64748b;">(Optional)</span></label>
->>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
-                        <input type="text" id="extension" name="extension"
-                               value="{{ current_teacher.extension or '' }}"
-                               class="form-input"
-                               placeholder="Jr., Sr., III …"
-                               maxlength="20">
-                        <div class="info-text">
-                            <i class="fa-solid fa-info-circle"></i> Valid: Jr., Sr., II, III, IV, V, VI, VII, VIII, IX, X
-                        </div>
-                        <div class="error-text" id="extension_error">
-                            <i class="fa-solid fa-exclamation-circle"></i> Invalid extension (e.g., Jr., Sr., II, III)
-                        </div>
-                        <div class="valid-text" id="extension_valid">
-                            <i class="fa-solid fa-check-circle"></i> Valid extension
-                        </div>
+                        <input type="text" id="extension" name="extension" value="{{ current_teacher.extension or '' }}" class="form-input" placeholder="Jr., Sr., III …" maxlength="20">
+                        <div class="form-hint"><i class="fa-solid fa-info-circle"></i> Jr., Sr., II, III, IV, V, VI, VII, VIII, IX, X</div>
+                        <div class="error-text" id="extension_error"><i class="fa-solid fa-exclamation-circle"></i> Invalid extension (e.g., Jr., Sr., II, III)</div>
+                        <div class="valid-text" id="extension_valid"><i class="fa-solid fa-check-circle"></i> Valid extension</div>
                     </div>
-<<<<<<< HEAD
                     <div class="form-group full">
                         <label class="form-label">Contact Number</label>
-                        <input type="tel" id="contact_number" name="contact_number"
-                               value="{{ current_teacher.contact_number or '' }}"
-                               class="form-input"
-                               placeholder="09123456789"
-                               maxlength="11"
-                               inputmode="numeric">
-                        <div class="form-hint"><i class="fa-solid fa-info-circle"></i> Numbers only &bull; Max 11 digits</div>
+                        <input type="tel" id="contact_number" name="contact_number" value="{{ current_teacher.contact_number or '' }}" class="form-input" placeholder="09123456789" maxlength="11" inputmode="numeric">
+                        <div class="form-hint"><i class="fa-solid fa-info-circle"></i> Numbers only • Max 11 digits (starts with 09)</div>
+                        <div class="error-text" id="contact_number_error"><i class="fa-solid fa-exclamation-circle"></i> Must be 11 digits starting with 09</div>
+                        <div class="valid-text" id="contact_number_valid"><i class="fa-solid fa-check-circle"></i> Valid Philippine mobile number</div>
                     </div>
                     <div class="form-group full">
                         <label class="form-label">Email Address</label>
-                        <input type="email" id="email"
-                               value="{{ current_teacher.email }}"
-                               class="form-input"
-                               disabled>
-                        <div class="form-hint"><i class="fa-solid fa-lock"></i> Email address cannot be changed</div>
+                        <input type="email" id="email" value="{{ current_teacher.email }}" class="form-input" disabled>
+                        <div class="form-hint"><i class="fa-solid fa-lock"></i> Email address cannot be changed here</div>
                     </div>
                 </div>
 
                 <button type="button" onclick="saveProfile()" id="saveBtn" class="btn-primary">
-                    <i class="fa-solid fa-floppy-disk"></i>
-                    Save Profile Changes
+                    <i class="fa-solid fa-floppy-disk"></i> Save Profile Changes
                 </button>
-=======
-                </div>
-
-                <div>
-                    <label>Contact Number</label>
-                    <input type="tel" id="contact_number" name="contact_number"
-                           value="{{ current_teacher.contact_number or '' }}"
-                           class="form-input"
-                           placeholder="09123456789"
-                           maxlength="11"
-                           inputmode="numeric">
-                    <div class="info-text">
-                        <i class="fa-solid fa-info-circle"></i> Philippine mobile number: 11 digits, starts with 09 (e.g., 09123456789)
-                    </div>
-                    <div class="error-text" id="contact_error">
-                        <i class="fa-solid fa-exclamation-circle"></i> Invalid: Must be 11 digits starting with 09 (e.g., 09123456789)
-                    </div>
-                    <div class="valid-text" id="contact_valid">
-                        <i class="fa-solid fa-check-circle"></i> Valid Philippine mobile number
-                    </div>
-                </div>
-
-                <div>
-                    <label>Email Address <span class="label-required">*</span></label>
-                    <input type="email" id="email" name="email"
-                           value="{{ current_teacher.email }}"
-                           class="form-input"
-                           placeholder="teacher@example.com"
-                           maxlength="100">
-                    <div class="info-text">
-                        <i class="fa-solid fa-info-circle"></i> Valid email format required. This will be used for login and password reset.
-                    </div>
-                    <div class="error-text" id="email_error">
-                        <i class="fa-solid fa-exclamation-circle"></i> Invalid email format (e.g., name@example.com)
-                    </div>
-                    <div class="valid-text" id="email_valid">
-                        <i class="fa-solid fa-check-circle"></i> Valid email format
-                    </div>
-                </div>
-
-                <div class="pt-4">
-                    <button type="button" onclick="saveProfile()" id="saveBtn"
-                            class="btn-primary font-semibold rounded-xl transition shadow-lg">
-                        <i class="fa-solid fa-floppy-disk mr-2"></i>
-                        Save Profile Changes
-                    </button>
-                </div>
->>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
             </form>
 
             <div class="divider"></div>
 
-            <!-- Change Password section -->
             <div>
                 <div style="font-size:.95rem;font-weight:700;color:#0f172a;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;">
                     <span style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:8px;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;font-size:.85rem;">🔑</span>
                     Change Password
                 </div>
-<<<<<<< HEAD
                 <div class="reset-card">
-                    <p>
-                        <i class="fa-solid fa-circle-info" style="color:#0284c7;margin-right:.4rem;"></i>
-                        A password reset link will be sent to
-                        <strong>{{ current_teacher.email }}</strong>.
-                        The link expires after 24 hours.
-                    </p>
-                    <button type="button" onclick="sendPasswordReset()" id="resetPasswordBtn" class="btn-ghost">
-                        <i class="fa-solid fa-paper-plane"></i>
-                        Send Password Reset Link
+                    <p><i class="fa-solid fa-circle-info" style="color:#0284c7;margin-right:.4rem;"></i> Click the button below to change your password directly.</p>
+                    <button type="button" onclick="openChangePasswordModal()" id="changePasswordBtn" class="btn-ghost">
+                        <i class="fa-solid fa-key"></i> Change Password
                     </button>
-                    <div class="form-hint mt-2" style="margin-top:.5rem;">
-                        <i class="fa-solid fa-info-circle"></i>
-                        Check your inbox (and spam folder) after clicking.
-                    </div>
-=======
-
-                <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
-                    <p class="text-gray-600 text-sm mb-4">
-                        <i class="fa-solid fa-lock mr-2 text-accent"></i>
-                        Enter your new password below to change it immediately.
-                    </p>
-                    
-                    <button type="button" onclick="openChangePasswordModal()" id="changePasswordBtn"
-                            class="btn-secondary font-semibold rounded-xl transition">
-                        <i class="fa-solid fa-key mr-2"></i>
-                        Change Password
-                    </button>
->>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
                 </div>
             </div>
 
@@ -944,91 +456,64 @@
 
 </div>
 
-<!-- Preview / Confirm Upload Modal -->
+<!-- Preview Modal -->
 <div class="modal-bg" id="uploadModal">
     <div class="modal-box">
         <img src="" id="previewImg" alt="Preview" class="modal-preview-img">
         <div class="modal-title">Upload this photo?</div>
         <div class="modal-sub" id="previewFileName">filename.jpg</div>
         <div class="modal-actions">
-            <button class="btn-ghost" style="flex:1" onclick="cancelUpload()">
-                <i class="fa-solid fa-xmark"></i> Cancel
-            </button>
-            <button class="btn-primary" style="flex:1" id="confirmUploadBtn" onclick="confirmUpload()">
-                <i class="fa-solid fa-check"></i> Upload
-            </button>
+            <button class="btn-ghost" style="flex:1" onclick="cancelUpload()"><i class="fa-solid fa-xmark"></i> Cancel</button>
+            <button class="btn-primary" style="flex:1" id="confirmUploadBtn" onclick="confirmUpload()"><i class="fa-solid fa-check"></i> Upload</button>
         </div>
     </div>
 </div>
 
 <!-- Change Password Modal -->
-<div id="changePasswordModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <i class="fa-solid fa-lock"></i>
-            <h3>Change Password</h3>
-            <p>Enter your new password below</p>
+<div id="changePasswordModal" class="modal-bg">
+    <div class="modal-box" style="max-width: 420px; text-align: left;">
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+            <i class="fa-solid fa-lock" style="font-size: 2.5rem; color: #f59e0b;"></i>
+            <h3 style="margin: 0.75rem 0 0.25rem; font-size: 1.35rem; color: #0f172a;">Change Password</h3>
+            <p style="color: #64748b; font-size: 0.9rem;">Enter your new password below</p>
         </div>
         
-        <form id="changePasswordForm" class="space-y-5">
-            <div>
-                <label class="block text-sm font-medium text-blue-200 mb-2">
-                    <i class="fa-solid fa-lock mr-1 text-yellow-400/70"></i>
-                    New Password
-                </label>
-                <div class="password-wrapper">
-                    <input type="password" id="newPassword" name="password" required
-                           placeholder="Enter new password (min. 6 characters)"
-                           class="glass-input-modal w-full pr-12">
-                    <button type="button" class="password-toggle" onclick="toggleModalPassword('newPassword', 'toggleModalIcon1')">
-                        <i class="fa-regular fa-eye" id="toggleModalIcon1"></i>
+        <form id="changePasswordForm">
+            <div style="margin-bottom: 1rem;">
+                <label style="font-size: 0.8rem; font-weight: 700; color: #374151; display: block; margin-bottom: 0.4rem;">New Password</label>
+                <div style="position: relative;">
+                    <input type="password" id="newPassword" required placeholder="Enter new password (min. 6 characters)" style="width: 100%; padding: 0.75rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 0.75rem; font-size: 0.95rem;">
+                    <button type="button" onclick="togglePasswordVisibility('newPassword', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #64748b; cursor: pointer;">
+                        <i class="fa-regular fa-eye"></i>
                     </button>
                 </div>
             </div>
             
-            <div>
-                <label class="block text-sm font-medium text-blue-200 mb-2">
-                    <i class="fa-solid fa-lock mr-1 text-yellow-400/70"></i>
-                    Confirm New Password
-                </label>
-                <div class="password-wrapper">
-                    <input type="password" id="confirmNewPassword" name="confirm_password" required
-                           placeholder="Confirm your new password"
-                           class="glass-input-modal w-full pr-12">
-                    <button type="button" class="password-toggle" onclick="toggleModalPassword('confirmNewPassword', 'toggleModalIcon2')">
-                        <i class="fa-regular fa-eye" id="toggleModalIcon2"></i>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="font-size: 0.8rem; font-weight: 700; color: #374151; display: block; margin-bottom: 0.4rem;">Confirm New Password</label>
+                <div style="position: relative;">
+                    <input type="password" id="confirmNewPassword" required placeholder="Confirm your new password" style="width: 100%; padding: 0.75rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 0.75rem; font-size: 0.95rem;">
+                    <button type="button" onclick="togglePasswordVisibility('confirmNewPassword', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #64748b; cursor: pointer;">
+                        <i class="fa-regular fa-eye"></i>
                     </button>
                 </div>
             </div>
             
-            <div class="flex gap-3">
-                <button type="button" onclick="closeChangePasswordModal()"
-                        class="modal-close flex-1 text-white font-semibold py-3 rounded-xl transition">
-                    Cancel
-                </button>
-                <button type="submit" id="changePasswordSubmitBtn"
-                        class="modal-btn flex-1 text-white font-semibold py-3 rounded-xl transition">
-                    <i class="fa-solid fa-check-circle mr-2"></i>
-                    Update Password
-                </button>
+            <div style="display: flex; gap: 0.75rem;">
+                <button type="button" onclick="closeChangePasswordModal()" style="flex: 1; padding: 0.75rem; background: #f1f5f9; color: #334155; border: 1.5px solid #e2e8f0; border-radius: 0.75rem; font-weight: 600; cursor: pointer;">Cancel</button>
+                <button type="submit" id="changePasswordSubmitBtn" style="flex: 1; padding: 0.75rem; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; border-radius: 0.75rem; font-weight: 700; cursor: pointer;">Update Password</button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
-<<<<<<< HEAD
-/* ══════════════════════════════════════════
-   Toast
-══════════════════════════════════════════ */
-=======
-// REGEX PATTERNS
+// ==================== STRONG VALIDATION ====================
 const NAME_REGEX = /^[A-Za-z\u00C0-\u00FF\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF]+(?:[\s\-'][A-Za-z\u00C0-\u00FF\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF]+)*$/;
 const EXTENSION_REGEX = /^(|Jr\.?|Sr\.?|I{1,3}|IV|V|VI|VII|VIII|IX|X|II|III)$/i;
 const PHONE_REGEX = /^(09)\d{9}$/;
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
->>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
 function showToast(message, type = 'success', title = '') {
     const defaults = { success: ['✅','Success'], error: ['❌','Error'], info: ['ℹ️','Info'], warning: ['⚠️','Warning'] };
     const [icon, defaultTitle] = defaults[type] || defaults.success;
@@ -1047,38 +532,12 @@ function showToast(message, type = 'success', title = '') {
     setTimeout(() => dismissToast(el), 4000);
 }
 
-<<<<<<< HEAD
 function dismissToast(el) {
     if (!el || !el.parentElement) return;
     el.style.animation = 'toastOut .3s ease forwards';
     setTimeout(() => el.remove(), 290);
 }
 
-/* ══════════════════════════════════════════
-   Button helpers
-══════════════════════════════════════════ */
-function setBusy(btn, busy, restoreHTML) {
-    if (busy) {
-        btn._orig = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = `<span class="spinner"></span> Please wait…`;
-=======
-function setButtonLoading(button, isLoading, originalText, loadingText = 'Saving...') {
-    if (isLoading) {
-        button.classList.add('btn-loading');
-        button.disabled = true;
-        button.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> ${loadingText}`;
->>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
-    } else {
-        btn.disabled = false;
-        btn.innerHTML = restoreHTML || btn._orig || '';
-    }
-}
-
-<<<<<<< HEAD
-/* ══════════════════════════════════════════
-   Avatar / profile picture
-══════════════════════════════════════════ */
 let pendingFile = null;
 
 function handleAvatarSelect(e) {
@@ -1120,7 +579,8 @@ async function confirmUpload() {
     if (!pendingFile) return;
 
     const btn = document.getElementById('confirmUploadBtn');
-    setBusy(btn, true);
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner"></span> Uploading...`;
 
     const formData = new FormData();
     formData.append('profile_image', pendingFile);
@@ -1133,241 +593,27 @@ async function confirmUpload() {
         const data = await res.json();
 
         if (data.success) {
-            // Update avatar in DOM
             updateAvatarDOM(data.profile_image);
             document.getElementById('uploadModal').classList.remove('open');
             showToast('Profile picture updated!', 'success', 'Photo Uploaded');
             document.getElementById('removePhotoBtn').style.display = '';
         } else {
-            showToast(data.message || 'Upload failed. Please try again.', 'error', 'Upload Error');
+            showToast(data.message || 'Upload failed.', 'error', 'Upload Error');
         }
     } catch (err) {
-        console.error(err);
         showToast('Network error. Please try again.', 'error', 'Connection Error');
     } finally {
-        setBusy(btn, false);
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-check"></i> Upload`;
         pendingFile = null;
         document.getElementById('avatarFileInput').value = '';
-=======
-function toggleModalPassword(inputId, iconId) {
-    const input = document.getElementById(inputId);
-    const icon = document.getElementById(iconId);
-    const isHidden = input.type === 'password';
-    input.type = isHidden ? 'text' : 'password';
-    icon.classList.toggle('fa-eye', !isHidden);
-    icon.classList.toggle('fa-eye-slash', isHidden);
-}
-
-function openChangePasswordModal() {
-    document.getElementById('changePasswordModal').classList.add('show');
-    document.getElementById('newPassword').focus();
-}
-
-function closeChangePasswordModal() {
-    document.getElementById('changePasswordModal').classList.remove('show');
-    document.getElementById('changePasswordForm').reset();
-}
-
-function removeErrorStyles() {
-    const fields = ['first_name', 'middle_name', 'last_name', 'extension', 'contact_number', 'email'];
-    fields.forEach(id => {
-        const input = document.getElementById(id);
-        const errorDiv = document.getElementById(`${id}_error`);
-        const validDiv = document.getElementById(`${id}_valid`);
-        if (input) input.classList.remove('error');
-        if (errorDiv) errorDiv.classList.remove('show');
-        if (validDiv) validDiv.classList.remove('show');
-    });
-}
-
-function showFieldStatus(fieldId, isValid, errorMessage = null) {
-    const input = document.getElementById(fieldId);
-    const errorDiv = document.getElementById(`${fieldId}_error`);
-    const validDiv = document.getElementById(`${fieldId}_valid`);
-    
-    if (input && errorDiv && validDiv) {
-        if (!input.value.trim()) {
-            input.classList.remove('error');
-            errorDiv.classList.remove('show');
-            validDiv.classList.remove('show');
-            return;
-        }
-        
-        if (isValid) {
-            input.classList.remove('error');
-            errorDiv.classList.remove('show');
-            validDiv.classList.add('show');
-        } else {
-            input.classList.add('error');
-            errorDiv.classList.add('show');
-            validDiv.classList.remove('show');
-            if (errorMessage) {
-                showToast(errorMessage, 'warning', 'Invalid Input');
-            }
-        }
-    }
-}
-
-function validateName(value) {
-    if (!value || value.trim() === '') return false;
-    const trimmed = value.trim();
-    if (trimmed.length < 2) return false;
-    if (trimmed.length > 50) return false;
-    return NAME_REGEX.test(trimmed);
-}
-
-function validateExtension(value) {
-    if (!value || value.trim() === '') return true;
-    const trimmed = value.trim();
-    if (trimmed.length > 20) return false;
-    return EXTENSION_REGEX.test(trimmed);
-}
-
-function validateContactNumber(value) {
-    if (!value || value.trim() === '') return true;
-    const cleaned = value.replace(/\s/g, '');
-    if (cleaned.length !== 11) return false;
-    if (!PHONE_REGEX.test(cleaned)) return false;
-    return true;
-}
-
-function validateEmail(value) {
-    if (!value || value.trim() === '') return false;
-    return EMAIL_REGEX.test(value.trim());
-}
-
-function cleanNameInput(input) {
-    let value = input.value;
-    const original = value;
-    value = value.replace(/[^A-Za-z\u00C0-\u00FF\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF\s\-']/g, '');
-    value = value.replace(/\s+/g, ' ').trim();
-    if (value !== original) {
-        input.value = value;
-        if (original.match(/[0-9]/)) {
-            showToast('Names cannot contain numbers', 'warning', 'Invalid Character');
-        }
-        if (original.match(/[!@#$%^&*()_+=[\]{};:"\\|,.<>/?]/)) {
-            showToast('Names cannot contain special characters', 'warning', 'Invalid Character');
-        }
-    }
-    return value;
-}
-
-function cleanContactInput(input) {
-    let value = input.value;
-    const original = value;
-    value = value.replace(/[^\d]/g, '');
-    if (value.length > 11) {
-        value = value.slice(0, 11);
-    }
-    if (value !== original) {
-        input.value = value;
-        if (original.match(/[A-Za-z]/)) {
-            showToast('Contact number can only contain digits', 'warning', 'Invalid Character');
-        }
-    }
-    return value;
-}
-
-function validateForm() {
-    removeErrorStyles();
-    let isValid = true;
-    
-    const firstName = document.getElementById('first_name');
-    const lastName = document.getElementById('last_name');
-    const middleName = document.getElementById('middle_name');
-    const extension = document.getElementById('extension');
-    const contactNumber = document.getElementById('contact_number');
-    const email = document.getElementById('email');
-    
-    if (firstName) {
-        const isValidName = validateName(firstName.value);
-        showFieldStatus('first_name', isValidName, 'First name must contain only letters, spaces, hyphens, or apostrophes. 2-50 characters.');
-        if (!isValidName && firstName.value.trim()) isValid = false;
-    }
-    
-    if (lastName) {
-        const isValidName = validateName(lastName.value);
-        showFieldStatus('last_name', isValidName, 'Last name must contain only letters, spaces, hyphens, or apostrophes. 2-50 characters.');
-        if (!isValidName && lastName.value.trim()) isValid = false;
-    }
-    
-    if (middleName && middleName.value.trim()) {
-        const isValidName = validateName(middleName.value);
-        showFieldStatus('middle_name', isValidName, 'Middle name must contain only letters, spaces, hyphens, or apostrophes.');
-        if (!isValidName) isValid = false;
-    } else {
-        showFieldStatus('middle_name', true);
-    }
-    
-    if (extension && extension.value.trim()) {
-        const isValidExt = validateExtension(extension.value);
-        showFieldStatus('extension', isValidExt, 'Extension must be Jr., Sr., II, III, IV, V, VI, VII, VIII, IX, or X');
-        if (!isValidExt) isValid = false;
-    } else {
-        showFieldStatus('extension', true);
-    }
-    
-    if (contactNumber && contactNumber.value.trim()) {
-        const isValidContact = validateContactNumber(contactNumber.value);
-        showFieldStatus('contact_number', isValidContact, 'Contact number must be 11 digits starting with 09 (e.g., 09123456789)');
-        if (!isValidContact) isValid = false;
-    } else {
-        showFieldStatus('contact_number', true);
-    }
-    
-    if (email) {
-        const isValidEmail = validateEmail(email.value);
-        showFieldStatus('email', isValidEmail, 'Please enter a valid email address (e.g., name@example.com)');
-        if (!isValidEmail) isValid = false;
-    }
-    
-    return isValid;
-}
-
-function setupLiveValidation() {
-    const firstName = document.getElementById('first_name');
-    if (firstName) {
-        firstName.addEventListener('input', function() { cleanNameInput(this); showFieldStatus('first_name', validateName(this.value)); });
-        firstName.addEventListener('blur', function() { if (this.value.trim()) { const words = this.value.trim().split(/\s+/); const capitalized = words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '); if (capitalized !== this.value) this.value = capitalized; showFieldStatus('first_name', validateName(this.value)); } });
-    }
-    
-    const middleName = document.getElementById('middle_name');
-    if (middleName) {
-        middleName.addEventListener('input', function() { cleanNameInput(this); showFieldStatus('middle_name', !this.value.trim() || validateName(this.value)); });
-        middleName.addEventListener('blur', function() { if (this.value.trim()) { const words = this.value.trim().split(/\s+/); const capitalized = words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '); if (capitalized !== this.value) this.value = capitalized; showFieldStatus('middle_name', validateName(this.value)); } });
-    }
-    
-    const lastName = document.getElementById('last_name');
-    if (lastName) {
-        lastName.addEventListener('input', function() { cleanNameInput(this); showFieldStatus('last_name', validateName(this.value)); });
-        lastName.addEventListener('blur', function() { if (this.value.trim()) { const words = this.value.trim().split(/\s+/); const capitalized = words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '); if (capitalized !== this.value) this.value = capitalized; showFieldStatus('last_name', validateName(this.value)); } });
-    }
-    
-    const extension = document.getElementById('extension');
-    if (extension) {
-        extension.addEventListener('input', function() { let v = this.value; v = v.replace(/[^A-Za-z\s\.]/g, ''); v = v.replace(/\s+/g, ' ').trim(); if (v !== this.value) this.value = v; if (this.value.trim()) this.value = this.value.toUpperCase(); showFieldStatus('extension', !this.value.trim() || validateExtension(this.value)); });
-    }
-    
-    const contactField = document.getElementById('contact_number');
-    if (contactField) {
-        contactField.addEventListener('input', function() { cleanContactInput(this); showFieldStatus('contact_number', !this.value.trim() || validateContactNumber(this.value)); });
-        contactField.addEventListener('blur', function() { if (this.value.trim() && !validateContactNumber(this.value)) showToast('Contact number must be 11 digits starting with 09', 'warning', 'Invalid Format'); });
-    }
-    
-    const emailField = document.getElementById('email');
-    if (emailField) {
-        emailField.addEventListener('input', function() { showFieldStatus('email', validateEmail(this.value)); });
->>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
     }
 }
 
 function updateAvatarDOM(src) {
     const ring = document.getElementById('avatarRing');
-    // Replace whatever is inside the ring
     let img = document.getElementById('avatarImg');
     if (!img) {
-        // Was showing initials — build an img element
         const init = document.getElementById('avatarInitials');
         if (init) init.remove();
         img = document.createElement('img');
@@ -1386,7 +632,8 @@ function confirmRemovePhoto() {
 
 async function removePhoto() {
     const btn = document.getElementById('removePhotoBtn');
-    setBusy(btn, true);
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner"></span> Removing...`;
 
     try {
         const res = await fetch("{{ url_for('admin_bp.remove_teacher_profile_pic') }}", {
@@ -1396,7 +643,6 @@ async function removePhoto() {
         const data = await res.json();
 
         if (data.success) {
-            // Revert to initials
             const ring = document.getElementById('avatarRing');
             const img = document.getElementById('avatarImg');
             if (img) img.remove();
@@ -1417,97 +663,180 @@ async function removePhoto() {
     } catch (err) {
         showToast('Network error. Please try again.', 'error', 'Connection Error');
     } finally {
-        setBusy(btn, false, '<i class="fa-solid fa-trash-can"></i> Remove');
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-trash-can"></i> Remove`;
     }
 }
 
-/* ══════════════════════════════════════════
-   Contact number validation
-══════════════════════════════════════════ */
-function setupContactField() {
-    const el = document.getElementById('contact_number');
-    if (!el) return;
-
-    el.addEventListener('input', () => {
-        let v = el.value.replace(/\D/g, '');
-        if (v.length > 11) {
-            v = v.slice(0, 11);
-            showToast('Contact number cannot exceed 11 digits', 'warning', 'Too Long');
-        }
-        el.value = v;
-    });
-
-    el.addEventListener('keypress', (e) => {
-        if (!/\d/.test(e.key)) {
-            e.preventDefault();
-            showToast('Only numbers are allowed', 'warning', 'Invalid Input');
-        }
-    });
+function validateName(value) {
+    if (!value || value.trim() === '') return false;
+    const trimmed = value.trim();
+    if (trimmed.length < 2 || trimmed.length > 50) return false;
+    return NAME_REGEX.test(trimmed);
 }
 
-/* ══════════════════════════════════════════
-   Save profile
-══════════════════════════════════════════ */
+function validateExtension(value) {
+    if (!value || value.trim() === '') return true;
+    return EXTENSION_REGEX.test(value.trim());
+}
+
+function validateContactNumber(value) {
+    if (!value || value.trim() === '') return true;
+    const cleaned = value.replace(/\s/g, '');
+    return PHONE_REGEX.test(cleaned);
+}
+
+function validateEmail(value) {
+    if (!value || value.trim() === '') return false;
+    return EMAIL_REGEX.test(value.trim());
+}
+
+function showFieldStatus(fieldId, isValid) {
+    const input = document.getElementById(fieldId);
+    const errorDiv = document.getElementById(`${fieldId}_error`);
+    const validDiv = document.getElementById(`${fieldId}_valid`);
+    
+    if (!input || !errorDiv || !validDiv) return;
+
+    if (!input.value.trim()) {
+        input.classList.remove('error');
+        errorDiv.classList.remove('show');
+        validDiv.classList.remove('show');
+        return;
+    }
+
+    if (isValid) {
+        input.classList.remove('error');
+        errorDiv.classList.remove('show');
+        validDiv.classList.add('show');
+    } else {
+        input.classList.add('error');
+        errorDiv.classList.add('show');
+        validDiv.classList.remove('show');
+    }
+}
+
+function cleanNameInput(input) {
+    let value = input.value;
+    const original = value;
+    value = value.replace(/[^A-Za-z\u00C0-\u00FF\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF\s\-']/g, '');
+    value = value.replace(/\s+/g, ' ').trim();
+    if (value !== original) {
+        input.value = value;
+        if (original.match(/[0-9]/)) showToast('Names cannot contain numbers', 'warning', 'Invalid Character');
+        if (original.match(/[!@#$%^&*()_+=[\]{};:"\\|,.<>/?]/)) showToast('Names cannot contain special characters', 'warning', 'Invalid Character');
+    }
+    return value;
+}
+
+function cleanContactInput(input) {
+    let value = input.value;
+    const original = value;
+    value = value.replace(/[^\d]/g, '');
+    if (value.length > 11) value = value.slice(0, 11);
+    if (value !== original) {
+        input.value = value;
+        if (original.match(/[A-Za-z]/)) showToast('Contact number can only contain digits', 'warning', 'Invalid Character');
+    }
+    return value;
+}
+
+function setupLiveValidation() {
+    const firstName = document.getElementById('first_name');
+    if (firstName) {
+        firstName.addEventListener('input', function() { cleanNameInput(this); showFieldStatus('first_name', validateName(this.value)); });
+        firstName.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                const words = this.value.trim().split(/\s+/);
+                const capitalized = words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+                if (capitalized !== this.value) this.value = capitalized;
+                showFieldStatus('first_name', validateName(this.value));
+            }
+        });
+    }
+
+    const middleName = document.getElementById('middle_name');
+    if (middleName) {
+        middleName.addEventListener('input', function() { cleanNameInput(this); showFieldStatus('middle_name', !this.value.trim() || validateName(this.value)); });
+        middleName.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                const words = this.value.trim().split(/\s+/);
+                const capitalized = words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+                if (capitalized !== this.value) this.value = capitalized;
+                showFieldStatus('middle_name', validateName(this.value));
+            }
+        });
+    }
+
+    const lastName = document.getElementById('last_name');
+    if (lastName) {
+        lastName.addEventListener('input', function() { cleanNameInput(this); showFieldStatus('last_name', validateName(this.value)); });
+        lastName.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                const words = this.value.trim().split(/\s+/);
+                const capitalized = words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+                if (capitalized !== this.value) this.value = capitalized;
+                showFieldStatus('last_name', validateName(this.value));
+            }
+        });
+    }
+
+    const extension = document.getElementById('extension');
+    if (extension) {
+        extension.addEventListener('input', function() {
+            let v = this.value;
+            v = v.replace(/[^A-Za-z\s\.]/g, '');
+            v = v.replace(/\s+/g, ' ').trim();
+            if (v !== this.value) this.value = v;
+            if (this.value.trim()) this.value = this.value.toUpperCase();
+            showFieldStatus('extension', !this.value.trim() || validateExtension(this.value));
+        });
+    }
+
+    const contactField = document.getElementById('contact_number');
+    if (contactField) {
+        contactField.addEventListener('input', function() { cleanContactInput(this); showFieldStatus('contact_number', !this.value.trim() || validateContactNumber(this.value)); });
+        contactField.addEventListener('blur', function() {
+            if (this.value.trim() && !validateContactNumber(this.value)) {
+                showToast('Contact number must be 11 digits starting with 09', 'warning', 'Invalid Format');
+            }
+        });
+    }
+}
+
 async function saveProfile() {
-<<<<<<< HEAD
     const btn = document.getElementById('saveBtn');
-    const firstName     = document.getElementById('first_name').value.trim();
-    const middleName    = document.getElementById('middle_name').value.trim();
-    const lastName      = document.getElementById('last_name').value.trim();
-    const extension     = document.getElementById('extension').value.trim();
+    const firstName = document.getElementById('first_name').value.trim();
+    const middleName = document.getElementById('middle_name').value.trim();
+    const lastName = document.getElementById('last_name').value.trim();
+    const extension = document.getElementById('extension').value.trim();
     const contactNumber = document.getElementById('contact_number').value.trim();
 
-    if (!firstName) {
-        showToast('First name is required.', 'warning', 'Missing Field');
+    if (!validateName(firstName)) {
+        showToast('First name is invalid. Please check the format.', 'warning', 'Invalid Input');
         document.getElementById('first_name').focus();
         return;
     }
-    if (!lastName) {
-        showToast('Last name is required.', 'warning', 'Missing Field');
+    if (!validateName(lastName)) {
+        showToast('Last name is invalid. Please check the format.', 'warning', 'Invalid Input');
         document.getElementById('last_name').focus();
         return;
     }
-    if (contactNumber && !/^\d+$/.test(contactNumber)) {
-        showToast('Contact number can only contain numbers.', 'warning', 'Invalid Format');
+    if (middleName && !validateName(middleName)) {
+        showToast('Middle name is invalid.', 'warning', 'Invalid Input');
         return;
     }
-    if (contactNumber.length > 11) {
-        showToast('Contact number cannot exceed 11 digits.', 'warning', 'Too Long');
+    if (extension && !validateExtension(extension)) {
+        showToast('Invalid extension.', 'warning', 'Invalid Input');
         return;
     }
-=======
-    const saveBtn = document.getElementById('saveBtn');
-    const originalText = '<i class="fa-solid fa-floppy-disk mr-2"></i> Save Profile Changes';
-    
-    if (!validateForm()) {
+    if (contactNumber && !validateContactNumber(contactNumber)) {
+        showToast('Contact number must be 11 digits starting with 09.', 'warning', 'Invalid Input');
         return;
     }
-    
-    let firstName = document.getElementById('first_name').value.trim();
-    let middleName = document.getElementById('middle_name').value.trim();
-    let lastName = document.getElementById('last_name').value.trim();
-    let extension = document.getElementById('extension').value.trim();
-    const contactNumber = document.getElementById('contact_number').value.trim();
-    const email = document.getElementById('email').value.trim().toLowerCase();
-    
-    firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
-    if (middleName) middleName = middleName.charAt(0).toUpperCase() + middleName.slice(1).toLowerCase();
-    lastName = lastName.charAt(0).toUpperCase() + lastName.slice(1).toLowerCase();
-    if (extension) extension = extension.toUpperCase();
-    
-    const fullName = [firstName, middleName, lastName, extension].filter(p => p).join(' ');
-    
-    const formData = {
-        first_name: firstName,
-        middle_name: middleName,
-        last_name: lastName,
-        extension: extension,
-        contact_number: contactNumber,
-        email: email
-    };
->>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
 
-    setBusy(btn, true);
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner"></span> Saving...`;
 
     try {
         const res = await fetch("{{ url_for('admin_bp.update_teacher_profile') }}", {
@@ -1518,15 +847,9 @@ async function saveProfile() {
         const data = await res.json();
 
         if (data.success) {
-<<<<<<< HEAD
             const fullName = [firstName, middleName, lastName, extension].filter(Boolean).join(' ');
             document.getElementById('teacherNameDisplay').textContent = fullName;
-            document.getElementById('avatarNameDisplay').textContent  = fullName;
-=======
-            showToast('Your profile has been updated successfully!', 'success', 'Profile Updated');
-            document.getElementById('teacherNameDisplay').textContent = fullName;
-            document.getElementById('teacherEmailDisplay').textContent = email;
->>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
+            document.getElementById('avatarNameDisplay').textContent = fullName;
             document.title = `My Profile - ${fullName}`;
             showToast('Profile updated successfully!', 'success', 'Saved');
         } else {
@@ -1535,130 +858,91 @@ async function saveProfile() {
     } catch (err) {
         showToast('Network error. Please try again.', 'error', 'Connection Error');
     } finally {
-        setBusy(btn, false, '<i class="fa-solid fa-floppy-disk"></i> Save Profile Changes');
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Save Profile Changes`;
     }
 }
 
-<<<<<<< HEAD
-/* ══════════════════════════════════════════
-   Send password reset
-══════════════════════════════════════════ */
-async function sendPasswordReset() {
-    const btn   = document.getElementById('resetPasswordBtn');
-    const email = '{{ current_teacher.email }}';
+function openChangePasswordModal() {
+    document.getElementById('changePasswordModal').classList.add('open');
+    document.getElementById('newPassword').focus();
+}
 
-    if (!email) {
-        showToast('No email address on file.', 'error', 'Cannot Send');
-        return;
+function closeChangePasswordModal() {
+    document.getElementById('changePasswordModal').classList.remove('open');
+    document.getElementById('changePasswordForm').reset();
+}
+
+function togglePasswordVisibility(inputId, button) {
+    const input = document.getElementById(inputId);
+    const icon = button.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
     }
+}
 
-    setBusy(btn, true);
-
-    try {
-        const res = await fetch("{{ url_for('admin_bp.forgot_password_ajax') }}", {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
-=======
-// Handle change password form submission
 document.getElementById('changePasswordForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const password = document.getElementById('newPassword').value;
     const confirmPassword = document.getElementById('confirmNewPassword').value;
     const btn = document.getElementById('changePasswordSubmitBtn');
-    const originalText = btn.innerHTML;
-    const email = document.getElementById('email').value.trim();
+    const email = '{{ current_teacher.email }}';
     
-    if (!password) {
-        showToast('Please enter a new password.', 'warning', 'Password Required');
-        return;
-    }
-    
-    if (password.length < 6) {
+    if (!password || password.length < 6) {
         showToast('Password must be at least 6 characters long.', 'warning', 'Invalid Password');
         return;
     }
     
     if (password !== confirmPassword) {
-        showToast('Passwords do not match. Please try again.', 'error', 'Password Mismatch');
+        showToast('Passwords do not match.', 'error', 'Password Mismatch');
         return;
     }
     
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Updating...';
     btn.disabled = true;
-    btn.classList.add('opacity-70');
-    
+    btn.innerHTML = `<span class="spinner"></span> Updating...`;
+
     try {
         const response = await fetch("{{ url_for('admin_bp.update_teacher_password') }}", {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                email: email,
-                password: password 
-            })
->>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
+            body: JSON.stringify({ email: email, password: password })
         });
-        const data = await res.json();
+        const data = await response.json();
 
         if (data.success) {
-<<<<<<< HEAD
-            showToast(data.message, 'success', 'Email Sent');
-            btn.innerHTML = '<i class="fa-solid fa-check"></i> Reset Link Sent!';
-            setTimeout(() => {
-                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Password Reset Link';
-            }, 4000);
-        } else {
-            showToast(data.message || 'Failed to send reset link.', 'error', 'Failed');
-        }
-    } catch (err) {
-        showToast('Network error. Please try again.', 'error', 'Connection Error');
-    } finally {
-        btn.disabled = false;
-=======
-            showToast('Password has been changed successfully!', 'success', 'Password Updated');
+            showToast('Password changed successfully! Please login again.', 'success', 'Password Updated');
             closeChangePasswordModal();
             setTimeout(() => {
-                window.location.href = "{{ url_for('admin_bp.teacher_login') }}";
-            }, 2000);
+                window.location.href = "{{ url_for('admin_bp.teacher_logout') }}";
+            }, 1800);
         } else {
-            showToast(data.message || 'Failed to change password. Please try again.', 'error', 'Update Failed');
+            showToast(data.message || 'Failed to change password.', 'error', 'Update Failed');
         }
     } catch (error) {
-        console.error('Error:', error);
         showToast('Network error. Please try again.', 'error', 'Connection Error');
     } finally {
-        btn.innerHTML = originalText;
         btn.disabled = false;
-        btn.classList.remove('opacity-70');
->>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
+        btn.innerHTML = 'Update Password';
     }
 });
 
-<<<<<<< HEAD
-/* ══════════════════════════════════════════
-   Close modal on backdrop click
-══════════════════════════════════════════ */
 document.getElementById('uploadModal').addEventListener('click', function(e) {
     if (e.target === this) cancelUpload();
 });
 
-/* ══════════════════════════════════════════
-   Init
-══════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', setupContactField);
-=======
-// Close modal when clicking outside
 document.getElementById('changePasswordModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeChangePasswordModal();
-    }
+    if (e.target === this) closeChangePasswordModal();
 });
 
-// Initialize
 document.addEventListener('DOMContentLoaded', () => {
     setupLiveValidation();
 });
->>>>>>> 3ee97cc2674f18f1788f2ac125124e21d7e1cecb
 </script>
 {% endblock %}

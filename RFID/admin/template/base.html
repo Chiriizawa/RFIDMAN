@@ -513,7 +513,7 @@
                     <i class="fa-solid fa-house w-5"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="{{ url_for('admin_bp.teacher_schedules') }}" class="mobile-nav-item {% if request.endpoint == 'admin_bp.teacher_schedules' %}active{% endif %}">
+                <a href="{{ url_for('admin_bp.schedules') }}" class="mobile-nav-item {% if request.endpoint == 'admin_bp.schedules' %}active{% endif %}">
                     <i class="fa-solid fa-calendar-alt w-5"></i>
                     <span>My Schedule</span>
                 </a>
@@ -565,9 +565,9 @@
                         <span class="sidebar-text">Dashboard</span>
                     </a>
 
-                    <a href="{{ url_for('admin_bp.teacher_schedules') }}"
+                    <a href="{{ url_for('admin_bp.schedules') }}"
                     class="nav-item flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium
-                    {% if request.endpoint == 'admin_bp.teacher_schedules' %}active{% endif %}">
+                    {% if request.endpoint == 'admin_bp.schedules' %}active{% endif %}">
                         <i class="fa-solid fa-calendar-alt w-5 text-center"></i>
                         <span class="sidebar-text">My Schedule</span>
                     </a>
@@ -654,7 +654,7 @@
                         }
                         link.innerHTML = `
                             <i class="fa-solid fa-layer-group w-4 text-center"></i>
-                            <span>${escapeHtml(section.section_name)}</span>
+                            <span>${escapeHtml(section.section_name)} - ${section.year_level}</span>
                             <span class="text-xs ml-auto opacity-70">(${section.student_count})</span>
                         `;
                         container.appendChild(link);
@@ -700,7 +700,7 @@
                         link.className = `dropdown-item text-sm font-medium ${isActive ? 'active' : ''}`;
                         link.innerHTML = `
                             <i class="fa-solid fa-layer-group w-4 text-center"></i>
-                            <span>${escapeHtml(section.section_name)}</span>
+                            <span>${escapeHtml(section.section_name)} - ${section.year_level}</span>
                             <span class="text-xs ml-auto opacity-70">(${section.student_count})</span>
                         `;
                         container.appendChild(link);
