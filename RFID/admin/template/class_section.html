@@ -438,13 +438,28 @@
                 </div>
             </div>
 
-            <!-- Students Table with Toggle Attendance Buttons -->
+            <!-- Students Table with Search Bar -->
             <div class="mt-6">
-                <h2 class="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-user-graduate text-accent"></i>
-                    Student List
-                    <span class="text-xs text-gray-500 ml-2">(Click button to toggle attendance)</span>
-                </h2>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                            <i class="fa-solid fa-user-graduate text-accent"></i>
+                            Student List
+                        </h2>
+                        <span class="text-xs text-gray-500">(Click button to toggle attendance)</span>
+                    </div>
+                    
+                    <!-- Search Bar -->
+                    <div class="relative w-full sm:w-80">
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            placeholder="Search by name or UID..." 
+                            class="w-full pl-11 pr-4 py-2.5 text-sm border border-gray-200 rounded-2xl focus:outline-none focus:border-amber-400 bg-white shadow-sm transition-all placeholder:text-gray-400"
+                        >
+                        <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                    </div>
+                </div>
                 
                 <div class="overflow-x-auto">
                     <table class="w-full min-w-[800px]">
@@ -750,10 +765,47 @@
         bannerTimeout = setTimeout(() => banner.classList.add('hidden'), 5000);
     }
     
+    function filterStudentsTable() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+        const tbody = document.getElementById('studentsTableBody');
+        const rows = tbody.querySelectorAll('tr');
+        
+        rows.forEach(row => {
+            // Handle empty state row
+            if (row.querySelector('.empty-state')) {
+                row.style.display = searchTerm ? 'none' : '';
+                return;
+            }
+            
+            const nameCell = row.querySelector('td:nth-child(2)');
+            const uidCell = row.querySelector('td:nth-child(3)');
+            
+            if (!nameCell || !uidCell) {
+                row.style.display = '';
+                return;
+            }
+            
+            const nameText = nameCell.textContent.toLowerCase();
+            const uidText = uidCell.textContent.toLowerCase();
+            
+            if (searchTerm === '' || nameText.includes(searchTerm) || uidText.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
     // Initialize
     renderStudentsTable();
     updateStats();
     fetchLatestScan();
     setInterval(fetchLatestScan, 1000);
+    
+    // Search bar functionality
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', filterStudentsTable);
+    }
 </script>
 {% endblock %}

@@ -154,64 +154,6 @@
 
     </div>
 
-    <!-- Recent RFID Activity -->
-    <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
-        <h3 class="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-            <i class="fas fa-wifi text-emerald-500"></i>
-            Recent RFID Activity
-        </h3>
-
-        <div class="overflow-x-auto">
-            <table class="min-w-full">
-                <thead>
-                    <tr class="border-b border-gray-200">
-                        <th class="py-4 px-5 text-left text-sm font-medium text-gray-500">Student</th>
-                        <th class="py-4 px-5 text-left text-sm font-medium text-gray-500">UID</th>
-                        <th class="py-4 px-5 text-left text-sm font-medium text-gray-500">Time</th>
-                        <th class="py-4 px-5 text-left text-sm font-medium text-gray-500">Status</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    {% if recent_activities %}
-                        {% for activity in recent_activities %}
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="py-5 px-5 font-medium">{{ activity.student_name }}</td>
-                            <td class="py-5 px-5 text-gray-500 font-mono">{{ activity.uid }}</td>
-                            <td class="py-5 px-5 text-gray-500">{{ activity.time }}</td>
-                            <td class="py-5 px-5">
-                                {% if activity.status == 'Present' %}
-                                    <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-                                        <i class="fas fa-check text-xs"></i> Present
-                                    </span>
-                                {% elif activity.status == 'Late' %}
-                                    <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
-                                        <i class="fas fa-clock text-xs"></i> Late
-                                    </span>
-                                {% elif activity.status == 'Registered' %}
-                                    <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
-                                        <i class="fas fa-id-card text-xs"></i> Registered
-                                    </span>
-                                {% else %}
-                                    <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
-                                        <i class="fas fa-times text-xs"></i> {{ activity.status }}
-                                    </span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="4" class="text-center py-12 text-gray-400">
-                                <i class="fas fa-inbox text-3xl mb-2 block"></i>
-                                No recent activity found
-                            </td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
     <!-- Teacher Overview -->
     <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
         <h3 class="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">

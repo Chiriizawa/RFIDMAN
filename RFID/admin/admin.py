@@ -108,6 +108,7 @@ def get_all_students():
             SELECT 
                 s.id,
                 s.uid,
+                s.uid_lost,
                 s.first_name,
                 s.middle_name,
                 s.last_name,
@@ -141,7 +142,7 @@ def get_student_name_by_uid(uid):
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT first_name, middle_name, last_name, extension
+            SELECT first_name, middle_name, last_name, extension, uid_lost
             FROM students
             WHERE uid = %s
             LIMIT 1;
@@ -150,6 +151,12 @@ def get_student_name_by_uid(uid):
         cur.close()
         if not row:
             return ""
+        
+        # Check if UID is lost/deactivated
+        uid_lost = row[4] if len(row) > 4 else False
+        if uid_lost:
+            return "LOST_CARD"  # Special flag for lost cards
+        
         return build_full_name(row[0], row[1], row[2], row[3])
     except Exception as e:
         print(f"get_student_name_by_uid error: {e}")
@@ -171,6 +178,20 @@ def save_uid_to_db(uid):
 
     try:
         cur = conn.cursor()
+        
+        # Check if UID is associated with a lost card
+        cur.execute("""
+            SELECT uid_lost FROM students 
+            WHERE uid = %s AND uid_lost = TRUE
+            LIMIT 1
+        """, (uid,))
+        
+        lost_card = cur.fetchone()
+        if lost_card:
+            print(f"[RFID] Scan rejected - UID {uid} is marked as lost")
+            cur.close()
+            conn.close()
+            return False
 
         cur.execute("""
             SELECT id FROM rfid_cards 
@@ -291,7 +312,7 @@ def update_teacher_in_db(teacher_db_id, fields: dict):
     conn = get_connection()
     if conn is None:
         raise Exception("Database not connected")
-    allowed = {"first_name", "middle_name", "last_name", "extension", "contact_number", "email"}
+    allowed = {"first_name", "middle_name", "last_name", "extension", "contact_number"}
     updates = {k: v for k, v in fields.items() if k in allowed}
     if not updates:
         return
@@ -550,10 +571,25 @@ def listen():
                 uid = normalize_uid(raw.split(":", 1)[1].strip())
                 if not is_valid_uid(uid):
                     continue
-                save_uid_to_db(uid)
+                
+                # Check if student exists and card is not lost
                 student_name = get_student_name_by_uid(uid)
+                
+                if student_name == "LOST_CARD":
+                    latest_scan = {
+                        "message": "This UID has been deactivated. Please contact administrator.",
+                        "uid": format_uid(uid),
+                        "name": "Deactivated Card",
+                        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    }
+                    continue
+                
+                # Save attendance only if not lost and student exists
+                if student_name:  # Student exists and card is active
+                    save_uid_to_db(uid)
+                
                 latest_scan = {
-                    "message": "Card scanned successfully",
+                    "message": "Card scanned successfully" if student_name else "Student not enrolled in this class",
                     "uid": format_uid(uid),
                     "name": student_name if student_name else "No linked student",
                     "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -700,6 +736,72 @@ def toggle_attendance(student_id):
         print(f"Toggle attendance error: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
+# =========================
+# TOGGLE LOST STATUS ROUTE (NEW)
+# =========================
+# Add this new endpoint to your admin_bp routes
+@admin_bp.route('/toggle_lost_status/<int:student_id>', methods=['POST'])
+@login_required
+def toggle_lost_status(student_id):
+    """Toggle the lost/deactivated status of a student's UID (boolean field)"""
+    teacher_id = session.get('teacher_id')
+    if not teacher_id:
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+    
+    try:
+        data = request.get_json()
+        lost = data.get('lost', False)  # This should be boolean true/false
+        section_id = data.get('section_id')
+        
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({"success": False, "message": "Database connection failed"}), 500
+        
+        cur = conn.cursor()
+        
+        # Verify teacher owns this student through section
+        cur.execute("""
+            SELECT st.id, st.uid_lost
+            FROM students st
+            JOIN sections s ON st.section_id = s.id
+            WHERE st.id = %s AND s.teacher_id = %s
+        """, (student_id, teacher_id))
+        
+        student = cur.fetchone()
+        if not student:
+            cur.close()
+            conn.close()
+            return jsonify({"success": False, "message": "Unauthorized or student not found"}), 403
+        
+        # Update the lost status (boolean field)
+        cur.execute("""
+            UPDATE students 
+            SET uid_lost = %s
+            WHERE id = %s
+            RETURNING id, uid_lost
+        """, (lost, student_id))
+        
+        updated = cur.fetchone()
+        conn.commit()
+        
+        status_text = "deactivated" if lost else "reactivated"
+        message = f"Student's RFID card has been {status_text}"
+        
+        cur.close()
+        conn.close()
+        
+        if updated:
+            return jsonify({
+                "success": True, 
+                "message": message,
+                "lost": lost  # Return the boolean value
+            })
+        else:
+            return jsonify({"success": False, "message": "Failed to update status"}), 500
+        
+    except Exception as e:
+        print(f"Toggle lost status error: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
 # =========================
 # SECTIONS MANAGEMENT
 # =========================
@@ -916,8 +1018,9 @@ def class_section(section_id):
             flash('Section not found or unauthorized', 'error')
             return redirect(url_for('admin_bp.manage_sections'))
         
+        # Updated to include uid_lost
         cur.execute("""
-            SELECT id, uid, first_name, middle_name, last_name, extension, contact_number, email, schedule, section_id, created_at
+            SELECT id, uid, uid_lost, first_name, middle_name, last_name, extension, contact_number, email, schedule, section_id, created_at
             FROM students WHERE section_id = %s ORDER BY last_name ASC, first_name ASC
         """, (section['id'],))
         rows = cur.fetchall()
@@ -937,7 +1040,9 @@ def class_section(section_id):
             cur2.close()
             student_list.append({
                 "id": row['id'],
-                "uid": format_uid(row['uid']) if row['uid'] else "—",
+                "uid": row['uid'] if row['uid'] else "",
+                "uid_formatted": format_uid(row['uid']) if row['uid'] else "—",
+                "uid_lost": row['uid_lost'] if 'uid_lost' in row else False,
                 "full_name": full_name if full_name else "—",
                 "first_name": row['first_name'] or "—",
                 "middle_name": row['middle_name'] or "—",
@@ -1293,6 +1398,7 @@ def registered_students():
             student_list.append({
                 "id": row['id'],
                 "uid": format_uid(row['uid']) if row['uid'] else "—",
+                "uid_lost": row.get('uid_lost', False),
                 "first_name": row['first_name'] or "—",
                 "middle_name": row['middle_name'] or "—",
                 "last_name": row['last_name'] or "—",
@@ -1379,3 +1485,74 @@ def history_api():
             conn.close()
 
 print("[Admin] Module loaded successfully")
+@admin_bp.route('/api/get_students/<section_id>')
+@login_required
+def api_get_students(section_id):
+    """API endpoint to get students for a section"""
+    teacher_id = session.get('teacher_id')
+    conn = get_connection()
+    if conn is None:
+        return jsonify({"success": False, "message": "Database connection failed", "students": []})
+    
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+        # Get section to verify ownership
+        cur.execute("""
+            SELECT id FROM sections 
+            WHERE id = %s AND teacher_id = %s
+        """, (section_id, teacher_id))
+        
+        if not cur.fetchone():
+            conn.close()
+            return jsonify({"success": False, "message": "Unauthorized", "students": []})
+        
+        # Get students
+        cur.execute("""
+            SELECT id, uid, uid_lost, first_name, middle_name, last_name, extension
+            FROM students 
+            WHERE section_id = %s 
+            ORDER BY last_name ASC, first_name ASC
+        """, (section_id,))
+        
+        rows = cur.fetchall()
+        conn.close()
+        
+        today = datetime.now().strftime('%Y-%m-%d')
+        student_list = []
+        
+        for row in rows:
+            full_name = build_full_name(row['first_name'], row['middle_name'], row['last_name'], row['extension'])
+            
+            # Check attendance for today
+            conn2 = get_connection()
+            if conn2:
+                cur2 = conn2.cursor()
+                cur2.execute("""
+                    SELECT tapped_at FROM rfid_cards 
+                    WHERE DATE(tapped_at) = %s AND uid = %s
+                    LIMIT 1
+                """, (today, row['uid']))
+                attendance = cur2.fetchone()
+                cur2.close()
+                conn2.close()
+            else:
+                attendance = None
+            
+            student_list.append({
+                "id": row['id'],
+                "uid": row['uid'] if row['uid'] else "",
+                "uid_formatted": format_uid(row['uid']) if row['uid'] else "—",
+                "uid_lost": row['uid_lost'] if 'uid_lost' in row else False,
+                "full_name": full_name if full_name else "—",
+                "present_today": attendance is not None,
+                "scan_time": attendance[0].strftime("%I:%M:%S %p") if attendance else None
+            })
+        
+        return jsonify({"success": True, "students": student_list})
+        
+    except Exception as e:
+        print(f"API get students error: {e}")
+        if conn:
+            conn.close()
+        return jsonify({"success": False, "message": str(e), "students": []})

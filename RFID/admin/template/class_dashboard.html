@@ -141,9 +141,34 @@
         font-weight: 700;
         padding: 0.4rem 0.75rem;
         border-radius: 0.5rem;
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
         border: 1px solid #fbbf24;
         font-size: 0.75rem;
+    }
+    
+    .uid-badge.lost {
+        background: #fee2e2;
+        color: #991b1b;
+        border-color: #ef4444;
+        text-decoration: line-through;
+        opacity: 0.7;
+    }
+    
+    .uid-edit-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+        border-radius: 0.25rem;
+        transition: all 0.2s;
+    }
+    
+    .uid-edit-btn:hover {
+        background: rgba(0,0,0,0.1);
+        transform: scale(1.05);
     }
     
     .present-badge {
@@ -252,7 +277,6 @@
         background: #cbd5e1;
     }
     
-    /* Modal Confirm Button Styles */
     .confirm-btn-absent {
         background: #ef4444 !important;
         color: white !important;
@@ -316,6 +340,55 @@
     
     .btn-toggle.present-toggle:hover {
         background: #059669;
+    }
+    
+    /* Search Bar Styles */
+    .search-container {
+        position: relative;
+        margin-bottom: 1rem;
+    }
+    
+    .search-input {
+        width: 100%;
+        padding: 0.75rem 1rem 0.75rem 2.5rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 0.75rem;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+    
+    .search-input:focus {
+        outline: none;
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+    }
+    
+    .search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+    }
+    
+    .clear-search {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: #94a3b8;
+        display: none;
+    }
+    
+    .clear-search:hover {
+        color: #ef4444;
+    }
+    
+    .no-results {
+        text-align: center;
+        padding: 3rem;
+        color: #64748b;
     }
     
     @keyframes scanPulse {
@@ -456,12 +529,21 @@
                 </div>
             </div>
 
+            <!-- Search Bar -->
+            <div class="mt-6 mb-4">
+                <div class="search-container">
+                    <i class="fa-solid fa-search search-icon"></i>
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search by student name or UID...">
+                    <i class="fa-solid fa-times-circle clear-search" id="clearSearch"></i>
+                </div>
+            </div>
+
             <!-- Students Table with Toggle Attendance Buttons -->
-            <div class="mt-6">
+            <div class="mt-4">
                 <h2 class="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                     <i class="fa-solid fa-user-graduate text-accent"></i>
                     Student List
-                    <span class="text-xs text-gray-500 ml-2">(Click button to toggle attendance)</span>
+                    
                 </h2>
                 
                 <div class="overflow-x-auto">
@@ -506,11 +588,49 @@
     </div>
 </div>
 
+<!-- Lost/Reactivate Card Modal -->
+<div id="lostStatusModal" class="modal">
+    <div class="modal-content">
+        <h2 class="text-xl font-bold mb-4" id="lostModalTitle">
+            <i class="fa-solid fa-id-card text-accent mr-2"></i>Card Status
+        </h2>
+        <div class="py-4">
+            <div class="text-center mb-4">
+                <div class="text-6xl mb-3" id="lostModalIcon">⚠️</div>
+                <p class="text-gray-700 mb-2" id="lostModalMessage">Are you sure you want to change card status?</p>
+                <p class="text-sm text-gray-500 mb-4" id="lostStudentNameDisplay">—</p>
+                
+                <!-- Current UID Display (Read Only) -->
+                <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Current UID</label>
+                    <p class="font-mono text-sm text-gray-700" id="currentUidDisplay">—</p>
+                </div>
+                
+                <div class="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                    <div class="flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-info-circle text-amber-500"></i>
+                        <p class="text-xs text-amber-700" id="statusDescription">
+                            Lost cards cannot be used for attendance until reactivated.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="flex gap-3 justify-end">
+            <button onclick="closeLostStatusModal()" class="btn-secondary">Cancel</button>
+            <button onclick="confirmToggleLostStatus()" id="confirmLostBtn" class="btn-primary">Confirm</button>
+        </div>
+        <input type="hidden" id="lostStudentId">
+        <input type="hidden" id="lostCurrentStatus">
+    </div>
+</div>
+
 <script>
     let lastUID = '';
     let bannerTimeout = null;
     let studentsData = {{ students | tojson | safe }};
     let sectionId = '{{ section }}';
+    let searchTerm = '';
     
     console.log("=== Class Section Loaded ===");
     console.log("Section ID:", sectionId);
@@ -526,14 +646,43 @@
         setTimeout(() => { if (toast && toast.parentElement) { toast.style.animation = 'slideOutRight 0.3s ease'; setTimeout(() => toast.remove(), 300); } }, 3000);
     }
     
+    function filterStudents() {
+        const searchInput = document.getElementById('searchInput');
+        const clearBtn = document.getElementById('clearSearch');
+        searchTerm = searchInput.value.toLowerCase().trim();
+        
+        if (searchTerm) {
+            clearBtn.style.display = 'block';
+        } else {
+            clearBtn.style.display = 'none';
+        }
+        
+        renderStudentsTable();
+    }
+    
+    function clearSearch() {
+        document.getElementById('searchInput').value = '';
+        filterStudents();
+        document.getElementById('searchInput').focus();
+    }
+    
     function renderStudentsTable() {
         const tbody = document.getElementById('studentsTableBody');
-        if (!studentsData || studentsData.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8"><div class="empty-state"><i class="fa-regular fa-user text-4xl text-gray-400 mb-3"></i><p class="text-gray-500">No students in this class</p></div></td></td>`;
+        
+        let filteredStudents = studentsData;
+        if (searchTerm) {
+            filteredStudents = studentsData.filter(student => 
+                student.full_name.toLowerCase().includes(searchTerm) || 
+                student.uid.toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        if (filteredStudents.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8"><div class="empty-state"><i class="fa-regular fa-search text-4xl text-gray-400 mb-3"></i><p class="text-gray-500">No students match "${searchTerm}"</p></div></td></tr>`;
             return;
         }
         
-        tbody.innerHTML = studentsData.map((student, index) => `
+        tbody.innerHTML = filteredStudents.map((student, index) => `
             <tr class="table-row">
                 <td class="font-medium text-center">${index + 1}</td>
                 <td class="font-medium">
@@ -544,7 +693,18 @@
                         <span>${escapeHtml(student.full_name)}</span>
                     </div>
                 </td>
-                <td><span class="uid-badge"><i class="fa-solid fa-id-card mr-1 text-xs"></i>${escapeHtml(student.uid)}</span></span></td>
+                <td>
+                    <div class="flex items-center gap-2">
+                        <span class="uid-badge ${student.uid_lost ? 'lost' : ''}">
+                            <i class="fa-solid fa-id-card mr-1 text-xs"></i>
+                            ${escapeHtml(student.uid)}
+                            ${student.uid_lost ? ' <i class="fa-solid fa-ban ml-1"></i>' : ''}
+                        </span>
+                        <button onclick="openEditUidModal(${student.id})" class="uid-edit-btn" title="Edit UID">
+                            <i class="fa-solid fa-pen text-xs text-gray-500"></i>
+                        </button>
+                    </div>
+                </td>
                 <td id="status-${student.id}">
                     ${student.present_today ? 
                         '<span class="present-badge"><i class="fa-solid fa-check-circle text-xs mr-1"></i> Present</span>' : 
@@ -602,7 +762,6 @@
     
     function closeAttendanceModal() {
         document.getElementById('toggleAttendanceModal').classList.remove('show');
-        // Reset confirm button to default
         const confirmBtn = document.getElementById('confirmBtn');
         confirmBtn.className = 'btn-primary';
         confirmBtn.innerHTML = 'Confirm';
@@ -668,7 +827,6 @@
                     
                     closeAttendanceModal();
                     
-                    // Update the button without reloading
                     const button = document.querySelector(`button[onclick="openToggleModal(${studentId})"]`);
                     if (button) {
                         button.className = `btn-toggle ${newStatus ? 'present-toggle' : 'absent-toggle'}`;
@@ -689,6 +847,73 @@
             confirmBtn.innerHTML = originalText;
             confirmBtn.className = originalClass;
             confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
+    
+    function openEditUidModal(studentId) {
+        const student = studentsData.find(s => s.id === studentId);
+        if (!student) return;
+        
+        document.getElementById('editStudentId').value = student.id;
+        document.getElementById('editStudentName').innerHTML = `Student: <strong>${escapeHtml(student.full_name)}</strong>`;
+        document.getElementById('editUidInput').value = student.uid;
+        document.getElementById('markAsLost').checked = student.uid_lost || false;
+        
+        document.getElementById('editUidModal').classList.add('show');
+    }
+    
+    function closeEditUidModal() {
+        document.getElementById('editUidModal').classList.remove('show');
+        document.getElementById('editUidInput').value = '';
+        document.getElementById('markAsLost').checked = false;
+    }
+    
+    async function saveUidChanges() {
+        const studentId = document.getElementById('editStudentId').value;
+        const newUid = document.getElementById('editUidInput').value.trim();
+        const markLost = document.getElementById('markAsLost').checked;
+        
+        if (!newUid) {
+            showToast('Please enter a valid UID', 'error', 'Invalid Input');
+            return;
+        }
+        
+        const saveBtn = event.target;
+        const originalText = saveBtn.innerHTML;
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Saving...';
+        
+        try {
+            const response = await fetch(`/admin/update_student_uid/${studentId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    uid: newUid,
+                    lost: markLost,
+                    section_id: sectionId 
+                })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                const student = studentsData.find(s => s.id == studentId);
+                if (student) {
+                    student.uid = newUid;
+                    student.uid_lost = markLost;
+                }
+                
+                renderStudentsTable();
+                showToast(`UID updated successfully${markLost ? ' and marked as lost' : ''}`, 'success', 'UID Updated');
+                closeEditUidModal();
+            } else {
+                showToast(data.message || 'Failed to update UID', 'error', 'Error');
+            }
+        } catch (error) {
+            console.error('Error updating UID:', error);
+            showToast('Network error. Please try again.', 'error', 'Connection Error');
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalText;
         }
     }
     
@@ -716,7 +941,7 @@
             const messageEl = document.getElementById('message');
             
             if (data.uid && data.uid !== lastUID) {
-                const scannedStudent = studentsData.find(s => s.uid === data.uid);
+                const scannedStudent = studentsData.find(s => s.uid === data.uid && !s.uid_lost);
                 
                 if (scannedStudent) {
                     uidEl.classList.add('scanning');
@@ -740,7 +965,6 @@
                         showNameBanner(scannedStudent.full_name, data.time);
                         showToast(`${scannedStudent.full_name} has been detected`, 'success', 'New Scan');
                         
-                        // Update the button
                         const button = document.querySelector(`button[onclick="openToggleModal(${scannedStudent.id})"]`);
                         if (button) {
                             button.className = 'btn-toggle present-toggle';
@@ -748,7 +972,13 @@
                         }
                     }
                 } else {
-                    messageEl.innerHTML = '<i class="fa-solid fa-exclamation-triangle mr-2"></i>Student not enrolled in this class';
+                    const lostStudent = studentsData.find(s => s.uid === data.uid && s.uid_lost);
+                    if (lostStudent) {
+                        messageEl.innerHTML = `<i class="fa-solid fa-ban mr-2"></i>This UID has been deactivated (${lostStudent.full_name})`;
+                        showToast(`${lostStudent.full_name}'s UID is deactivated. Please reactivate it first.`, 'warning', 'Deactivated UID');
+                    } else {
+                        messageEl.innerHTML = '<i class="fa-solid fa-exclamation-triangle mr-2"></i>Student not enrolled in this class';
+                    }
                     setTimeout(() => {
                         messageEl.innerHTML = '<i class="fa-regular fa-clock mr-2"></i>Waiting for scan...';
                     }, 3000);
@@ -782,5 +1012,9 @@
     updateStats();
     fetchLatestScan();
     setInterval(fetchLatestScan, 1000);
+    
+    // Search event listeners
+    document.getElementById('searchInput').addEventListener('input', filterStudents);
+    document.getElementById('clearSearch').addEventListener('click', clearSearch);
 </script>
 {% endblock %}
