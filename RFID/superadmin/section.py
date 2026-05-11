@@ -69,7 +69,6 @@ def section():
                     flash("Year level must be 11 or 12.", "error")
                     return redirect(url_for("section_bp.section"))
 
-                # === NEW: Check duplicate (name + year_level) ===
                 cur.execute("""
                     SELECT id FROM sections 
                     WHERE LOWER(section_name) = LOWER(%s) 
@@ -78,7 +77,6 @@ def section():
                 if cur.fetchone():
                     flash(f'A section named "{section_name}" already exists in Grade {year_level or "—"}.', "error")
                     return redirect(url_for("section_bp.section"))
-                # === END CHECK ===
 
                 if teacher_id == "":
                     teacher_id = None
@@ -115,7 +113,6 @@ def section():
                     flash("Year level must be 11 or 12.", "error")
                     return redirect(url_for("section_bp.section"))
 
-                # === NEW: Check duplicate (ignore current section) ===
                 cur.execute("""
                     SELECT id FROM sections 
                     WHERE LOWER(section_name) = LOWER(%s) 
@@ -125,7 +122,6 @@ def section():
                 if cur.fetchone():
                     flash(f'A section named "{section_name}" already exists in Grade {year_level or "—"}.', "error")
                     return redirect(url_for("section_bp.section"))
-                # === END CHECK ===
 
                 if teacher_id == "":
                     teacher_id = None
@@ -149,7 +145,9 @@ def section():
                 flash("Section updated successfully.", "success")
                 return redirect(url_for("section_bp.section"))
 
-            # DELETE and ASSIGN STUDENTS (unchanged)
+            # ─────────────────────────────────────────────
+            # DELETE SECTION
+            # ─────────────────────────────────────────────
             elif action == "delete_section":
                 section_id = request.form.get("section_id", "").strip()
                 if not section_id:
@@ -161,6 +159,9 @@ def section():
                 flash("Section deleted successfully.", "success")
                 return redirect(url_for("section_bp.section"))
 
+            # ─────────────────────────────────────────────
+            # ASSIGN STUDENTS — locked students are protected
+            # ─────────────────────────────────────────────
             elif action == "assign_students":
                 section_id = request.form.get("section_id", "").strip()
                 student_ids = request.form.getlist("student_ids")
@@ -176,21 +177,62 @@ def section():
                     flash("Invalid ID format.", "error")
                     return redirect(url_for("section_bp.section"))
 
-                cur.execute("UPDATE students SET section_id = NULL WHERE section_id = %s", (section_id,))
+                # Fetch students who are already assigned to ANY section (locked — cannot be moved)
+                cur.execute("""
+                    SELECT id FROM students
+                    WHERE section_id IS NOT NULL
+                """)
+                locked_rows = cur.fetchall()
+                locked_ids = {row["id"] for row in locked_rows}
 
-                if selected_ids:
+                # From the selected list, only process students who are NOT already locked
+                # (i.e. currently unassigned students only)
+                new_assignable = [sid for sid in selected_ids if sid not in locked_ids]
+
+                # Also collect locked students who were submitted but we must ignore/skip
+                attempted_locked = [sid for sid in selected_ids if sid in locked_ids]
+
+                # Only assign students who have no section yet
+                if new_assignable:
                     cur.execute(
-                        "UPDATE students SET section_id = %s WHERE id = ANY(%s)",
-                        (section_id, selected_ids)
+                        """
+                        UPDATE students
+                        SET section_id = %s
+                        WHERE id = ANY(%s)
+                        AND section_id IS NULL
+                        """,
+                        (section_id, new_assignable)
                     )
-                    flash(f"{len(selected_ids)} student(s) successfully assigned.", "success")
-                else:
-                    flash("All students have been unassigned from this section.", "success")
 
                 conn.commit()
+
+                # Build feedback message
+                if attempted_locked:
+                    # Look up their names for the flash message
+                    cur.execute("""
+                        SELECT first_name, last_name FROM students
+                        WHERE id = ANY(%s)
+                    """, (attempted_locked,))
+                    locked_names = cur.fetchall()
+                    names_str = ", ".join(
+                        f"{r['last_name']}, {r['first_name']}" for r in locked_names
+                    )
+                    flash(
+                        f"{len(new_assignable)} student(s) assigned. "
+                        f"{len(attempted_locked)} student(s) were skipped because they are already locked to a section: {names_str}.",
+                        "error"
+                    )
+                else:
+                    if new_assignable:
+                        flash(f"{len(new_assignable)} student(s) successfully assigned.", "success")
+                    else:
+                        flash("No new students were assigned (all selected students are already locked to a section).", "error")
+
                 return redirect(url_for("section_bp.section"))
 
-        # GET REQUEST (unchanged - no need to modify)
+        # ─────────────────────────────────────────────
+        # GET REQUEST
+        # ─────────────────────────────────────────────
         search = request.args.get("search", "").strip()
 
         query = """

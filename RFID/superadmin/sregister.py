@@ -188,20 +188,12 @@ SCHEDULE_SUBQUERY = """
 
 # ─────────────────────────────────────────────
 # SF1 NAME PARSER
-# Handles "LASTNAME,FIRSTNAME MIDDLENAME" format
-# used in DepEd School Form 1 Excel files.
 # ─────────────────────────────────────────────
 
 def parse_sf1_name(raw):
     """
     Parse a name string in SF1 format: "LASTNAME,FIRSTNAME [MIDDLENAME]"
     Returns (last_name, first_name, middle_name) — all title-cased strings.
-
-    Examples:
-      "AGAWIN,MATTHEUS EZEKIELLE MALUBAY"  → ("Agawin", "Mattheus Ezekielle", "Malubay")
-      "DE CASTRO,MARY ANGELLYN ABAS"       → ("De Castro", "Mary Angellyn", "Abas")
-      "SUERO,JETHRO NENCIO DEL RIO"        → ("Suero", "Jethro Nencio Del", "Rio")
-        ↑ edge case: "DEL RIO" split — caller should note this limitation
     """
     raw = (raw or '').strip()
     if not raw:
@@ -222,7 +214,6 @@ def parse_sf1_name(raw):
             first  = ''
             middle = ''
     else:
-        # No comma — treat the whole string as last name only
         last   = raw.title()
         first  = ''
         middle = ''
@@ -253,7 +244,6 @@ def test_db():
 @login_required
 def student():
     students = []
-    available_uids = []
 
     try:
         conn = get_db_connection()
@@ -295,32 +285,25 @@ def student():
         """)
         students = cur.fetchall()
 
-        cur.execute("""
-            SELECT rc.uid
-            FROM rfid_cards rc
-            LEFT JOIN students s ON s.uid = rc.uid
-            WHERE s.uid IS NULL
-            ORDER BY rc.id ASC
-        """)
-        available_uids = [row["uid"] for row in cur.fetchall()]
-
         cur.close()
         conn.close()
 
     except Exception as e:
         flash(f"Database error: {str(e)}", "error")
 
+    # available_uids is no longer passed — UID is not required at registration
     return render_template(
         "superadmin/student.html",
         students=students,
-        available_uids=available_uids
     )
 
 
 @sregister.route('/add-student', methods=['POST'])
 @login_required
 def add_student():
-    uid            = request.form.get('uid', '').strip()
+    # UID is intentionally NOT accepted from the form.
+    # Students are registered without a UID; a UID can be linked later
+    # through the RFID card management flow.
     last_name      = request.form.get('last_name', '').strip()
     first_name     = request.form.get('first_name', '').strip()
     middle_name    = request.form.get('middle_name', '').strip()
@@ -365,39 +348,14 @@ def add_student():
             flash("This student is already registered.", "error")
             return redirect(url_for('sregister.student'))
 
-        if not uid:
-            cur.execute("""
-                SELECT rc.uid FROM rfid_cards rc
-                LEFT JOIN students s ON s.uid = rc.uid
-                WHERE s.uid IS NULL
-                ORDER BY rc.id ASC LIMIT 1
-            """)
-            uid_row = cur.fetchone()
-            if not uid_row:
-                cur.close(); conn.close()
-                flash("No available UID found.", "error")
-                return redirect(url_for('sregister.student'))
-            uid = uid_row[0]
-        else:
-            cur.execute("SELECT uid FROM rfid_cards WHERE uid = %s", (uid,))
-            if not cur.fetchone():
-                cur.close(); conn.close()
-                flash("Selected UID does not exist.", "error")
-                return redirect(url_for('sregister.student'))
-
-            cur.execute("SELECT id FROM students WHERE uid = %s", (uid,))
-            if cur.fetchone():
-                cur.close(); conn.close()
-                flash("This UID is already linked to another student.", "error")
-                return redirect(url_for('sregister.student'))
-
+        # Insert student with uid = NULL — no UID required at registration
         cur.execute("""
             INSERT INTO students
                 (uid, last_name, first_name, middle_name, extension,
                  birthday, contact_number, email)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (NULL, %s, %s, %s, %s, %s, %s, %s)
         """, (
-            uid, last_name, first_name,
+            last_name, first_name,
             middle_name or None, extension or None,
             birthday, contact_number, email
         ))
@@ -464,6 +422,8 @@ def update_student(student_id):
             flash("Another student with the same name and birthday already exists.", "error")
             return redirect(url_for('sregister.student'))
 
+        # UID is intentionally excluded from the UPDATE — it is managed
+        # separately via the RFID card management flow.
         cur.execute("""
             UPDATE students
             SET
@@ -633,67 +593,14 @@ def import_excel():
     cur  = None
     imported = 0
     skipped  = 0
-    no_uid_available = False
 
     try:
         conn = get_db_connection()
         cur  = conn.cursor()
 
-        # Count available UIDs
-        cur.execute("""
-            SELECT COUNT(rc.uid)
-            FROM rfid_cards rc
-            LEFT JOIN students s ON s.uid = rc.uid
-            WHERE s.uid IS NULL
-        """)
-        available_count = cur.fetchone()[0]
-
-        # ── Pre-count valid students ──────────────────────────────────────────
-        valid_students_count = 0
-        for s in students:
-            try:
-                last_name    = (s.get('last_name') or '').strip()
-                first_name   = (s.get('first_name') or '').strip()
-                middle_name  = (s.get('middle_name') or '').strip()
-                extension    = (s.get('extension') or '').strip()
-                birthday_raw = (s.get('birthday') or '').strip()
-                contact      = (s.get('contact_number') or '').strip()
-                email        = (s.get('email') or '').strip()
-
-                # SF1 imports may omit contact/email — treat as valid for count purposes
-                # (they'll be skipped properly in the main loop below)
-                if not (last_name and first_name and birthday_raw):
-                    continue
-                field_errors = validate_student_fields(
-                    last_name, first_name, middle_name, extension,
-                    birthday_raw, contact or '09000000000', email or 'placeholder@gmail.com'
-                )
-                # Only count name/birthday errors, not contact/email (may be blank in SF1)
-                name_errors = [e for e in field_errors if 'name' in e.lower() or 'birth' in e.lower() or 'extension' in e.lower()]
-                if name_errors:
-                    continue
-                if contact and email:
-                    cur.execute("SELECT id FROM students WHERE email = %s", (email,))
-                    if cur.fetchone():
-                        continue
-                    cur.execute("SELECT id FROM students WHERE contact_number = %s", (contact,))
-                    if cur.fetchone():
-                        continue
-                valid_students_count += 1
-            except Exception:
-                continue
-
-        if valid_students_count > available_count:
-            cur.close(); conn.close()
-            return jsonify({
-                'message': (
-                    f'❌ Import failed: Not enough available UIDs. '
-                    f'Need {valid_students_count} UIDs but only {available_count} available. '
-                    f'Please add more RFID cards first.'
-                )
-            }), 400
-
         # ── Main import loop ──────────────────────────────────────────────────
+        # Students are inserted with uid = NULL.
+        # No UID availability check is needed — UIDs are linked separately.
         for s in students:
             try:
                 last_name    = (s.get('last_name') or '').strip()
@@ -709,18 +616,18 @@ def import_excel():
                     skipped += 1
                     continue
 
-                # Validate name / birthday / extension fields
-                name_bday_errors = []
+                # Validate name characters
                 if not re.match(r"^[a-zA-ZÀ-ÿ\s'\-]+$", last_name):
-                    name_bday_errors.append("bad last name")
+                    skipped += 1
+                    continue
                 if not re.match(r"^[a-zA-ZÀ-ÿ\s'\-]+$", first_name):
-                    name_bday_errors.append("bad first name")
+                    skipped += 1
+                    continue
                 if middle_name and not re.match(r"^[a-zA-ZÀ-ÿ\s'\-]+$", middle_name):
-                    name_bday_errors.append("bad middle name")
-                if name_bday_errors:
                     skipped += 1
                     continue
 
+                # Validate birthday
                 try:
                     birthday = normalize_birthday(birthday_raw)
                 except ValueError:
@@ -763,26 +670,14 @@ def import_excel():
                     skipped += 1
                     continue
 
-                # Assign next available UID
-                cur.execute("""
-                    SELECT rc.uid FROM rfid_cards rc
-                    LEFT JOIN students s ON s.uid = rc.uid
-                    WHERE s.uid IS NULL
-                    ORDER BY rc.id ASC LIMIT 1
-                """)
-                uid_row = cur.fetchone()
-                if not uid_row:
-                    no_uid_available = True
-                    break
-                uid = uid_row[0]
-
+                # Insert with uid = NULL — no UID required
                 cur.execute("""
                     INSERT INTO students
                         (uid, last_name, first_name, middle_name, extension,
                          birthday, contact_number, email)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    VALUES (NULL, %s, %s, %s, %s, %s, %s, %s)
                 """, (
-                    uid, last_name, first_name, middle_name, extension,
+                    last_name, first_name, middle_name, extension,
                     birthday, contact or None, email or None
                 ))
 
@@ -792,10 +687,6 @@ def import_excel():
                 print(f"Error processing student: {str(e)}")
                 skipped += 1
                 continue
-
-        if no_uid_available:
-            conn.rollback()
-            return jsonify({'message': '❌ Import failed: No available UIDs found during import process.'}), 400
 
         conn.commit()
 

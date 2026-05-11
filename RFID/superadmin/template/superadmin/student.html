@@ -166,10 +166,23 @@
       </div>
       {% endif %}
     </div>
+
+    <!-- ── Pagination ── -->
+    {% if students %}
+    <div id="paginationBar" class="px-6 py-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
+      <!-- Info text -->
+      <p id="paginationInfo" class="text-sm text-gray-500"></p>
+      <!-- Buttons -->
+      <div id="paginationButtons" class="flex items-center gap-1.5"></div>
+    </div>
+    {% endif %}
+
   </div>
 </div>
 
 <!-- ===== ADD STUDENT MODAL ===== -->
+<!-- UID field removed entirely — students are registered without a UID.
+     A UID can be linked later via the RFID card assignment flow.         -->
 <div id="addStudentModal" class="modal-overlay hidden">
   <div class="modal-panel modal-panel-lg animate-fadeIn">
     <div class="modal-header bg-gradient-to-r from-blue-600 to-blue-700">
@@ -185,15 +198,6 @@
     </div>
     <div class="modal-body">
       <form id="addStudentForm" action="{{ url_for('sregister.add_student') }}" method="POST" class="p-8" novalidate onsubmit="return validateAddForm(event)">
-        <div class="mb-6">
-          <label class="form-label">Available UID <span class="text-gray-400 font-normal">(Optional)</span></label>
-          <select name="uid" class="form-select">
-            <option value="">Select available UID</option>
-            {% for uid in available_uids %}
-              <option value="{{ uid }}">{{ uid }}</option>
-            {% endfor %}
-          </select>
-        </div>
         <div class="mb-2">
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Personal Information</p>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -244,6 +248,13 @@
             <input type="email" id="add_email" name="email" class="form-input" placeholder="e.g. student@school.edu.ph">
             <p class="field-error hidden" id="err_add_email"></p>
           </div>
+        </div>
+        <!-- Info note: UID can be linked later -->
+        <div class="bg-blue-50 border border-blue-100 rounded-2xl px-5 py-4 flex items-start gap-3 text-xs text-blue-700">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mt-0.5 flex-shrink-0 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span>A UID / RFID card can be linked to this student later through the RFID card management page.</span>
         </div>
       </form>
     </div>
@@ -316,7 +327,7 @@
         </svg>
         <div>
           Required columns: <strong>last_name, first_name, birthday, contact_number, email</strong><br>
-          <span class="text-gray-400 mt-1 block">Optional: middle_name, extension. UID is auto-linked from available RFID cards.</span>
+          <span class="text-gray-400 mt-1 block">Optional: middle_name, extension. UID is not required — students are registered without one and linked later.</span>
         </div>
       </div>
 
@@ -328,7 +339,7 @@
         <div>
           <strong>SF1 Mode:</strong> Reads the DepEd School Form 1 Excel directly.<br>
           Names are split automatically from <code class="bg-violet-100 px-1 rounded">LASTNAME,FIRSTNAME MIDDLENAME</code>.<br>
-          <span class="text-gray-400 mt-1 block">Contact number &amp; email are <em>not</em> in SF1 — you can fill them in later via Edit.</span>
+          <span class="text-gray-400 mt-1 block">Contact number &amp; email are <em>not</em> in SF1 — you can fill them in later via Edit. UID is also not required at import.</span>
         </div>
       </div>
 
@@ -408,7 +419,7 @@
         <div class="mb-6">
           <label class="form-label">UID</label>
           <input type="text" id="edit_uid" class="form-input bg-gray-100" readonly>
-          <p class="text-xs text-gray-400 mt-2">UID is readonly to preserve the existing RFID link.</p>
+          <p class="text-xs text-gray-400 mt-2">UID is readonly. Link or change it via the RFID card management page.</p>
         </div>
         <hr class="border-gray-100 my-6">
         <div class="mb-2">
@@ -753,7 +764,7 @@ function openEditStudentModal(student) {
   clearAllErrors('edit')
   const form = document.getElementById('editStudentForm')
   form.action = "{{ url_for('sregister.update_student', student_id=0) }}".replace('/0', '/' + student.id)
-  document.getElementById('edit_uid').value            = student.uid || ''
+  document.getElementById('edit_uid').value            = student.uid || '—'
   document.getElementById('edit_last_name').value      = student.last_name || ''
   document.getElementById('edit_first_name').value     = student.first_name || ''
   document.getElementById('edit_middle_name').value    = student.middle_name || ''
@@ -784,8 +795,7 @@ function setImportMode(mode) {
 }
 
 // ══════════════════════════════════════════════════
-// SF1 NAME PARSER  (mirrors Python parse_sf1_name)
-// "LASTNAME,FIRSTNAME MIDDLENAME" → { last, first, middle }
+// SF1 NAME PARSER
 // ══════════════════════════════════════════════════
 function parseSF1Name(raw) {
   raw = (raw || '').trim()
@@ -845,7 +855,6 @@ function normalizeBirthday(value) {
   if (!raw) return ''
   if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw
   if (/^\d+(\.\d+)?$/.test(raw)) return excelSerialToDate(parseFloat(raw))
-  // mm/dd/yyyy → yyyy-mm-dd
   const mmddyyyy = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
   if (mmddyyyy) return `${mmddyyyy[3]}-${mmddyyyy[1].padStart(2,'0')}-${mmddyyyy[2].padStart(2,'0')}`
   const parsed = new Date(raw)
@@ -902,16 +911,11 @@ async function parseAndImportSF1(rows, filename) {
 
   const students = []
 
-  // Detect the NAME column (col index 2 in standard SF1) and BIRTHDAY col (col index 11)
-  // We scan all rows to find student data rows.
-  // A student row has a value in col 2 matching "LASTNAME,FIRSTNAME..." pattern
-  // and a date-like value in col 11.
   for (let row of rows) {
     if (!row || row.length < 3) continue
     const nameCell = (row[2] ?? '').toString().trim()
     const bdayCell = (row[11] ?? '').toString().trim()
 
-    // Skip header / total / legend rows
     if (!nameCell || !nameCell.includes(',')) continue
     if (nameCell.includes('===') || nameCell.toLowerCase().includes('name') || nameCell.toLowerCase().includes('lrn')) continue
     if (!bdayCell) continue
@@ -922,7 +926,6 @@ async function parseAndImportSF1(rows, filename) {
     const birthday = normalizeBirthday(bdayCell)
     if (!birthday) continue
 
-    // Sex is in col 10
     const sex = (row[10] ?? '').toString().trim()
 
     students.push({
@@ -931,7 +934,6 @@ async function parseAndImportSF1(rows, filename) {
       middle_name: middle_name || '',
       birthday,
       sex,
-      // contact & email intentionally blank — SF1 doesn't have them
       contact_number: '',
       email: '',
     })
@@ -1147,14 +1149,113 @@ async function clearAssignSection() {
 }
 
 // ══════════════════════════════════════════════════
-// TABLE UTILITIES
+// PAGINATION
 // ══════════════════════════════════════════════════
-function filterTable() {
-  const q = document.getElementById('searchInput').value.toLowerCase().trim()
-  document.querySelectorAll('#studentsTable tbody tr').forEach(row => {
-    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none'
-  })
+const PAGE_SIZE = 10
+let _currentPage  = 1
+let _filteredRows = []   // rows visible after the search filter
+
+function getAllRows() {
+  return Array.from(document.querySelectorAll('#studentsTable tbody tr'))
 }
+
+function applyFilterAndPaginate() {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim()
+  const allRows = getAllRows()
+  _filteredRows = allRows.filter(row => !q || row.textContent.toLowerCase().includes(q))
+  _currentPage = 1
+  renderPage()
+}
+
+function renderPage() {
+  const allRows    = getAllRows()
+  const total      = _filteredRows.length
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+
+  if (_currentPage < 1) _currentPage = 1
+  if (_currentPage > totalPages) _currentPage = totalPages
+
+  const start = (_currentPage - 1) * PAGE_SIZE
+  const end   = start + PAGE_SIZE
+
+  // Hide all rows, then show only the current-page slice of filtered rows
+  allRows.forEach(row => { row.style.display = 'none' })
+  _filteredRows.forEach((row, idx) => {
+    row.style.display = (idx >= start && idx < end) ? '' : 'none'
+  })
+
+  updatePaginationUI(total, totalPages)
+}
+
+function updatePaginationUI(total, totalPages) {
+  const bar     = document.getElementById('paginationBar')
+  const info    = document.getElementById('paginationInfo')
+  const buttons = document.getElementById('paginationButtons')
+  if (!bar) return
+
+  // Hide bar when there's only one page and no active search query
+  const hasSearch = document.getElementById('searchInput').value.trim() !== ''
+  bar.style.display = (total === 0 || (totalPages <= 1 && !hasSearch)) ? 'none' : 'flex'
+
+  const from = total === 0 ? 0 : (_currentPage - 1) * PAGE_SIZE + 1
+  const to   = Math.min(_currentPage * PAGE_SIZE, total)
+  info.textContent = total === 0
+    ? 'No results found'
+    : `Showing ${from}\u2013${to} of ${total} student${total !== 1 ? 's' : ''}`
+
+  buttons.innerHTML = ''
+
+  // Prev
+  const prev = document.createElement('button')
+  prev.type = 'button'
+  prev.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>`
+  prev.className = `w-9 h-9 flex items-center justify-center rounded-xl border text-sm font-medium transition-colors ${_currentPage === 1 ? 'border-gray-100 text-gray-300 cursor-not-allowed' : 'border-gray-200 text-gray-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600'}`
+  prev.disabled = _currentPage === 1
+  prev.addEventListener('click', () => { if (_currentPage > 1) { _currentPage--; renderPage() } })
+  buttons.appendChild(prev)
+
+  // Page number buttons with smart window
+  buildPageWindow(_currentPage, totalPages).forEach(p => {
+    if (p === '\u2026') {
+      const dots = document.createElement('span')
+      dots.textContent = '\u2026'
+      dots.className = 'w-9 h-9 flex items-center justify-center text-gray-400 text-sm select-none'
+      buttons.appendChild(dots)
+      return
+    }
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.textContent = p
+    const isActive = p === _currentPage
+    btn.className = `w-9 h-9 flex items-center justify-center rounded-xl border text-sm font-medium transition-colors ${isActive ? 'bg-blue-600 border-blue-600 text-white shadow-sm' : 'border-gray-200 text-gray-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600'}`
+    btn.addEventListener('click', () => { _currentPage = p; renderPage() })
+    buttons.appendChild(btn)
+  })
+
+  // Next
+  const next = document.createElement('button')
+  next.type = 'button'
+  next.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>`
+  next.className = `w-9 h-9 flex items-center justify-center rounded-xl border text-sm font-medium transition-colors ${_currentPage === totalPages ? 'border-gray-100 text-gray-300 cursor-not-allowed' : 'border-gray-200 text-gray-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600'}`
+  next.disabled = _currentPage === totalPages
+  next.addEventListener('click', () => { if (_currentPage < totalPages) { _currentPage++; renderPage() } })
+  buttons.appendChild(next)
+}
+
+// Returns array like [1, '…', 4, 5, 6, '…', 12] for smart page window
+function buildPageWindow(current, total) {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+  const pages = []
+  pages.push(1)
+  if (current > 3) pages.push('\u2026')
+  for (let p = Math.max(2, current - 1); p <= Math.min(total - 1, current + 1); p++) pages.push(p)
+  if (current < total - 2) pages.push('\u2026')
+  pages.push(total)
+  return pages
+}
+
+// Public entry point called by the search input's onkeyup
+function filterTable() { applyFilterAndPaginate() }
 
 ALL_MODALS.forEach(id => {
   document.getElementById(id)?.addEventListener('click', function(e) {
@@ -1181,8 +1282,10 @@ function moveModalsToBody() {
 document.addEventListener('DOMContentLoaded', function() {
   moveModalsToBody()
   document.querySelectorAll('.schedule-cell').forEach(el => {
-    el.innerHTML = (el.textContent || '—').replace(/,\s*(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/g, '\n$1').trim()
+    el.innerHTML = (el.textContent || '\u2014').replace(/,\s*(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/g, '\n$1').trim()
   })
+  // Initialise pagination on load
+  applyFilterAndPaginate()
 })
 </script>
 

@@ -8,7 +8,7 @@
     .top-gradient { background: linear-gradient(90deg, #1f46c7 0%, #3d7cf0 100%); }
     .table-head { letter-spacing: 0.08em; font-size: 12px; }
     .modal-backdrop { background: rgba(15, 23, 42, 0.45); }
-    
+
     .flash-notifications {
         position: fixed;
         top: 20px;
@@ -31,8 +31,8 @@
         animation: slideIn 0.3s ease;
     }
     .flash-message.success { background: #10b981; color: white; }
-    .flash-message.error { background: #ef4444; color: white; }
-    .flash-message .icon { font-size: 1.3rem; }
+    .flash-message.error   { background: #ef4444; color: white; }
+    .flash-message .icon   { font-size: 1.3rem; }
     .flash-message .close-btn {
         margin-left: auto;
         background: none;
@@ -44,23 +44,35 @@
     }
     @keyframes slideIn {
         from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
+        to   { transform: translateX(0);    opacity: 1; }
     }
 
-    .error-message {
-        display: none;
-        color: #ef4444;
-        font-size: 0.875rem;
-        margin-top: 4px;
-    }
+    .error-message { display: none; color: #ef4444; font-size: 0.875rem; margin-top: 4px; }
     .error-message.show { display: block; }
 
-    .student-row {
-        transition: all 0.2s ease;
-    }
-    .student-row:hover {
+    .student-row { transition: all 0.2s ease; }
+    .student-row:hover { background: #f8fafc; }
+
+    /* Locked row */
+    .student-row.locked {
         background: #f8fafc;
+        opacity: 0.70;
+        cursor: not-allowed;
     }
+    .student-row.locked label  { cursor: not-allowed; }
+    .student-row.locked input  { cursor: not-allowed; pointer-events: none; }
+
+    /* Lock warning modal */
+    @keyframes popIn {
+        0%   { transform: scale(0.85); opacity: 0; }
+        70%  { transform: scale(1.03); }
+        100% { transform: scale(1);    opacity: 1; }
+    }
+    #lockedWarningModal .modal-box { animation: popIn 0.28s ease forwards; }
+    .locked-list { max-height: 210px; overflow-y: auto; }
+    .locked-list::-webkit-scrollbar       { width: 4px; }
+    .locked-list::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+    .locked-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 </style>
 
 <!-- Flash Notifications -->
@@ -88,9 +100,9 @@
         <form id="searchForm" method="GET" action="{{ url_for('section_bp.section') }}" class="flex-1 max-w-md">
             <div class="bg-white border rounded-full px-5 py-3 flex items-center gap-3 shadow-sm">
                 <i class="fa-solid fa-magnifying-glass text-blue-500"></i>
-                <input type="text" 
+                <input type="text"
                        id="searchInput"
-                       name="search" 
+                       name="search"
                        value="{{ search }}"
                        placeholder="Search section, year level, adviser..."
                        class="w-full outline-none text-sm bg-transparent">
@@ -168,22 +180,16 @@
             <h3 class="text-white text-xl font-semibold">Add Section</h3>
             <button type="button" onclick="closeAddModal()" class="text-white text-2xl">&times;</button>
         </div>
-
         <form id="addForm" method="POST" class="p-6 space-y-5" onsubmit="return validateAddForm()">
             <input type="hidden" name="action" value="add_section">
-
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Section Name</label>
-                    <input type="text" 
-                           id="add_section_name"       
-                           name="section_name"
-                           placeholder="STEM, ABM, HUMSS, GAS"
-                           required
+                    <input type="text" id="add_section_name" name="section_name"
+                           placeholder="STEM, ABM, HUMSS, GAS" required
                            class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
                     <p id="add_section_name_error" class="error-message"></p>
                 </div>
-
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Year Level</label>
                     <select name="year_level" id="add_year_level"
@@ -194,10 +200,10 @@
                     </select>
                 </div>
             </div>
-
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-2">Teacher</label>
-                <select name="teacher_id" class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
+                <select name="teacher_id"
+                        class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">No Teacher</option>
                     {% for teacher in teachers %}
                         <option value="{{ teacher.id }}">
@@ -207,7 +213,6 @@
                     {% endfor %}
                 </select>
             </div>
-
             <div class="flex justify-end gap-3 pt-2">
                 <button type="button" onclick="closeAddModal()"
                         class="px-5 py-3 rounded-2xl border font-semibold text-slate-700">Cancel</button>
@@ -227,23 +232,17 @@
             <h3 class="text-white text-xl font-semibold">Edit Section</h3>
             <button type="button" onclick="closeEditModal()" class="text-white text-2xl">&times;</button>
         </div>
-
         <form id="editForm" method="POST" class="p-6 space-y-5" onsubmit="return validateEditForm()">
             <input type="hidden" name="action" value="edit_section">
             <input type="hidden" name="section_id" id="edit_section_id">
-
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Section Name</label>
-                    <input type="text" 
-                           id="edit_section_name" 
-                           name="section_name"
-                           placeholder="e.g. STEM, ABM, HUMSS, GAS (3-20 letters only)"
-                           required
+                    <input type="text" id="edit_section_name" name="section_name"
+                           placeholder="e.g. STEM, ABM, HUMSS, GAS (3-20 letters only)" required
                            class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
                     <p id="edit_section_name_error" class="error-message"></p>
                 </div>
-
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Year Level</label>
                     <select name="year_level" id="edit_year_level"
@@ -254,7 +253,6 @@
                     </select>
                 </div>
             </div>
-
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-2">Teacher</label>
                 <select name="teacher_id" id="edit_teacher_id"
@@ -268,7 +266,6 @@
                     {% endfor %}
                 </select>
             </div>
-
             <div class="flex justify-end gap-3 pt-2">
                 <button type="button" onclick="closeEditModal()"
                         class="px-5 py-3 rounded-2xl border font-semibold text-slate-700">Cancel</button>
@@ -288,16 +285,13 @@
             <h3 class="text-white text-xl font-semibold">Delete Section</h3>
             <button type="button" onclick="closeDeleteModal()" class="text-white text-2xl">&times;</button>
         </div>
-
         <form method="POST" class="p-6">
             <input type="hidden" name="action" value="delete_section">
             <input type="hidden" name="section_id" id="delete_section_id">
-
             <p class="text-slate-700 text-base">
                 Are you sure you want to delete
                 <span id="delete_section_name" class="font-bold text-red-600"></span>?
             </p>
-
             <div class="flex justify-end gap-3 pt-6">
                 <button type="button" onclick="closeDeleteModal()"
                         class="px-5 py-3 rounded-2xl border font-semibold text-slate-700">Cancel</button>
@@ -310,62 +304,65 @@
     </div>
 </div>
 
-<!-- ====================== ASSIGN STUDENTS MODAL (UPDATED) ====================== -->
+<!-- ====================== ASSIGN STUDENTS MODAL ====================== -->
 <div id="assignModal" class="fixed inset-0 hidden items-center justify-center modal-backdrop z-50 p-4">
     <div class="bg-white w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
-        
-        <!-- HEADER with Select All / Clear All in TOP RIGHT -->
+
+        <!-- Header -->
         <div class="top-gradient px-6 py-4 flex items-center justify-between">
             <h3 class="text-white text-xl font-semibold">
                 Assign Students to <span id="assign_section_name" class="font-bold"></span>
             </h3>
-            
             <div class="flex items-center gap-2">
-                <!-- Select All & Clear All Buttons (Top Right) -->
-                <button type="button" 
-                        onclick="selectAllVisible()"
+                <button type="button" onclick="selectAllVisible()"
                         class="px-4 py-1.5 text-sm font-semibold bg-white/20 hover:bg-white/30 text-white rounded-2xl flex items-center gap-2 transition-all active:scale-95">
-                    <i class="fa-solid fa-check-double"></i> 
+                    <i class="fa-solid fa-check-double"></i>
                     <span class="hidden md:inline">Select All</span>
                 </button>
-                <button type="button" 
-                        onclick="clearAllVisible()"
+                <button type="button" onclick="clearAllVisible()"
                         class="px-4 py-1.5 text-sm font-semibold bg-white/20 hover:bg-white/30 text-white rounded-2xl flex items-center gap-2 transition-all active:scale-95">
-                    <i class="fa-solid fa-times"></i> 
+                    <i class="fa-solid fa-times"></i>
                     <span class="hidden md:inline">Clear All</span>
                 </button>
-                
                 <button type="button" onclick="closeAssignModal()" class="text-white text-3xl ml-1">&times;</button>
             </div>
         </div>
 
-        <form id="assignForm" method="POST" class="flex-1 flex flex-col">
+        <form id="assignForm" method="POST" class="flex-1 flex flex-col" onsubmit="return handleAssignSubmit(event)">
             <input type="hidden" name="action" value="assign_students">
             <input type="hidden" name="section_id" id="assign_section_id">
 
-            <!-- Search Bar -->
+            <!-- Search -->
             <div class="px-6 pt-6 pb-3 border-b">
                 <div class="relative">
                     <i class="fa-solid fa-magnifying-glass text-slate-400 absolute left-5 top-1/2 -translate-y-1/2"></i>
-                    <input type="text" 
-                           id="modalSearchInput"
+                    <input type="text" id="modalSearchInput"
                            placeholder="Search students by name..."
                            class="w-full border rounded-3xl px-12 py-4 outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
                 </div>
             </div>
 
-            <!-- SCROLLABLE STUDENTS LIST -->
-            <div class="flex-1 overflow-y-auto p-6 space-y-2" id="studentsListContainer" style="max-height: 420px;">
-                <div id="studentsContainer" class="space-y-1">
+            <!-- Legend -->
+            <div class="px-6 pt-3 pb-1 flex flex-wrap items-center gap-5 text-xs text-slate-500">
+                <span class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-lock text-slate-400"></i> Locked — cannot be moved
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-user-plus text-emerald-500"></i> Available to assign
+                </span>
+            </div>
+
+            <!-- List -->
+            <div class="flex-1 overflow-y-auto p-6" id="studentsListContainer" style="max-height: 400px;">
+                <div id="studentsContainer" class="space-y-2">
                     <!-- Populated by JS -->
                 </div>
             </div>
 
             <!-- Footer -->
             <div class="border-t px-6 py-5 bg-slate-50 flex items-center justify-between">
-                <div class="flex items-center gap-3 text-sm text-slate-600">
-                    <span id="selectedCountDisplay" class="font-semibold text-emerald-600">0</span> 
-                    students selected
+                <div class="text-sm text-slate-600">
+                    <span id="selectedCountDisplay" class="font-semibold text-emerald-600">0</span> students selected
                 </div>
                 <div class="flex items-center gap-3">
                     <button type="button" onclick="closeAssignModal()"
@@ -374,8 +371,7 @@
                     </button>
                     <button type="submit"
                             class="px-8 py-3 rounded-3xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center gap-2">
-                        <i class="fa-solid fa-check"></i>
-                        Save Assignments
+                        <i class="fa-solid fa-check"></i> Save Assignments
                     </button>
                 </div>
             </div>
@@ -383,265 +379,294 @@
     </div>
 </div>
 
-<script>
-    function isValidSectionName(name) {
-        return /^[A-Za-z]{3,20}$/.test(name);
-    }
+<!-- ====================== LOCKED WARNING MODAL ====================== -->
+<div id="lockedWarningModal"
+     class="fixed inset-0 hidden items-center justify-center z-[9999] p-4"
+     style="background: rgba(15,23,42,0.55);">
+    <div class="modal-box bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
 
-    // ====================== ADD MODAL VALIDATION ======================
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-red-500 to-rose-600 px-6 py-5 flex items-center gap-3">
+            <div class="w-10 h-10 bg-white/25 rounded-2xl flex items-center justify-center text-white text-xl">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <div>
+                <h3 class="text-white text-lg font-bold leading-tight">Section Locked</h3>
+                <p class="text-white/80 text-xs">This student cannot be reassigned</p>
+            </div>
+            <button type="button" onclick="closeLockedWarningModal()"
+                    class="ml-auto text-white text-2xl leading-none">&times;</button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6">
+            <p class="text-slate-600 text-sm mb-4">
+                The following student(s) are <span class="font-semibold text-red-600">already locked</span> to a
+                section and <strong>cannot be moved or reassigned</strong>:
+            </p>
+
+            <div class="locked-list space-y-2 mb-5" id="lockedStudentList">
+                <!-- Populated by JS -->
+            </div>
+
+            <div class="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 flex items-start gap-3 mb-5">
+                <i class="fa-solid fa-triangle-exclamation text-amber-500 mt-0.5 flex-shrink-0"></i>
+                <p class="text-amber-700 text-xs leading-relaxed">
+                    Once a student is assigned to a section, their placement is <strong>permanent</strong>.
+                    Only students with an <span class="text-emerald-700 font-semibold">Available</span> badge can be assigned.
+                </p>
+            </div>
+
+            <button type="button" onclick="closeLockedWarningModal()"
+                    class="w-full px-5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm flex items-center justify-center gap-2">
+                <i class="fa-solid fa-arrow-left"></i> Got it, Go Back
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ─── Validation ───────────────────────────────────────────────
+    function isValidSectionName(n) { return /^[A-Za-z]{3,20}$/.test(n); }
+
     function validateAddForm() {
         const input = document.getElementById('add_section_name');
         const error = document.getElementById('add_section_name_error');
-        const value = input.value.trim();
-
-        if (!isValidSectionName(value)) {
+        if (!isValidSectionName(input.value.trim())) {
             error.textContent = "Section name must be 3-20 letters only (no numbers, no spaces)";
-            error.classList.add('show');
-            return false;
+            error.classList.add('show'); return false;
         }
         return true;
     }
     function setupAddValidation() {
         const input = document.getElementById('add_section_name');
         const error = document.getElementById('add_section_name_error');
-        input.addEventListener('input', function () {
-            const value = this.value.trim();
-            if (value === '') {
-                error.classList.remove('show');
-            } else if (!isValidSectionName(value)) {
-                error.textContent = "Section name must be 3-20 letters only (no numbers, no spaces)";
-                error.classList.add('show');
-            } else {
-                error.classList.remove('show');
-            }
+        input.addEventListener('input', () => {
+            const v = input.value.trim();
+            if (!v) { error.classList.remove('show'); return; }
+            error.textContent = "Section name must be 3-20 letters only (no numbers, no spaces)";
+            isValidSectionName(v) ? error.classList.remove('show') : error.classList.add('show');
         });
     }
-
-    // ====================== EDIT MODAL VALIDATION ======================
     function validateEditForm() {
         const input = document.getElementById('edit_section_name');
         const error = document.getElementById('edit_section_name_error');
-        const value = input.value.trim();
-
-        if (!isValidSectionName(value)) {
+        if (!isValidSectionName(input.value.trim())) {
             error.textContent = "Section name must be 3-20 letters only (no numbers, no spaces)";
-            error.classList.add('show');
-            return false;
+            error.classList.add('show'); return false;
         }
         return true;
     }
     function setupEditValidation() {
         const input = document.getElementById('edit_section_name');
         const error = document.getElementById('edit_section_name_error');
-        input.addEventListener('input', function () {
-            const value = this.value.trim();
-            if (value === '') {
-                error.classList.remove('show');
-            } else if (!isValidSectionName(value)) {
-                error.textContent = "Section name must be 3-20 letters only (no numbers, no spaces)";
-                error.classList.add('show');
-            } else {
-                error.classList.remove('show');
-            }
+        input.addEventListener('input', () => {
+            const v = input.value.trim();
+            if (!v) { error.classList.remove('show'); return; }
+            error.textContent = "Section name must be 3-20 letters only (no numbers, no spaces)";
+            isValidSectionName(v) ? error.classList.remove('show') : error.classList.add('show');
         });
     }
 
-    // ====================== MODAL OPEN/CLOSE ======================
-    function openAddModal() {
-        document.getElementById('addModal').classList.remove('hidden');
-        document.getElementById('addModal').classList.add('flex');
-        document.getElementById('add_section_name_error').classList.remove('show');
-    }
-    function closeAddModal() {
-        document.getElementById('addModal').classList.add('hidden');
-        document.getElementById('addModal').classList.remove('flex');
-    }
+    // ─── Generic modal helpers ────────────────────────────────────
+    function showModal(id)  { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
+    function hideModal(id)  { document.getElementById(id).classList.add('hidden');    document.getElementById(id).classList.remove('flex'); }
+
+    function openAddModal()    { showModal('addModal');    document.getElementById('add_section_name_error').classList.remove('show'); }
+    function closeAddModal()   { hideModal('addModal'); }
+    function closeEditModal()  { hideModal('editModal'); }
+    function closeDeleteModal(){ hideModal('deleteModal'); }
 
     function openEditModal(id, sectionName, yearLevel, teacherId) {
-        document.getElementById('edit_section_id').value = id;
+        document.getElementById('edit_section_id').value   = id;
         document.getElementById('edit_section_name').value = sectionName;
-        document.getElementById('edit_year_level').value = yearLevel || "";
-        document.getElementById('edit_teacher_id').value = teacherId || "";
-        document.getElementById('editModal').classList.remove('hidden');
-        document.getElementById('editModal').classList.add('flex');
+        document.getElementById('edit_year_level').value   = yearLevel  || "";
+        document.getElementById('edit_teacher_id').value   = teacherId  || "";
+        showModal('editModal');
         document.getElementById('edit_section_name_error').classList.remove('show');
     }
-    function closeEditModal() {
-        document.getElementById('editModal').classList.add('hidden');
-        document.getElementById('editModal').classList.remove('flex');
-    }
-
     function openDeleteModal(id, sectionName) {
-        document.getElementById('delete_section_id').value = id;
+        document.getElementById('delete_section_id').value         = id;
         document.getElementById('delete_section_name').textContent = sectionName;
-        document.getElementById('deleteModal').classList.remove('hidden');
-        document.getElementById('deleteModal').classList.add('flex');
-    }
-    function closeDeleteModal() {
-        document.getElementById('deleteModal').classList.add('hidden');
-        document.getElementById('deleteModal').classList.remove('flex');
+        showModal('deleteModal');
     }
 
-    // ====================== ASSIGN STUDENTS ======================
-    let allStudents = [];
+    // ─── Assign Students ──────────────────────────────────────────
+    let allStudents      = [];
+    let currentSectionId = null;
 
     function openAssignModal(sectionId, sectionName) {
-        const modal = document.getElementById('assignModal');
-        document.getElementById('assign_section_id').value = sectionId;
+        currentSectionId = parseInt(sectionId);
+        document.getElementById('assign_section_id').value         = sectionId;
         document.getElementById('assign_section_name').textContent = sectionName;
 
         const container = document.getElementById('studentsContainer');
         container.innerHTML = '';
 
-        allStudents.forEach(student => {
-            const isChecked = student.sectionId === parseInt(sectionId);
+        // Available (unlocked) students always on top, locked at the bottom
+        const sorted = [...allStudents].sort((a, b) => {
+            const aLocked = a.sectionId !== null ? 1 : 0;
+            const bLocked = b.sectionId !== null ? 1 : 0;
+            return aLocked - bLocked;
+        });
 
-            let badgeHTML = '';
-            if (student.currentSection && student.currentSection !== 'None') {
-                if (student.sectionId === parseInt(sectionId)) {
-                    badgeHTML = `<span class="text-xs px-3 py-1 bg-emerald-100 text-emerald-700 rounded-3xl">Currently assigned</span>`;
-                } else {
-                    badgeHTML = `<span class="text-xs px-3 py-1 bg-amber-100 text-amber-700 rounded-3xl">In: ${student.currentSection}</span>`;
-                }
+        sorted.forEach(student => {
+            const isLocked      = student.sectionId !== null;
+            const isThisSection = student.sectionId === currentSectionId;
+
+            let badgeHTML;
+            if (isLocked) {
+                const color = isThisSection ? 'bg-slate-100 text-slate-600' : 'bg-red-50 text-red-600';
+                badgeHTML = `
+                    <span class="flex items-center gap-1 text-xs px-3 py-1 ${color} rounded-3xl whitespace-nowrap">
+                        <i class="fa-solid fa-lock text-[10px]"></i> ${student.currentSection}
+                    </span>`;
             } else {
-                badgeHTML = `<span class="text-xs px-3 py-1 bg-slate-100 text-slate-600 rounded-3xl">Not assigned</span>`;
+                badgeHTML = `
+                    <span class="flex items-center gap-1 text-xs px-3 py-1 bg-emerald-50 text-emerald-700 rounded-3xl whitespace-nowrap">
+                        <i class="fa-solid fa-user-plus text-[10px]"></i> Available
+                    </span>`;
             }
 
-            const rowHTML = `
-                <div class="student-row flex items-center justify-between gap-4 px-5 py-4 border border-slate-200 rounded-3xl">
-                    <label class="flex items-center gap-3 cursor-pointer flex-1">
-                        <input type="checkbox" 
-                               name="student_ids" 
+            container.innerHTML += `
+                <div class="student-row ${isLocked ? 'locked' : ''} flex items-center justify-between gap-4 px-5 py-4 border border-slate-200 rounded-3xl">
+                    <label class="flex items-center gap-3 flex-1 ${isLocked ? 'cursor-not-allowed' : 'cursor-pointer'}">
+                        <input type="checkbox"
+                               name="student_ids"
                                value="${student.id}"
-                               ${isChecked ? 'checked' : ''}
+                               ${isThisSection ? 'checked' : ''}
+                               ${isLocked ? 'disabled' : ''}
                                class="w-5 h-5 accent-emerald-500">
-                        <div>
-                            <div class="font-medium text-slate-800">${student.name}</div>
-                        </div>
+                        <span class="font-medium text-slate-800 text-sm">${student.name}</span>
                     </label>
                     ${badgeHTML}
                 </div>`;
-            container.innerHTML += rowHTML;
-        });
+        });  // end sorted.forEach
 
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-
+        showModal('assignModal');
         document.getElementById('modalSearchInput').value = '';
         filterAssignStudents();
         updateSelectedCount();
         attachCheckboxListeners();
-        attachModalSearchListener();
+        document.getElementById('modalSearchInput').addEventListener('input', filterAssignStudents);
     }
 
-    function closeAssignModal() {
-        const modal = document.getElementById('assignModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-    }
+    function closeAssignModal() { hideModal('assignModal'); }
 
     function updateSelectedCount() {
-        const checked = document.querySelectorAll('#studentsContainer input[type="checkbox"]:checked').length;
-        document.getElementById('selectedCountDisplay').textContent = checked;
+        const n = document.querySelectorAll('#studentsContainer input[type="checkbox"]:not([disabled]):checked').length;
+        document.getElementById('selectedCountDisplay').textContent = n;
     }
 
     function attachCheckboxListeners() {
-        const container = document.getElementById('studentsContainer');
-        container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        document.querySelectorAll('#studentsContainer input[type="checkbox"]').forEach(cb => {
             cb.addEventListener('change', updateSelectedCount);
         });
     }
 
-    function attachModalSearchListener() {
-        const searchInput = document.getElementById('modalSearchInput');
-        searchInput.addEventListener('input', filterAssignStudents);
-    }
-
     function filterAssignStudents() {
         const term = document.getElementById('modalSearchInput').value.toLowerCase().trim();
-        const rows = document.querySelectorAll('.student-row');
-
-        rows.forEach(row => {
-            const nameText = row.textContent.toLowerCase();
-            row.style.display = (!term || nameText.includes(term)) ? 'flex' : 'none';
+        document.querySelectorAll('.student-row').forEach(row => {
+            row.style.display = (!term || row.textContent.toLowerCase().includes(term)) ? 'flex' : 'none';
         });
     }
 
-    // ====================== SELECT ALL & CLEAR ALL ======================
     function selectAllVisible() {
-        const rows = document.querySelectorAll('#studentsContainer .student-row');
-        rows.forEach(row => {
+        document.querySelectorAll('#studentsContainer .student-row').forEach(row => {
             if (row.style.display !== 'none') {
-                const checkbox = row.querySelector('input[type="checkbox"]');
-                if (checkbox) checkbox.checked = true;
+                const cb = row.querySelector('input[type="checkbox"]:not([disabled])');
+                if (cb) cb.checked = true;
             }
         });
         updateSelectedCount();
     }
 
     function clearAllVisible() {
-        const rows = document.querySelectorAll('#studentsContainer .student-row');
-        rows.forEach(row => {
+        document.querySelectorAll('#studentsContainer .student-row').forEach(row => {
             if (row.style.display !== 'none') {
-                const checkbox = row.querySelector('input[type="checkbox"]');
-                if (checkbox) checkbox.checked = false;
+                const cb = row.querySelector('input[type="checkbox"]:not([disabled])');
+                if (cb) cb.checked = false;
             }
         });
         updateSelectedCount();
     }
 
-    // ====================== REAL-TIME SEARCH + FLASHES ======================
-    let searchTimeout;
-    function debounceSearch() {
-        const input = document.getElementById('searchInput');
-        const value = input.value.trim();
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            performLiveSearch(value);
-        }, 300);
+    // ─── Submit guard: block any locked student that somehow got checked ──
+    function handleAssignSubmit(event) {
+        event.preventDefault();
+
+        // Extra safety: detect if a locked student from a DIFFERENT section
+        // was somehow checked (shouldn't happen via UI, but guard anyway)
+        const blocked = [];
+        document.querySelectorAll('#studentsContainer input[type="checkbox"]:not([disabled]):checked').forEach(cb => {
+            const student = allStudents.find(s => s.id === parseInt(cb.value));
+            if (student && student.sectionId !== null && student.sectionId !== currentSectionId) {
+                blocked.push(student);
+            }
+        });
+
+        if (blocked.length > 0) {
+            const listEl = document.getElementById('lockedStudentList');
+            listEl.innerHTML = '';
+            blocked.forEach(s => {
+                listEl.innerHTML += `
+                    <div class="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-100 rounded-2xl">
+                        <div class="w-8 h-8 rounded-full bg-red-200 flex items-center justify-center flex-shrink-0">
+                            <i class="fa-solid fa-lock text-red-600 text-xs"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-slate-800 text-sm">${s.name}</div>
+                            <div class="text-xs text-red-500">Locked to: ${s.currentSection}</div>
+                        </div>
+                    </div>`;
+            });
+            showModal('lockedWarningModal');
+            return false;
+        }
+
+        document.getElementById('assignForm').submit();
+        return true;
     }
 
-    async function performLiveSearch(searchTerm) {
-        const url = `{{ url_for('section_bp.section') }}?search=${encodeURIComponent(searchTerm)}`;
+    function closeLockedWarningModal() { hideModal('lockedWarningModal'); }
+
+    // ─── Live table search ────────────────────────────────────────
+    let searchTimeout;
+    async function performLiveSearch(term) {
         try {
-            const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-            const html = await response.text();
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-
-            const newTbody = doc.getElementById('sectionsTbody');
-            if (newTbody) document.getElementById('sectionsTbody').innerHTML = newTbody.innerHTML;
-
-            const newCount = doc.getElementById('recordCount');
-            if (newCount) document.getElementById('recordCount').outerHTML = newCount.outerHTML;
-        } catch (error) {
-            console.error('Search failed:', error);
-        }
+            const res  = await fetch(`{{ url_for('section_bp.section') }}?search=${encodeURIComponent(term)}`,
+                                     { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const html = await res.text();
+            const doc  = new DOMParser().parseFromString(html, 'text/html');
+            const tb   = doc.getElementById('sectionsTbody');
+            if (tb) document.getElementById('sectionsTbody').innerHTML = tb.innerHTML;
+            const rc = doc.getElementById('recordCount');
+            if (rc) document.getElementById('recordCount').outerHTML = rc.outerHTML;
+        } catch (e) { console.error('Search error:', e); }
     }
 
     function autoHideFlashes() {
-        const flashes = document.querySelectorAll('.flash-message');
-        flashes.forEach(flash => {
+        document.querySelectorAll('.flash-message').forEach(f => {
             setTimeout(() => {
-                if (flash) {
-                    flash.style.transition = 'opacity 0.5s';
-                    flash.style.opacity = '0';
-                    setTimeout(() => { if (flash) flash.remove(); }, 500);
-                }
+                f.style.transition = 'opacity 0.5s';
+                f.style.opacity    = '0';
+                setTimeout(() => f.remove(), 500);
             }, 5000);
         });
     }
 
-    // ====================== INIT ======================
-    window.onload = function() {
+    // ─── Init ─────────────────────────────────────────────────────
+    window.onload = function () {
         setupAddValidation();
         setupEditValidation();
         autoHideFlashes();
 
-        const searchInput = document.getElementById('searchInput');
-        searchInput.addEventListener('input', debounceSearch);
+        document.getElementById('searchInput').addEventListener('input', function () {
+            clearTimeout(searchTimeout);
+            const v = this.value.trim();
+            searchTimeout = setTimeout(() => performLiveSearch(v), 300);
+        });
 
-        // Load all students
         allStudents = [
             {% for student in all_students %}
             {
