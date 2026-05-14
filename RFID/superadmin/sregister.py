@@ -291,7 +291,6 @@ def student():
     except Exception as e:
         flash(f"Database error: {str(e)}", "error")
 
-    # available_uids is no longer passed — UID is not required at registration
     return render_template(
         "superadmin/student.html",
         students=students,
@@ -301,9 +300,6 @@ def student():
 @sregister.route('/add-student', methods=['POST'])
 @login_required
 def add_student():
-    # UID is intentionally NOT accepted from the form.
-    # Students are registered without a UID; a UID can be linked later
-    # through the RFID card management flow.
     last_name      = request.form.get('last_name', '').strip()
     first_name     = request.form.get('first_name', '').strip()
     middle_name    = request.form.get('middle_name', '').strip()
@@ -327,6 +323,29 @@ def add_student():
         conn = get_db_connection()
         cur  = conn.cursor()
 
+        # ── Cross-table checks: block teachers from being added as students ──
+        cur.execute("SELECT id FROM teachers WHERE email = %s", (email,))
+        if cur.fetchone():
+            cur.close(); conn.close()
+            flash("This email is already registered to a teacher. A teacher cannot also be a student.", "error")
+            return redirect(url_for('sregister.student'))
+
+        cur.execute("SELECT id FROM teachers WHERE contact_number = %s", (contact_number,))
+        if cur.fetchone():
+            cur.close(); conn.close()
+            flash("This contact number is already registered to a teacher. A teacher cannot also be a student.", "error")
+            return redirect(url_for('sregister.student'))
+
+        cur.execute("""
+            SELECT id FROM teachers
+            WHERE last_name = %s AND first_name = %s
+        """, (last_name, first_name))
+        if cur.fetchone():
+            cur.close(); conn.close()
+            flash("A teacher with the same name is already registered. A teacher cannot also be a student.", "error")
+            return redirect(url_for('sregister.student'))
+
+        # ── Within-table duplicate checks ────────────────────────────────────
         cur.execute("SELECT id FROM students WHERE email = %s", (email,))
         if cur.fetchone():
             cur.close(); conn.close()
@@ -348,7 +367,7 @@ def add_student():
             flash("This student is already registered.", "error")
             return redirect(url_for('sregister.student'))
 
-        # Insert student with uid = NULL — no UID required at registration
+        # ── Insert ────────────────────────────────────────────────────────────
         cur.execute("""
             INSERT INTO students
                 (uid, last_name, first_name, middle_name, extension,
@@ -404,6 +423,26 @@ def update_student(student_id):
             flash("Student not found.", "error")
             return redirect(url_for('sregister.student'))
 
+        # ── Cross-table checks: block teacher data from being used by a student ──
+        cur.execute("SELECT id FROM teachers WHERE email = %s", (email,))
+        if cur.fetchone():
+            flash("This email is already registered to a teacher. A teacher cannot also be a student.", "error")
+            return redirect(url_for('sregister.student'))
+
+        cur.execute("SELECT id FROM teachers WHERE contact_number = %s", (contact_number,))
+        if cur.fetchone():
+            flash("This contact number is already registered to a teacher. A teacher cannot also be a student.", "error")
+            return redirect(url_for('sregister.student'))
+
+        cur.execute("""
+            SELECT id FROM teachers
+            WHERE last_name = %s AND first_name = %s
+        """, (last_name, first_name))
+        if cur.fetchone():
+            flash("A teacher with the same name is already registered. A teacher cannot also be a student.", "error")
+            return redirect(url_for('sregister.student'))
+
+        # ── Within-table duplicate checks ────────────────────────────────────
         cur.execute("SELECT id FROM students WHERE email = %s AND id <> %s", (email, student_id))
         if cur.fetchone():
             flash("This email is already registered to another student.", "error")
@@ -422,8 +461,7 @@ def update_student(student_id):
             flash("Another student with the same name and birthday already exists.", "error")
             return redirect(url_for('sregister.student'))
 
-        # UID is intentionally excluded from the UPDATE — it is managed
-        # separately via the RFID card management flow.
+        # ── Update ────────────────────────────────────────────────────────────
         cur.execute("""
             UPDATE students
             SET
@@ -598,9 +636,6 @@ def import_excel():
         conn = get_db_connection()
         cur  = conn.cursor()
 
-        # ── Main import loop ──────────────────────────────────────────────────
-        # Students are inserted with uid = NULL.
-        # No UID availability check is needed — UIDs are linked separately.
         for s in students:
             try:
                 last_name    = (s.get('last_name') or '').strip()
@@ -649,7 +684,28 @@ def import_excel():
                         skipped += 1
                         continue
 
-                # Duplicate checks (only when contact/email provided)
+                # ── Cross-table checks: skip if person is already a teacher ──
+                if email:
+                    cur.execute("SELECT id FROM teachers WHERE email = %s", (email,))
+                    if cur.fetchone():
+                        skipped += 1
+                        continue
+
+                if contact:
+                    cur.execute("SELECT id FROM teachers WHERE contact_number = %s", (contact,))
+                    if cur.fetchone():
+                        skipped += 1
+                        continue
+
+                cur.execute("""
+                    SELECT id FROM teachers
+                    WHERE last_name = %s AND first_name = %s
+                """, (last_name, first_name))
+                if cur.fetchone():
+                    skipped += 1
+                    continue
+
+                # ── Within-table duplicate checks ─────────────────────────────
                 if email:
                     cur.execute("SELECT id FROM students WHERE email = %s", (email,))
                     if cur.fetchone():
@@ -661,7 +717,6 @@ def import_excel():
                         skipped += 1
                         continue
 
-                # Duplicate name + birthday check
                 cur.execute("""
                     SELECT id FROM students
                     WHERE last_name = %s AND first_name = %s AND birthday = %s
@@ -670,7 +725,7 @@ def import_excel():
                     skipped += 1
                     continue
 
-                # Insert with uid = NULL — no UID required
+                # ── Insert ────────────────────────────────────────────────────
                 cur.execute("""
                     INSERT INTO students
                         (uid, last_name, first_name, middle_name, extension,

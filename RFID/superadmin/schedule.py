@@ -53,7 +53,6 @@ def parse_time_str(raw: str, fallback_period: str = None):
     """
     raw = raw.strip().upper()
 
-    # Patterns tried in order (most-specific first)
     TIME_FORMATS = [
         "%I:%M %p",   # 7:00 AM
         "%I:%M%p",    # 7:00AM
@@ -62,10 +61,8 @@ def parse_time_str(raw: str, fallback_period: str = None):
         "%I%p",       # 7AM
     ]
 
-    # Check if the raw string already contains an AM/PM indicator
     has_period = bool(re.search(r'\b(AM|PM)\b', raw))
 
-    # If no period in the raw string AND a fallback is supplied, inject it
     if not has_period and fallback_period:
         augmented = f"{raw} {fallback_period}"
         for fmt in ["%I:%M %p", "%I %p", "%I%p"]:
@@ -74,7 +71,6 @@ def parse_time_str(raw: str, fallback_period: str = None):
             except ValueError:
                 continue
 
-    # Normal parsing
     for fmt in TIME_FORMATS:
         try:
             return datetime.strptime(raw, fmt).time()
@@ -113,14 +109,11 @@ def parse_time_range(time_str: str):
             start_raw = parts[0].strip()
             end_raw   = parts[1].strip()
 
-            # Determine the period (AM/PM) from each half
             end_period   = _extract_period(end_raw)
             start_period = _extract_period(start_raw)
 
-            # Parse end first (it is most likely to have an explicit period)
             end = parse_time_str(end_raw)
 
-            # Parse start; if it has no period, inherit from end
             if start_period:
                 start = parse_time_str(start_raw)
             else:
@@ -227,6 +220,73 @@ def check_room_conflict_db(cur, room_id: int, day: str, new_start: dtime,
                 "time":    sched["time"],
                 "day":     sched["day"],
             }
+
+    return None
+
+
+# ─────────────────────────────────────────────
+# ★ NEW: TEACHER SUBJECT LIMIT CHECK (MAX 2)
+# ─────────────────────────────────────────────
+
+MAX_SUBJECTS_PER_TEACHER = 2
+
+def check_teacher_subject_limit_db(
+    cur,
+    teacher_id: int,
+    new_subject: str,
+    exclude_schedule_id: int = None,
+) -> dict | None:
+    """
+    A teacher may only teach at most MAX_SUBJECTS_PER_TEACHER (2) distinct
+    subjects across the entire schedule.
+
+    If adding `new_subject` would exceed that limit, return a dict with:
+        { "current_subjects": ["Math", "Science"] }
+    Otherwise return None (no violation).
+
+    Pass `exclude_schedule_id` when editing an existing schedule so the
+    subject already stored in that row is not double-counted.
+    """
+    if not teacher_id:
+        return None
+
+    query = """
+        SELECT DISTINCT LOWER(TRIM(subject)) AS subject
+        FROM schedules
+        WHERE teacher_id = %s
+          AND subject IS NOT NULL
+          AND TRIM(subject) <> ''
+    """
+    params = [teacher_id]
+
+    if exclude_schedule_id:
+        query += " AND id != %s"
+        params.append(exclude_schedule_id)
+
+    cur.execute(query, params)
+    rows = cur.fetchall()
+
+    existing_subjects_lower = {r["subject"] for r in rows}
+    new_subject_lower = new_subject.strip().lower()
+
+    # If the teacher already teaches this subject, it's fine — no new slot used
+    if new_subject_lower in existing_subjects_lower:
+        return None
+
+    # Adding a brand-new subject — check if the cap would be exceeded
+    if len(existing_subjects_lower) >= MAX_SUBJECTS_PER_TEACHER:
+        # Fetch display-cased names for the error message
+        cur.execute("""
+            SELECT DISTINCT subject
+            FROM schedules
+            WHERE teacher_id = %s
+              AND subject IS NOT NULL
+              AND TRIM(subject) <> ''
+        """ + (" AND id != %s" if exclude_schedule_id else ""),
+        [teacher_id] + ([exclude_schedule_id] if exclude_schedule_id else []))
+
+        display_subjects = sorted({r["subject"] for r in cur.fetchall()})
+        return {"current_subjects": display_subjects}
 
     return None
 
@@ -388,6 +448,21 @@ def bulk_add_schedule():
         teacher_id_int = int(teacher_id) if teacher_id else None
         section_id_int = int(section_id)
 
+        # ── ★ Teacher subject limit check (done once for the whole bulk) ──
+        if teacher_id_int:
+            subject_limit = check_teacher_subject_limit_db(cur, teacher_id_int, subject)
+            if subject_limit:
+                already = ", ".join(
+                    f'"{s}"' for s in subject_limit["current_subjects"]
+                )
+                flash(
+                    f"Cannot assign this teacher to '{subject}'. "
+                    f"A teacher may only handle a maximum of {MAX_SUBJECTS_PER_TEACHER} "
+                    f"distinct subject(s). This teacher already handles: {already}.",
+                    "error",
+                )
+                return redirect(url_for("schedule.schedule"))
+
         days     = request.form.getlist("days[]")
         times    = request.form.getlist("times[]")
         room_ids = request.form.getlist("room_ids[]")
@@ -404,10 +479,7 @@ def bulk_add_schedule():
         row_errors  = []
         valid_rows  = []
 
-        # Keep track of times already validated in this batch
-        # { teacher_id: { day: [(start, end, row_num)] } }
         batch_teacher_times: dict[int, dict[str, list]] = {}
-        # { room_id: { day: [(start, end, row_num)] } }
         batch_room_times: dict[int, dict[str, list]] = {}
 
         for i, (day, time_str, room_id_str) in enumerate(zip(days, times, room_ids), start=1):
@@ -415,12 +487,10 @@ def bulk_add_schedule():
             time_str    = time_str.strip()
             room_id_str = room_id_str.strip()
 
-            # Required fields check
             if not day or not time_str or not room_id_str:
                 row_errors.append(f"Row {i}: Day, Time, and Room are all required.")
                 continue
 
-            # Time format validation
             start_t, end_t, time_err = validate_time_format(time_str)
             if time_err:
                 row_errors.append(f"Row {i} ({day}): {time_err}")
@@ -483,9 +553,8 @@ def bulk_add_schedule():
                 "subject":    subject,
             })
 
-        # ── If any row errors, abort everything ──
         if row_errors:
-            for err in row_errors[:5]:   # show max 5 errors to avoid flooding
+            for err in row_errors[:5]:
                 flash(err, "error")
             if len(row_errors) > 5:
                 flash(f"…and {len(row_errors) - 5} more error(s). Please fix all rows and try again.", "error")
@@ -500,7 +569,6 @@ def bulk_add_schedule():
         skipped  = 0
 
         for row in valid_rows:
-            # Duplicate check
             cur.execute("""
                 SELECT id FROM schedules
                 WHERE day        = %s
@@ -582,7 +650,6 @@ def update_schedule(schedule_id):
         if not room_id_str:
             errors.append("Room is required.")
 
-        # ── Time format validation ──
         start_t, end_t, time_err = validate_time_format(time_str)
         if time_err:
             errors.append(f"Time: {time_err}")
@@ -600,6 +667,24 @@ def update_schedule(schedule_id):
             return redirect(url_for("schedule.schedule"))
 
         teacher_id = int(teacher_id_str) if teacher_id_str else None
+
+        # ── ★ Teacher subject limit check (exclude current schedule's own subject) ──
+        if teacher_id:
+            subject_limit = check_teacher_subject_limit_db(
+                cur, teacher_id, subject,
+                exclude_schedule_id=schedule_id,
+            )
+            if subject_limit:
+                already = ", ".join(
+                    f'"{s}"' for s in subject_limit["current_subjects"]
+                )
+                flash(
+                    f"Cannot assign this teacher to '{subject}'. "
+                    f"A teacher may only handle a maximum of {MAX_SUBJECTS_PER_TEACHER} "
+                    f"distinct subject(s). This teacher already handles: {already}.",
+                    "error",
+                )
+                return redirect(url_for("schedule.schedule"))
 
         # ── Teacher conflict check (excluding current schedule) ──
         if teacher_id:
@@ -700,7 +785,6 @@ def add_room():
 
         room_name = request.form.get("room_name", "").strip()
 
-        # ── Validation ──
         if not room_name:
             flash("Room name is required.", "error")
             return redirect(url_for("schedule.schedule"))
@@ -713,7 +797,6 @@ def add_room():
             flash("Room name must not exceed 60 characters.", "error")
             return redirect(url_for("schedule.schedule"))
 
-        # ── Duplicate check ──
         cur.execute(
             "SELECT id FROM rooms WHERE LOWER(room_name) = LOWER(%s)", (room_name,)
         )
@@ -734,6 +817,7 @@ def add_room():
         if conn: conn.close()
 
     return redirect(url_for("schedule.schedule"))
+
 
 @schedule_bp.route("/schedule/room/delete/<int:room_id>", methods=["POST"])
 @login_required

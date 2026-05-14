@@ -62,6 +62,21 @@
     .student-row.locked label  { cursor: not-allowed; }
     .student-row.locked input  { cursor: not-allowed; pointer-events: none; }
 
+    /* Block badge pill */
+    .block-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: #eff6ff;
+        color: #1d4ed8;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 10px;
+        border-radius: 999px;
+        border: 1px solid #bfdbfe;
+        letter-spacing: 0.04em;
+    }
+
     /* Lock warning modal */
     @keyframes popIn {
         0%   { transform: scale(0.85); opacity: 0; }
@@ -123,6 +138,7 @@
                 <thead class="bg-white border-b">
                     <tr class="table-head text-slate-500 uppercase text-left">
                         <th class="px-6 py-6">Section Name</th>
+                        <th class="px-6 py-6">Block</th>
                         <th class="px-6 py-6">Year Level</th>
                         <th class="px-6 py-6">Teacher</th>
                         <th class="px-6 py-6">Students</th>
@@ -133,7 +149,22 @@
                     {% if sections %}
                         {% for section in sections %}
                             <tr class="border-b last:border-b-0 hover:bg-slate-50 transition">
-                                <td class="px-6 py-6 font-semibold text-slate-800">{{ section.section_name }}</td>
+                                <td class="px-6 py-6 font-semibold text-slate-800">
+                                    {{ section.section_name }}
+                                    {% if section.sub_name %}
+                                        <span class="block-badge ml-1">
+                                            <i class="fa-solid fa-layer-group" style="font-size:9px;"></i>
+                                            {{ section.sub_name }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-6 text-slate-500 text-sm">
+                                    {% if section.sub_name %}
+                                        {{ section.section_name }}-{{ section.sub_name }}
+                                    {% else %}
+                                        <span class="text-slate-300">—</span>
+                                    {% endif %}
+                                </td>
                                 <td class="px-6 py-6 text-slate-600">
                                     {% if section.year_level %}Grade {{ section.year_level }}{% else %}—{% endif %}
                                 </td>
@@ -144,17 +175,17 @@
                                 <td class="px-6 py-6">
                                     <div class="flex items-center justify-center gap-2 flex-wrap">
                                         <button type="button"
-                                                onclick='openAssignModal("{{ section.id }}", "{{ section.section_name|e }}")'
+                                                onclick='openAssignModal("{{ section.id }}", "{{ section.section_name|e }}{% if section.sub_name %}-{{ section.sub_name|e }}{% endif %}")'
                                                 class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-1">
                                             <i class="fa-solid fa-user-plus"></i> Assign Students
                                         </button>
                                         <button type="button"
-                                                onclick='openEditModal("{{ section.id }}", "{{ section.section_name|e }}", "{{ section.year_level if section.year_level else "" }}", "{{ section.teacher_id if section.teacher_id else "" }}")'
+                                                onclick='openEditModal("{{ section.id }}", "{{ section.section_name|e }}", "{{ section.sub_name|e if section.sub_name else "" }}", "{{ section.year_level if section.year_level else "" }}", "{{ section.teacher_id if section.teacher_id else "" }}")'
                                                 class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-full text-sm font-semibold">
                                             <i class="fa-solid fa-pen-to-square mr-1"></i> Edit
                                         </button>
                                         <button type="button"
-                                                onclick='openDeleteModal("{{ section.id }}", "{{ section.section_name|e }}")'
+                                                onclick='openDeleteModal("{{ section.id }}", "{{ section.section_name|e }}{% if section.sub_name %}-{{ section.sub_name|e }}{% endif %}")'
                                                 class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-semibold">
                                             <i class="fa-solid fa-trash mr-1"></i> Delete
                                         </button>
@@ -164,7 +195,7 @@
                         {% endfor %}
                     {% else %}
                         <tr>
-                            <td colspan="5" class="px-6 py-12 text-center text-slate-500">No sections found.</td>
+                            <td colspan="6" class="px-6 py-12 text-center text-slate-500">No sections found.</td>
                         </tr>
                     {% endif %}
                 </tbody>
@@ -186,10 +217,24 @@
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Section Name</label>
                     <input type="text" id="add_section_name" name="section_name"
-                           placeholder="STEM, ABM, HUMSS, GAS" required
+                           placeholder="e.g. STEM, ABM, HUMSS, GAS"
+                           required
                            class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
                     <p id="add_section_name_error" class="error-message"></p>
                 </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">
+                        Block <span class="text-slate-400 font-normal">(optional)</span>
+                    </label>
+                    <input type="text" id="add_sub_name" name="sub_name"
+                           placeholder="e.g. A, B, C, Rizal, Bonifacio"
+                           maxlength="20"
+                           class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
+                    <p class="text-slate-400 text-xs mt-1">Creates <strong>STEM-A</strong>, <strong>STEM-B</strong>, etc.</p>
+                    <p id="add_sub_name_error" class="error-message"></p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Year Level</label>
                     <select name="year_level" id="add_year_level"
@@ -199,19 +244,19 @@
                         <option value="12">Grade 12</option>
                     </select>
                 </div>
-            </div>
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-2">Teacher</label>
-                <select name="teacher_id"
-                        class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">No Teacher</option>
-                    {% for teacher in teachers %}
-                        <option value="{{ teacher.id }}">
-                            {{ teacher.last_name }}, {{ teacher.first_name }}
-                            {% if teacher.middle_name %} {{ teacher.middle_name }}{% endif %}
-                        </option>
-                    {% endfor %}
-                </select>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Teacher</label>
+                    <select name="teacher_id"
+                            class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">No Teacher</option>
+                        {% for teacher in teachers %}
+                            <option value="{{ teacher.id }}">
+                                {{ teacher.last_name }}, {{ teacher.first_name }}
+                                {% if teacher.middle_name %} {{ teacher.middle_name }}{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
             <div class="flex justify-end gap-3 pt-2">
                 <button type="button" onclick="closeAddModal()"
@@ -239,10 +284,24 @@
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Section Name</label>
                     <input type="text" id="edit_section_name" name="section_name"
-                           placeholder="e.g. STEM, ABM, HUMSS, GAS (3-20 letters only)" required
+                           placeholder="e.g. STEM, ABM, HUMSS, GAS (3-20 letters only)"
+                           required
                            class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
                     <p id="edit_section_name_error" class="error-message"></p>
                 </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">
+                        Block <span class="text-slate-400 font-normal">(optional)</span>
+                    </label>
+                    <input type="text" id="edit_sub_name" name="sub_name"
+                           placeholder="e.g. A, B, C, Rizal, Bonifacio"
+                           maxlength="20"
+                           class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
+                    <p class="text-slate-400 text-xs mt-1">Leave blank to remove the block label.</p>
+                    <p id="edit_sub_name_error" class="error-message"></p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Year Level</label>
                     <select name="year_level" id="edit_year_level"
@@ -252,19 +311,19 @@
                         <option value="12">Grade 12</option>
                     </select>
                 </div>
-            </div>
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-2">Teacher</label>
-                <select name="teacher_id" id="edit_teacher_id"
-                        class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">No Teacher</option>
-                    {% for teacher in teachers %}
-                        <option value="{{ teacher.id }}">
-                            {{ teacher.last_name }}, {{ teacher.first_name }}
-                            {% if teacher.middle_name %} {{ teacher.middle_name }}{% endif %}
-                        </option>
-                    {% endfor %}
-                </select>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Teacher</label>
+                    <select name="teacher_id" id="edit_teacher_id"
+                            class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">No Teacher</option>
+                        {% for teacher in teachers %}
+                            <option value="{{ teacher.id }}">
+                                {{ teacher.last_name }}, {{ teacher.first_name }}
+                                {% if teacher.middle_name %} {{ teacher.middle_name }}{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
             <div class="flex justify-end gap-3 pt-2">
                 <button type="button" onclick="closeEditModal()"
@@ -428,43 +487,98 @@
 <script>
     // ─── Validation ───────────────────────────────────────────────
     function isValidSectionName(n) { return /^[A-Za-z]{3,20}$/.test(n); }
+    // Block/sub name: letters, numbers, spaces allowed — 1-20 chars (optional)
+    function isValidSubName(n) { return n === '' || /^[A-Za-z0-9 ]{1,20}$/.test(n); }
 
     function validateAddForm() {
-        const input = document.getElementById('add_section_name');
-        const error = document.getElementById('add_section_name_error');
-        if (!isValidSectionName(input.value.trim())) {
-            error.textContent = "Section name must be 3-20 letters only (no numbers, no spaces)";
-            error.classList.add('show'); return false;
+        let ok = true;
+        const nameInput  = document.getElementById('add_section_name');
+        const nameError  = document.getElementById('add_section_name_error');
+        const subInput   = document.getElementById('add_sub_name');
+        const subError   = document.getElementById('add_sub_name_error');
+
+        if (!isValidSectionName(nameInput.value.trim())) {
+            nameError.textContent = "Section name must be 3-20 letters only (no numbers, no spaces)";
+            nameError.classList.add('show');
+            ok = false;
+        } else {
+            nameError.classList.remove('show');
         }
-        return true;
+
+        if (!isValidSubName(subInput.value.trim())) {
+            subError.textContent = "Block must be 1-20 alphanumeric characters.";
+            subError.classList.add('show');
+            ok = false;
+        } else {
+            subError.classList.remove('show');
+        }
+
+        return ok;
     }
+
     function setupAddValidation() {
-        const input = document.getElementById('add_section_name');
-        const error = document.getElementById('add_section_name_error');
-        input.addEventListener('input', () => {
-            const v = input.value.trim();
-            if (!v) { error.classList.remove('show'); return; }
-            error.textContent = "Section name must be 3-20 letters only (no numbers, no spaces)";
-            isValidSectionName(v) ? error.classList.remove('show') : error.classList.add('show');
+        const nameInput = document.getElementById('add_section_name');
+        const nameError = document.getElementById('add_section_name_error');
+        nameInput.addEventListener('input', () => {
+            const v = nameInput.value.trim();
+            if (!v) { nameError.classList.remove('show'); return; }
+            nameError.textContent = "Section name must be 3-20 letters only (no numbers, no spaces)";
+            isValidSectionName(v) ? nameError.classList.remove('show') : nameError.classList.add('show');
+        });
+
+        const subInput = document.getElementById('add_sub_name');
+        const subError = document.getElementById('add_sub_name_error');
+        subInput.addEventListener('input', () => {
+            const v = subInput.value.trim();
+            if (!v) { subError.classList.remove('show'); return; }
+            subError.textContent = "Block must be 1-20 alphanumeric characters.";
+            isValidSubName(v) ? subError.classList.remove('show') : subError.classList.add('show');
         });
     }
+
     function validateEditForm() {
-        const input = document.getElementById('edit_section_name');
-        const error = document.getElementById('edit_section_name_error');
-        if (!isValidSectionName(input.value.trim())) {
-            error.textContent = "Section name must be 3-20 letters only (no numbers, no spaces)";
-            error.classList.add('show'); return false;
+        let ok = true;
+        const nameInput  = document.getElementById('edit_section_name');
+        const nameError  = document.getElementById('edit_section_name_error');
+        const subInput   = document.getElementById('edit_sub_name');
+        const subError   = document.getElementById('edit_sub_name_error');
+
+        if (!isValidSectionName(nameInput.value.trim())) {
+            nameError.textContent = "Section name must be 3-20 letters only (no numbers, no spaces)";
+            nameError.classList.add('show');
+            ok = false;
+        } else {
+            nameError.classList.remove('show');
         }
-        return true;
+
+        if (!isValidSubName(subInput.value.trim())) {
+            subError.textContent = "Block must be 1-20 alphanumeric characters.";
+            subError.classList.add('show');
+            ok = false;
+        } else {
+            subError.classList.remove('show');
+        }
+
+        return ok;
     }
+
     function setupEditValidation() {
-        const input = document.getElementById('edit_section_name');
-        const error = document.getElementById('edit_section_name_error');
-        input.addEventListener('input', () => {
-            const v = input.value.trim();
-            if (!v) { error.classList.remove('show'); return; }
-            error.textContent = "Section name must be 3-20 letters only (no numbers, no spaces)";
-            isValidSectionName(v) ? error.classList.remove('show') : error.classList.add('show');
+        const nameInput = document.getElementById('edit_section_name');
+        const nameError = document.getElementById('edit_section_name_error');
+        nameInput.addEventListener('input', () => {
+            const v = nameInput.value.trim();
+            if (!v) { nameError.classList.remove('show'); return; }
+            nameError.textContent = "Section name must be 3-20 letters only (no numbers, no spaces)";
+            isValidSectionName(v) ? nameError.classList.remove('show') : nameError.classList.add('show');
+        });
+
+        const subInput = document.getElementById('edit_sub_name');
+        const subError = document.getElementById('edit_sub_name_error');
+        subInput.addEventListener('input', () => {
+            const v = subInput.value.trim();
+            if (!v) { subError.classList.remove('show'); return; }
+            subError.textContent = "Block must be 1-20 alphanumeric characters.";
+            isValidSubName(v) ? subError.classList.remove('show') : subError.classList.add('show');
         });
     }
 
@@ -472,19 +586,23 @@
     function showModal(id)  { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
     function hideModal(id)  { document.getElementById(id).classList.add('hidden');    document.getElementById(id).classList.remove('flex'); }
 
-    function openAddModal()    { showModal('addModal');    document.getElementById('add_section_name_error').classList.remove('show'); }
+    function openAddModal()    { showModal('addModal'); document.getElementById('add_section_name_error').classList.remove('show'); document.getElementById('add_sub_name_error').classList.remove('show'); }
     function closeAddModal()   { hideModal('addModal'); }
     function closeEditModal()  { hideModal('editModal'); }
     function closeDeleteModal(){ hideModal('deleteModal'); }
 
-    function openEditModal(id, sectionName, yearLevel, teacherId) {
+    // openEditModal now receives subName as 3rd argument (shifted from original)
+    function openEditModal(id, sectionName, subName, yearLevel, teacherId) {
         document.getElementById('edit_section_id').value   = id;
         document.getElementById('edit_section_name').value = sectionName;
+        document.getElementById('edit_sub_name').value     = subName    || "";
         document.getElementById('edit_year_level').value   = yearLevel  || "";
         document.getElementById('edit_teacher_id').value   = teacherId  || "";
         showModal('editModal');
         document.getElementById('edit_section_name_error').classList.remove('show');
+        document.getElementById('edit_sub_name_error').classList.remove('show');
     }
+
     function openDeleteModal(id, sectionName) {
         document.getElementById('delete_section_id').value         = id;
         document.getElementById('delete_section_name').textContent = sectionName;
@@ -503,7 +621,6 @@
         const container = document.getElementById('studentsContainer');
         container.innerHTML = '';
 
-        // Available (unlocked) students always on top, locked at the bottom
         const sorted = [...allStudents].sort((a, b) => {
             const aLocked = a.sectionId !== null ? 1 : 0;
             const bLocked = b.sectionId !== null ? 1 : 0;
@@ -541,7 +658,7 @@
                     </label>
                     ${badgeHTML}
                 </div>`;
-        });  // end sorted.forEach
+        });
 
         showModal('assignModal');
         document.getElementById('modalSearchInput').value = '';
@@ -591,12 +708,9 @@
         updateSelectedCount();
     }
 
-    // ─── Submit guard: block any locked student that somehow got checked ──
     function handleAssignSubmit(event) {
         event.preventDefault();
 
-        // Extra safety: detect if a locked student from a DIFFERENT section
-        // was somehow checked (shouldn't happen via UI, but guard anyway)
         const blocked = [];
         document.querySelectorAll('#studentsContainer input[type="checkbox"]:not([disabled]):checked').forEach(cb => {
             const student = allStudents.find(s => s.id === parseInt(cb.value));

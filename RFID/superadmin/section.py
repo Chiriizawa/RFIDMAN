@@ -54,8 +54,9 @@ def section():
             # ─────────────────────────────────────────────
             if action == "add_section":
                 section_name = request.form.get("section_name", "").strip()
-                year_level = request.form.get("year_level", "").strip()
-                teacher_id = request.form.get("teacher_id", "").strip()
+                sub_name     = request.form.get("sub_name", "").strip() or None
+                year_level   = request.form.get("year_level", "").strip()
+                teacher_id   = request.form.get("teacher_id", "").strip()
 
                 if not section_name:
                     flash("Section name is required.", "error")
@@ -65,41 +66,56 @@ def section():
                     flash("Section name must contain only letters (A-Z, a-z), no numbers or spaces, and be 3-20 characters long.", "error")
                     return redirect(url_for("section_bp.section"))
 
+                # Validate sub_name (block) — optional, alphanumeric + spaces, 1-20 chars
+                if sub_name and not re.match(r'^[A-Za-z0-9 ]{1,20}$', sub_name):
+                    flash("Block name must be 1-20 alphanumeric characters.", "error")
+                    return redirect(url_for("section_bp.section"))
+
                 if year_level and year_level not in ["11", "12"]:
                     flash("Year level must be 11 or 12.", "error")
                     return redirect(url_for("section_bp.section"))
 
+                # Duplicate check: same section_name + sub_name + year_level combo
                 cur.execute("""
-                    SELECT id FROM sections 
-                    WHERE LOWER(section_name) = LOWER(%s) 
-                    AND (year_level = %s OR (year_level IS NULL AND %s IS NULL))
-                """, (section_name, year_level if year_level else None, year_level if year_level else None))
+                    SELECT id FROM sections
+                    WHERE LOWER(section_name) = LOWER(%s)
+                      AND (
+                            (sub_name IS NULL AND %s IS NULL)
+                            OR LOWER(COALESCE(sub_name,'')) = LOWER(COALESCE(%s,''))
+                          )
+                      AND (year_level = %s OR (year_level IS NULL AND %s IS NULL))
+                """, (
+                    section_name,
+                    sub_name, sub_name,
+                    year_level if year_level else None,
+                    year_level if year_level else None
+                ))
                 if cur.fetchone():
-                    flash(f'A section named "{section_name}" already exists in Grade {year_level or "—"}.', "error")
+                    label = f"{section_name}-{sub_name}" if sub_name else section_name
+                    flash(f'A section named "{label}" already exists in Grade {year_level or "—"}.', "error")
                     return redirect(url_for("section_bp.section"))
 
-                if teacher_id == "":
-                    teacher_id = None
-                else:
-                    teacher_id = int(teacher_id)
+                teacher_id = int(teacher_id) if teacher_id else None
 
                 cur.execute("""
-                    INSERT INTO sections (section_name, year_level, teacher_id)
-                    VALUES (%s, %s, %s)
-                """, (section_name, year_level if year_level else None, teacher_id))
+                    INSERT INTO sections (section_name, sub_name, year_level, teacher_id)
+                    VALUES (%s, %s, %s, %s)
+                """, (section_name, sub_name, year_level if year_level else None, teacher_id))
                 conn.commit()
 
-                flash("Section added successfully.", "success")
+                label = f"{section_name}-{sub_name}" if sub_name else section_name
+                flash(f'Section "{label}" added successfully.', "success")
                 return redirect(url_for("section_bp.section"))
 
             # ─────────────────────────────────────────────
             # EDIT SECTION
             # ─────────────────────────────────────────────
             elif action == "edit_section":
-                section_id = request.form.get("section_id", "").strip()
+                section_id   = request.form.get("section_id", "").strip()
                 section_name = request.form.get("section_name", "").strip()
-                year_level = request.form.get("year_level", "").strip()
-                teacher_id = request.form.get("teacher_id", "").strip()
+                sub_name     = request.form.get("sub_name", "").strip() or None
+                year_level   = request.form.get("year_level", "").strip()
+                teacher_id   = request.form.get("teacher_id", "").strip()
 
                 if not section_id or not section_name:
                     flash("Section ID and name are required.", "error")
@@ -109,40 +125,56 @@ def section():
                     flash("Section name must contain only letters (A-Z, a-z), no numbers or spaces, and be 3-20 characters long.", "error")
                     return redirect(url_for("section_bp.section"))
 
+                if sub_name and not re.match(r'^[A-Za-z0-9 ]{1,20}$', sub_name):
+                    flash("Block name must be 1-20 alphanumeric characters.", "error")
+                    return redirect(url_for("section_bp.section"))
+
                 if year_level and year_level not in ["11", "12"]:
                     flash("Year level must be 11 or 12.", "error")
                     return redirect(url_for("section_bp.section"))
 
+                # Duplicate check (exclude self)
                 cur.execute("""
-                    SELECT id FROM sections 
-                    WHERE LOWER(section_name) = LOWER(%s) 
-                    AND (year_level = %s OR (year_level IS NULL AND %s IS NULL))
-                    AND id != %s
-                """, (section_name, year_level if year_level else None, year_level if year_level else None, section_id))
+                    SELECT id FROM sections
+                    WHERE LOWER(section_name) = LOWER(%s)
+                      AND (
+                            (sub_name IS NULL AND %s IS NULL)
+                            OR LOWER(COALESCE(sub_name,'')) = LOWER(COALESCE(%s,''))
+                          )
+                      AND (year_level = %s OR (year_level IS NULL AND %s IS NULL))
+                      AND id != %s
+                """, (
+                    section_name,
+                    sub_name, sub_name,
+                    year_level if year_level else None,
+                    year_level if year_level else None,
+                    section_id
+                ))
                 if cur.fetchone():
-                    flash(f'A section named "{section_name}" already exists in Grade {year_level or "—"}.', "error")
+                    label = f"{section_name}-{sub_name}" if sub_name else section_name
+                    flash(f'A section named "{label}" already exists in Grade {year_level or "—"}.', "error")
                     return redirect(url_for("section_bp.section"))
 
-                if teacher_id == "":
-                    teacher_id = None
-                else:
-                    teacher_id = int(teacher_id)
+                teacher_id = int(teacher_id) if teacher_id else None
 
                 cur.execute("""
                     UPDATE sections
                     SET section_name = %s,
-                        year_level = %s,
-                        teacher_id = %s
+                        sub_name     = %s,
+                        year_level   = %s,
+                        teacher_id   = %s
                     WHERE id = %s
                 """, (
                     section_name,
+                    sub_name,
                     year_level if year_level else None,
                     teacher_id,
                     section_id
                 ))
                 conn.commit()
 
-                flash("Section updated successfully.", "success")
+                label = f"{section_name}-{sub_name}" if sub_name else section_name
+                flash(f'Section "{label}" updated successfully.', "success")
                 return redirect(url_for("section_bp.section"))
 
             # ─────────────────────────────────────────────
@@ -163,7 +195,7 @@ def section():
             # ASSIGN STUDENTS — locked students are protected
             # ─────────────────────────────────────────────
             elif action == "assign_students":
-                section_id = request.form.get("section_id", "").strip()
+                section_id  = request.form.get("section_id", "").strip()
                 student_ids = request.form.getlist("student_ids")
 
                 if not section_id:
@@ -171,28 +203,22 @@ def section():
                     return redirect(url_for("section_bp.section"))
 
                 try:
-                    section_id = int(section_id)
+                    section_id   = int(section_id)
                     selected_ids = [int(sid) for sid in student_ids if sid.strip()]
                 except ValueError:
                     flash("Invalid ID format.", "error")
                     return redirect(url_for("section_bp.section"))
 
-                # Fetch students who are already assigned to ANY section (locked — cannot be moved)
                 cur.execute("""
                     SELECT id FROM students
                     WHERE section_id IS NOT NULL
                 """)
                 locked_rows = cur.fetchall()
-                locked_ids = {row["id"] for row in locked_rows}
+                locked_ids  = {row["id"] for row in locked_rows}
 
-                # From the selected list, only process students who are NOT already locked
-                # (i.e. currently unassigned students only)
-                new_assignable = [sid for sid in selected_ids if sid not in locked_ids]
-
-                # Also collect locked students who were submitted but we must ignore/skip
+                new_assignable   = [sid for sid in selected_ids if sid not in locked_ids]
                 attempted_locked = [sid for sid in selected_ids if sid in locked_ids]
 
-                # Only assign students who have no section yet
                 if new_assignable:
                     cur.execute(
                         """
@@ -206,9 +232,7 @@ def section():
 
                 conn.commit()
 
-                # Build feedback message
                 if attempted_locked:
-                    # Look up their names for the flash message
                     cur.execute("""
                         SELECT first_name, last_name FROM students
                         WHERE id = ANY(%s)
@@ -239,6 +263,7 @@ def section():
             SELECT
                 s.id,
                 s.section_name,
+                s.sub_name,
                 s.year_level,
                 s.teacher_id,
                 s.created_at,
@@ -265,19 +290,20 @@ def section():
             query += """
                 WHERE
                     LOWER(COALESCE(s.section_name, '')) LIKE LOWER(%s)
+                    OR LOWER(COALESCE(s.sub_name, ''))  LIKE LOWER(%s)
                     OR LOWER(COALESCE(s.year_level::text, '')) LIKE LOWER(%s)
                     OR LOWER(COALESCE(t.first_name, '')) LIKE LOWER(%s)
                     OR LOWER(COALESCE(t.middle_name, '')) LIKE LOWER(%s)
                     OR LOWER(COALESCE(t.last_name, '')) LIKE LOWER(%s)
             """
             like_search = f"%{search}%"
-            params.extend([like_search] * 5)
+            params.extend([like_search] * 6)
 
         query += """
             GROUP BY
-                s.id, s.section_name, s.year_level, s.teacher_id, s.created_at,
+                s.id, s.section_name, s.sub_name, s.year_level, s.teacher_id, s.created_at,
                 t.id, t.first_name, t.middle_name, t.last_name
-            ORDER BY s.id ASC
+            ORDER BY s.section_name ASC, s.sub_name ASC NULLS LAST
         """
 
         cur.execute(query, params)
@@ -291,14 +317,20 @@ def section():
         teachers = cur.fetchall()
 
         cur.execute("""
-            SELECT 
+            SELECT
                 s.id,
                 s.first_name,
                 s.middle_name,
                 s.last_name,
                 s.section_id,
-                (SELECT section_name FROM sections WHERE id = s.section_id) AS current_section_name
+                CASE
+                    WHEN sec.sub_name IS NOT NULL AND sec.sub_name <> '' THEN
+                        sec.section_name || '-' || sec.sub_name
+                    ELSE
+                        sec.section_name
+                END AS current_section_name
             FROM students s
+            LEFT JOIN sections sec ON sec.id = s.section_id
             ORDER BY s.last_name ASC, s.first_name ASC
         """)
         all_students = cur.fetchall()
