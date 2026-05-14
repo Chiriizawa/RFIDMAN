@@ -181,8 +181,6 @@
 </div>
 
 <!-- ===== ADD STUDENT MODAL ===== -->
-<!-- UID field removed entirely — students are registered without a UID.
-     A UID can be linked later via the RFID card assignment flow.         -->
 <div id="addStudentModal" class="modal-overlay hidden">
   <div class="modal-panel modal-panel-lg animate-fadeIn">
     <div class="modal-header bg-gradient-to-r from-blue-600 to-blue-700">
@@ -249,7 +247,6 @@
             <p class="field-error hidden" id="err_add_email"></p>
           </div>
         </div>
-        <!-- Info note: UID can be linked later -->
         <div class="bg-blue-50 border border-blue-100 rounded-2xl px-5 py-4 flex items-start gap-3 text-xs text-blue-700">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mt-0.5 flex-shrink-0 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -359,6 +356,35 @@
       <button type="button" onclick="closeModal('importStudentModal')" class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors">Cancel</button>
       <button type="button" onclick="runImportFromModal()" class="px-7 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm shadow-sm transition-colors">Import Students</button>
     </div>
+  </div>
+</div>
+
+<!-- ===== IMPORT LOADING OVERLAY ===== -->
+<!-- This overlay is shown while the import fetch request is in progress -->
+<div id="importLoadingOverlay" class="hidden fixed inset-0 z-[2147483647] flex flex-col items-center justify-center bg-gray-900/70 backdrop-blur-sm">
+  <div class="bg-white rounded-3xl shadow-2xl px-10 py-10 flex flex-col items-center gap-6 max-w-sm w-full mx-4">
+    <!-- Animated spinner + icon stack -->
+    <div class="relative flex items-center justify-center w-20 h-20">
+      <svg class="absolute inset-0 w-20 h-20 animate-spin text-emerald-500" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="40" cy="40" r="36" stroke="currentColor" stroke-width="6" stroke-linecap="round"
+          stroke-dasharray="180 45" class="opacity-80"/>
+      </svg>
+      <div class="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+        </svg>
+      </div>
+    </div>
+    <!-- Text -->
+    <div class="text-center">
+      <p class="text-gray-900 font-semibold text-lg">Importing Students…</p>
+      <p id="importLoadingSubtext" class="text-gray-500 text-sm mt-1">Please wait, this may take a moment.</p>
+    </div>
+    <!-- Animated progress bar -->
+    <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+      <div class="import-progress-bar h-2 rounded-full bg-emerald-500"></div>
+    </div>
+    <p class="text-xs text-gray-400">Do not close or refresh the page.</p>
   </div>
 </div>
 
@@ -569,6 +595,25 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
+// ══════════════════════════════════════════════════
+// IMPORT LOADING OVERLAY HELPERS
+// ══════════════════════════════════════════════════
+function showImportLoading(studentCount) {
+  const overlay  = document.getElementById('importLoadingOverlay')
+  const subtext  = document.getElementById('importLoadingSubtext')
+  subtext.textContent = studentCount
+    ? `Importing ${studentCount} student${studentCount !== 1 ? 's' : ''}… please wait.`
+    : 'Please wait, this may take a moment.'
+  overlay.classList.remove('hidden')
+  document.body.style.overflow = 'hidden'
+}
+
+function hideImportLoading() {
+  const overlay = document.getElementById('importLoadingOverlay')
+  overlay.classList.add('hidden')
+  document.body.style.overflow = ''
+}
+
 // ══════════════════════════════════════════════════
 // ALERT / CONFIRM
 // ══════════════════════════════════════════════════
@@ -963,7 +1008,9 @@ async function confirmAndSendImport(students, filename, mode) {
   )
   if (!confirmed) return
 
+  // Close the import modal and show the loading overlay
   closeModal('importStudentModal')
+  showImportLoading(students.length)
 
   try {
     const res  = await fetch('/superadmin/import-excel', {
@@ -972,12 +1019,17 @@ async function confirmAndSendImport(students, filename, mode) {
       body: JSON.stringify({ students })
     })
     const data = await res.json().catch(() => ({}))
+
+    // Always hide loading before showing result
+    hideImportLoading()
+
     if (!res.ok) throw new Error(data.message || 'Import failed.')
     showAlert(data.message || `Successfully imported ${students.length} students!`, 'success', 'Import Complete')
     document.getElementById('alertModal').addEventListener('click', function handler(e) {
       if (e.target.closest('button')) { window.location.reload(); this.removeEventListener('click', handler) }
     })
   } catch (err) {
+    hideImportLoading()
     showAlert(err.message || 'Import failed.', 'error', 'Import Failed')
   }
 }
@@ -1153,7 +1205,7 @@ async function clearAssignSection() {
 // ══════════════════════════════════════════════════
 const PAGE_SIZE = 10
 let _currentPage  = 1
-let _filteredRows = []   // rows visible after the search filter
+let _filteredRows = []
 
 function getAllRows() {
   return Array.from(document.querySelectorAll('#studentsTable tbody tr'))
@@ -1178,7 +1230,6 @@ function renderPage() {
   const start = (_currentPage - 1) * PAGE_SIZE
   const end   = start + PAGE_SIZE
 
-  // Hide all rows, then show only the current-page slice of filtered rows
   allRows.forEach(row => { row.style.display = 'none' })
   _filteredRows.forEach((row, idx) => {
     row.style.display = (idx >= start && idx < end) ? '' : 'none'
@@ -1193,7 +1244,6 @@ function updatePaginationUI(total, totalPages) {
   const buttons = document.getElementById('paginationButtons')
   if (!bar) return
 
-  // Hide bar when there's only one page and no active search query
   const hasSearch = document.getElementById('searchInput').value.trim() !== ''
   bar.style.display = (total === 0 || (totalPages <= 1 && !hasSearch)) ? 'none' : 'flex'
 
@@ -1205,7 +1255,6 @@ function updatePaginationUI(total, totalPages) {
 
   buttons.innerHTML = ''
 
-  // Prev
   const prev = document.createElement('button')
   prev.type = 'button'
   prev.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>`
@@ -1214,7 +1263,6 @@ function updatePaginationUI(total, totalPages) {
   prev.addEventListener('click', () => { if (_currentPage > 1) { _currentPage--; renderPage() } })
   buttons.appendChild(prev)
 
-  // Page number buttons with smart window
   buildPageWindow(_currentPage, totalPages).forEach(p => {
     if (p === '\u2026') {
       const dots = document.createElement('span')
@@ -1232,7 +1280,6 @@ function updatePaginationUI(total, totalPages) {
     buttons.appendChild(btn)
   })
 
-  // Next
   const next = document.createElement('button')
   next.type = 'button'
   next.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>`
@@ -1242,7 +1289,6 @@ function updatePaginationUI(total, totalPages) {
   buttons.appendChild(next)
 }
 
-// Returns array like [1, '…', 4, 5, 6, '…', 12] for smart page window
 function buildPageWindow(current, total) {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
   const pages = []
@@ -1254,7 +1300,6 @@ function buildPageWindow(current, total) {
   return pages
 }
 
-// Public entry point called by the search input's onkeyup
 function filterTable() { applyFilterAndPaginate() }
 
 ALL_MODALS.forEach(id => {
@@ -1267,6 +1312,8 @@ ALL_MODALS.forEach(id => {
 })
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
+    // Don't allow Escape to close anything while import is loading
+    if (!document.getElementById('importLoadingOverlay').classList.contains('hidden')) return
     if (document.getElementById('confirmModal')?.classList.contains('is-open')) resolveConfirm(false)
     else ALL_MODALS.forEach(closeModal)
   }
@@ -1284,7 +1331,6 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.schedule-cell').forEach(el => {
     el.innerHTML = (el.textContent || '\u2014').replace(/,\s*(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/g, '\n$1').trim()
   })
-  // Initialise pagination on load
   applyFilterAndPaginate()
 })
 </script>
@@ -1318,6 +1364,18 @@ document.addEventListener('DOMContentLoaded', function() {
   .modal-close-btn:hover { background: rgba(255,255,255,.3); }
   @keyframes fadeIn { from { opacity: 0; transform: scale(.97) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
   .animate-fadeIn { animation: fadeIn .2s ease-out; }
+
+  /* ── Import loading progress bar animation ── */
+  @keyframes importProgress {
+    0%   { width: 0%;   margin-left: 0%; }
+    30%  { width: 60%;  margin-left: 0%; }
+    70%  { width: 20%;  margin-left: 75%; }
+    100% { width: 0%;   margin-left: 100%; }
+  }
+  .import-progress-bar {
+    animation: importProgress 1.6s ease-in-out infinite;
+  }
+
   @media (max-width: 640px) {
     .modal-overlay { padding: 12px; align-items: stretch; }
     .modal-panel { max-height: calc(100vh - 24px); border-radius: 1.25rem; }

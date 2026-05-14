@@ -5,7 +5,9 @@ from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 import os
 import re
+import secrets
 import smtplib
+from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from werkzeug.security import generate_password_hash
@@ -30,7 +32,7 @@ def login_required(f):
 
 
 # ─────────────────────────────────────────────
-# CONSTANTS & VALIDATION (same style as student validation)
+# CONSTANTS & VALIDATION
 # ─────────────────────────────────────────────
 
 VALID_EXTENSIONS = {'', 'Jr.', 'Sr.', 'II', 'III', 'IV', 'V'}
@@ -54,20 +56,13 @@ def is_valid_email_domain(addr):
     if '@' not in addr:
         return False
     domain = addr.lower().split('@')[-1]
-    # STRICT VALIDATION: Only domains in the ALLOWED_DOMAINS list are accepted
-    # This makes 1234@ggmail.com INVALID
     return domain in ALLOWED_DOMAINS
 
 
 def validate_teacher_fields(last_name, first_name, middle_name, extension,
                             contact_number, email):
-    """
-    Returns a list of error strings. Empty list = all valid.
-    Same validation style as students.
-    """
     errors = []
 
-    # ── Last Name ─────────────────────────────────
     if not last_name:
         errors.append("Last name is required.")
     elif not re.match(r"^[a-zA-ZÀ-ÿ\s'\-]+$", last_name):
@@ -75,7 +70,6 @@ def validate_teacher_fields(last_name, first_name, middle_name, extension,
     elif len(last_name) < 3:
         errors.append("Last name must be at least 3 characters.")
 
-    # ── First Name ────────────────────────────────
     if not first_name:
         errors.append("First name is required.")
     elif not re.match(r"^[a-zA-ZÀ-ÿ\s'\-]+$", first_name):
@@ -83,18 +77,15 @@ def validate_teacher_fields(last_name, first_name, middle_name, extension,
     elif len(first_name) < 3:
         errors.append("First name must be at least 3 characters.")
 
-    # ── Middle Name (optional, min 2 if provided) ─
     if middle_name:
         if not re.match(r"^[a-zA-ZÀ-ÿ\s'\-]+$", middle_name):
             errors.append("Middle name must contain letters only.")
         elif len(middle_name) < 2:
             errors.append("Middle name must be at least 2 characters.")
 
-    # ── Extension ─────────────────────────────────
     if extension and extension not in VALID_EXTENSIONS:
         errors.append("Extension must be one of: Jr., Sr., II, III, IV, V.")
 
-    # ── Contact Number ────────────────────────────
     if not contact_number:
         errors.append("Contact number is required.")
     elif not contact_number.isdigit():
@@ -104,14 +95,16 @@ def validate_teacher_fields(last_name, first_name, middle_name, extension,
     elif not contact_number.startswith('09'):
         errors.append("Contact number must start with 09.")
 
-    # ── Email ─────────────────────────────────────
     if not email:
         errors.append("Email address is required.")
     elif not re.match(r'^[^\s@]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$', email):
         errors.append("Please enter a valid email address.")
     elif not is_valid_email_domain(email):
         domain_part = email.split('@')[-1] if '@' in email else ''
-        errors.append(f'"{domain_part}" is not an accepted email domain. Use Gmail, Yahoo, Outlook, iCloud, or a valid school/government email.')
+        errors.append(
+            f'"{domain_part}" is not an accepted email domain. '
+            f'Use Gmail, Yahoo, Outlook, iCloud, or a valid school/government email.'
+        )
 
     return errors
 
@@ -121,25 +114,23 @@ def validate_teacher_fields(last_name, first_name, middle_name, extension,
 # ─────────────────────────────────────────────
 
 def get_db_connection():
-    from dotenv import load_dotenv
-    import psycopg2
-
     load_dotenv()
-
     database_url = os.getenv("DATABASE_URL")
-
     print("🔥 USING DB URL:", database_url)
-
     if not database_url:
         raise Exception("❌ DATABASE_URL missing")
-
-    return psycopg2.connect(
-        database_url.strip(),
-        sslmode="require"
-    )
+    return psycopg2.connect(database_url.strip(), sslmode="require")
 
 
-def send_teacher_create_password_email(to_email, first_name, last_name, reset_link):
+# ─────────────────────────────────────────────
+# EMAIL FUNCTION - SENT WHEN TEACHER IS ADDED
+# ─────────────────────────────────────────────
+
+def send_teacher_invitation_email(to_email, first_name, last_name, reset_link):
+    """
+    Sends an email invitation to the teacher with a password setup link
+    This is triggered automatically when a teacher is added
+    """
     mail_host = os.getenv("MAIL_HOST")
     mail_port = int(os.getenv("MAIL_PORT", 587))
     mail_username = os.getenv("MAIL_USERNAME")
@@ -147,42 +138,150 @@ def send_teacher_create_password_email(to_email, first_name, last_name, reset_li
     mail_from = os.getenv("MAIL_FROM", mail_username)
 
     if not mail_host or not mail_username or not mail_password:
-        raise Exception("Mail configuration is missing in .env")
+        print("⚠️ Warning: Mail configuration is missing in .env")
+        raise Exception("Mail configuration is missing. Please check your .env file.")
 
-    subject = "Create Your Teacher Account Password"
+    subject = "🎓 Create Your Teacher Account Password"
 
     body = f"""
+    <!DOCTYPE html>
     <html>
-    <body style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,sans-serif;">
-        <div style="max-width:600px;margin:40px auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.08);">
-            <div style="background:linear-gradient(90deg,#2563eb,#1d4ed8);padding:24px 32px;">
-                <h2 style="margin:0;color:#ffffff;">Teacher Account Created</h2>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Create Your Teacher Password</title>
+        <style>
+            body {{
+                margin: 0;
+                padding: 0;
+                background: #f4f7fb;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            }}
+            .container {{
+                max-width: 560px;
+                margin: 40px auto;
+                background: #ffffff;
+                border-radius: 20px;
+                overflow: hidden;
+                box-shadow: 0 20px 35px -10px rgba(0,0,0,0.1);
+            }}
+            .header {{
+                background: linear-gradient(135deg, #2563eb, #1e40af);
+                padding: 40px 32px;
+                text-align: center;
+            }}
+            .header h1 {{
+                margin: 0;
+                color: #ffffff;
+                font-size: 28px;
+                font-weight: 700;
+            }}
+            .header p {{
+                margin: 10px 0 0;
+                color: #bfdbfe;
+                font-size: 15px;
+            }}
+            .content {{
+                padding: 40px 32px;
+            }}
+            .greeting {{
+                font-size: 16px;
+                color: #1f2937;
+                margin-bottom: 20px;
+                line-height: 1.6;
+            }}
+            .info-box {{
+                background: #eff6ff;
+                border-left: 4px solid #2563eb;
+                padding: 16px 20px;
+                margin: 24px 0;
+                border-radius: 8px;
+            }}
+            .info-box p {{
+                margin: 0;
+                color: #1e40af;
+                font-size: 14px;
+            }}
+            .button {{
+                display: inline-block;
+                background: linear-gradient(135deg, #2563eb, #1e40af);
+                color: white;
+                text-decoration: none;
+                padding: 14px 32px;
+                font-size: 16px;
+                font-weight: 600;
+                border-radius: 12px;
+                margin: 24px 0;
+                transition: transform 0.2s, box-shadow 0.2s;
+            }}
+            .button:hover {{
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px -5px rgba(37,99,235,0.3);
+            }}
+            .expiry-note {{
+                background: #fef3c7;
+                border: 1px solid #fde68a;
+                border-radius: 12px;
+                padding: 14px 18px;
+                margin-top: 24px;
+                font-size: 13px;
+                color: #92400e;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }}
+            .footer {{
+                background: #f9fafb;
+                border-top: 1px solid #e5e7eb;
+                padding: 24px 32px;
+                text-align: center;
+            }}
+            .footer p {{
+                margin: 0;
+                font-size: 12px;
+                color: #9ca3af;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🎓 Teacher Account Setup</h1>
+                <p>Complete your registration</p>
             </div>
-
-            <div style="padding:32px;">
-                <p style="font-size:16px;color:#1f2937;margin-top:0;">
-                    Hello <strong>{first_name} {last_name}</strong>,
-                </p>
-
-                <p style="font-size:15px;color:#4b5563;line-height:1.7;">
-                    Your teacher account has been created successfully.
-                    Click the button below to create your password.
-                </p>
-
-                <div style="margin:32px 0;text-align:center;">
-                    <a href="{reset_link}"
-                       style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:10px;font-weight:bold;font-size:15px;">
-                       Create Password
-                    </a>
+            
+            <div class="content">
+                <div class="greeting">
+                    <strong>Hello {first_name} {last_name},</strong>
                 </div>
-
-                <p style="font-size:14px;color:#6b7280;line-height:1.6;">
-                    If the button does not work, copy and paste this link into your browser:
+                
+                <p style="color: #4b5563; line-height: 1.6; margin-bottom: 24px;">
+                    Your teacher account has been successfully created in our school management system. 
+                    Please click the button below to set up your password and activate your account.
                 </p>
-
-                <p style="font-size:13px;color:#2563eb;word-break:break-all;">
-                    {reset_link}
+                
+                <div class="info-box">
+                    <p>🔐 This link is valid for <strong>24 hours</strong> from the time this email was sent.</p>
+                </div>
+                
+                <div style="text-align: center;">
+                    <a href="{reset_link}" class="button">Create My Password →</a>
+                </div>
+                
+                <p style="font-size: 13px; color: #6b7280; text-align: center; margin-top: 20px;">
+                    Or copy and paste this link into your browser:<br>
+                    <span style="color: #2563eb; word-break: break-all;">{reset_link}</span>
                 </p>
+                
+                <div class="expiry-note">
+                    <span style="font-size: 20px;">⏰</span>
+                    <span><strong>Link expires in 24 hours.</strong> If expired, please contact your school administrator to send a new link.</span>
+                </div>
+            </div>
+            
+            <div class="footer">
+                <p>This is an automated message from your school management system.</p>
+                <p>If you didn't request this, please ignore this email.</p>
             </div>
         </div>
     </body>
@@ -195,40 +294,39 @@ def send_teacher_create_password_email(to_email, first_name, last_name, reset_li
     msg["Subject"] = subject
     msg.attach(MIMEText(body, "html"))
 
-    with smtplib.SMTP(mail_host, mail_port) as server:
-        server.starttls()
-        server.login(mail_username, mail_password)
-        server.sendmail(mail_from, to_email, msg.as_string())
+    try:
+        with smtplib.SMTP(mail_host, mail_port) as server:
+            server.starttls()
+            server.login(mail_username, mail_password)
+            server.sendmail(mail_from, to_email, msg.as_string())
+        print(f"✅ Email sent successfully to {to_email}")
+        return True
+    except Exception as e:
+        print(f"❌ Failed to send email: {str(e)}")
+        raise e
 
+
+# ─────────────────────────────────────────────
+# ROUTES
+# ─────────────────────────────────────────────
 
 @teacher_bp.route("/teachers", methods=["GET"])
 @login_required
 def teachers():
     teachers_list = []
-    conn = None
-    cur = None
-
+    conn = cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-
         cur.execute("""
-            SELECT id,
-                   last_name,
-                   first_name,
-                   middle_name,
-                   extension,
-                   contact_number,
-                   email,
-                   created_at
+            SELECT id, last_name, first_name, middle_name,
+                   extension, contact_number, email, created_at
             FROM teachers
             ORDER BY id DESC
         """)
         teachers_list = cur.fetchall()
-
     except Exception as e:
         flash(f"Database error: {str(e)}", "error")
-
     finally:
         if cur:
             cur.close()
@@ -241,21 +339,14 @@ def teachers():
 @teacher_bp.route("/teachers/<int:teacher_id>/students", methods=["GET"])
 @login_required
 def view_teacher_students(teacher_id):
-    conn = None
-    cur = None
-
+    conn = cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute("""
-            SELECT id,
-                last_name,
-                first_name,
-                middle_name,
-                extension
-            FROM teachers
-            WHERE id = %s
+            SELECT id, last_name, first_name, middle_name, extension
+            FROM teachers WHERE id = %s
         """, (teacher_id,))
         teacher = cur.fetchone()
 
@@ -268,37 +359,25 @@ def view_teacher_students(teacher_id):
             }), 404
 
         cur.execute("""
-            SELECT s.id,
-                   s.last_name,
-                   s.first_name,
-                   s.middle_name,
-                   s.extension,
-                   sec.section_name,
-                   sec.year_level
+            SELECT s.id, s.last_name, s.first_name, s.middle_name, s.extension,
+                   sec.section_name, sec.year_level
             FROM students s
             INNER JOIN sections sec ON sec.id = s.section_id
             WHERE sec.teacher_id = %s
-            ORDER BY sec.year_level ASC,
-                     sec.section_name ASC,
-                     s.last_name ASC,
-                     s.first_name ASC
+            ORDER BY sec.year_level ASC, sec.section_name ASC,
+                     s.last_name ASC, s.first_name ASC
         """, (teacher_id,))
         students = cur.fetchall()
 
         teacher_name = f"{teacher['last_name']}, {teacher['first_name']}"
-
         if teacher["middle_name"]:
             teacher_name += f" {teacher['middle_name']}"
-
         if teacher["extension"]:
             teacher_name += f" {teacher['extension']}"
 
         return jsonify({
             "success": True,
-            "teacher": {
-                "id": teacher["id"],
-                "name": teacher_name
-            },
+            "teacher": {"id": teacher["id"], "name": teacher_name},
             "students": students
         })
 
@@ -309,7 +388,6 @@ def view_teacher_students(teacher_id):
             "teacher": None,
             "students": []
         }), 500
-
     finally:
         if cur:
             cur.close()
@@ -327,48 +405,43 @@ def add_teacher():
     contact_number = request.form.get("contact_number", "").strip()
     email = request.form.get("email", "").strip()
 
-    # New validation (same style as students)
     errors = validate_teacher_fields(
-        last_name, first_name, middle_name, extension,
-        contact_number, email
+        last_name, first_name, middle_name, extension, contact_number, email
     )
     if errors:
         for err in errors:
             flash(err, "error")
         return redirect(url_for("teacher_bp.teachers"))
 
-    conn = None
-    cur = None
-
+    conn = cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        # Duplicate email check
+        try:
+            cur.execute("""
+                ALTER TABLE teacher_accounts 
+                ALTER COLUMN password DROP NOT NULL
+            """)
+            conn.commit()
+        except Exception as alter_error:
+            print(f"Note: {alter_error}")
+            conn.rollback()
+
         cur.execute("SELECT id FROM teachers WHERE email = %s", (email,))
         if cur.fetchone():
-            cur.close()
-            conn.close()
             flash("This email is already registered.", "error")
             return redirect(url_for("teacher_bp.teachers"))
 
-        # Duplicate contact number check
         cur.execute("SELECT id FROM teachers WHERE contact_number = %s", (contact_number,))
         if cur.fetchone():
-            cur.close()
-            conn.close()
             flash("This contact number is already registered.", "error")
             return redirect(url_for("teacher_bp.teachers"))
 
-        # INSERT (teacher_id removed as it was not present in the form)
         cur.execute("""
             INSERT INTO teachers (
-                last_name,
-                first_name,
-                middle_name,
-                extension,
-                contact_number,
-                email
+                last_name, first_name, middle_name,
+                extension, contact_number, email
             )
             VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING id
@@ -380,15 +453,71 @@ def add_teacher():
             contact_number,
             email
         ))
+        teacher_id = cur.fetchone()["id"]
+
+        token = secrets.token_urlsafe(48)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=1)
+
+        cur.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'teacher_accounts' 
+            AND column_name IN ('reset_token', 'token_expires_at')
+        """)
+        existing_columns = [row['column_name'] for row in cur.fetchall()]
+
+        if 'reset_token' not in existing_columns:
+            cur.execute("ALTER TABLE teacher_accounts ADD COLUMN reset_token TEXT")
+        if 'token_expires_at' not in existing_columns:
+            cur.execute("ALTER TABLE teacher_accounts ADD COLUMN token_expires_at TIMESTAMP WITH TIME ZONE")
 
         conn.commit()
-        flash("Teacher added successfully.", "success")
+
+        cur.execute("SELECT id FROM teacher_accounts WHERE teacher_id = %s", (teacher_id,))
+        existing = cur.fetchone()
+
+        if existing:
+            cur.execute("""
+                UPDATE teacher_accounts
+                SET email = %s,
+                    reset_token = %s,
+                    token_expires_at = %s
+                WHERE teacher_id = %s
+            """, (email, token, expires_at, teacher_id))
+        else:
+            cur.execute("""
+                INSERT INTO teacher_accounts (teacher_id, email, reset_token, token_expires_at)
+                VALUES (%s, %s, %s, %s)
+            """, (teacher_id, email, token, expires_at))
+
+        conn.commit()
+
+        base_url = os.getenv("BASE_URL", request.host_url.rstrip("/"))
+        reset_link = base_url + url_for("teacher_bp.create_password", token=token)
+        
+        try:
+            send_teacher_invitation_email(
+                to_email=email,
+                first_name=first_name,
+                last_name=last_name,
+                reset_link=reset_link
+            )
+            flash(
+                f"✅ Teacher added successfully! A password setup link has been sent to {email} (valid for 24 hours).",
+                "success"
+            )
+        except Exception as mail_err:
+            flash(
+                f"⚠️ Teacher added successfully, but the invitation email could not be sent. Error: {str(mail_err)}",
+                "warning"
+            )
+            print(f"Email sending failed: {str(mail_err)}")
 
     except Exception as e:
         if conn:
             conn.rollback()
         flash(f"Error adding teacher: {str(e)}", "error")
-
+        print(f"Teacher addition failed: {str(e)}")
     finally:
         if cur:
             cur.close()
@@ -400,66 +529,101 @@ def add_teacher():
 
 @teacher_bp.route("/create-password/<token>", methods=["GET", "POST"])
 def create_password(token):
-    # NOTE: No @login_required here — teachers need this without being logged in
-    conn = None
-    cur = None
-
+    """Handles password creation and redirects to index on success"""
+    conn = cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
+        try:
+            cur.execute("""
+                ALTER TABLE teacher_accounts 
+                ALTER COLUMN password DROP NOT NULL
+            """)
+            conn.commit()
+        except:
+            conn.rollback()
+
         cur.execute("""
-            SELECT id, email, reset_token
-            FROM teacher_accounts
-            WHERE reset_token = %s
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'teacher_accounts' 
+            AND column_name IN ('reset_token', 'token_expires_at')
+        """)
+        existing_columns = [row['column_name'] for row in cur.fetchall()]
+
+        if 'reset_token' not in existing_columns:
+            cur.execute("ALTER TABLE teacher_accounts ADD COLUMN reset_token TEXT")
+        if 'token_expires_at' not in existing_columns:
+            cur.execute("ALTER TABLE teacher_accounts ADD COLUMN token_expires_at TIMESTAMP WITH TIME ZONE")
+        conn.commit()
+
+        cur.execute("""
+            SELECT ta.id, ta.email, ta.reset_token, ta.token_expires_at,
+                   t.first_name, t.last_name
+            FROM teacher_accounts ta
+            JOIN teachers t ON t.id = ta.teacher_id
+            WHERE ta.reset_token = %s
         """, (token,))
         account = cur.fetchone()
 
         if not account:
-            flash("Invalid or expired password link.", "error")
-            return render_template("superadmin/create_password.html", token=token)
+            flash("This password link is invalid or has already been used.", "error")
+            return redirect(url_for("teacher_bp.teachers"))
+
+        expires_at = account.get("token_expires_at")
+        if expires_at and expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+        if not expires_at or datetime.now(timezone.utc) > expires_at:
+            flash("This password link has expired (valid for 24 hours). Please contact your administrator for a new link.", "error")
+            return redirect(url_for("teacher_bp.teachers"))
 
         if request.method == "POST":
             password = request.form.get("password", "").strip()
-            confirm_password = request.form.get("confirm_password", "").strip()
+            confirm = request.form.get("confirm_password", "").strip()
 
-            if not password or not confirm_password:
-                flash("Password and Confirm Password are required.", "error")
-                return render_template("superadmin/create_password.html", token=token)
+            if not password or not confirm:
+                flash("Password and confirmation are required.", "error")
+                return redirect(url_for("teacher_bp.create_password", token=token))
 
-            if password != confirm_password:
+            if password != confirm:
                 flash("Passwords do not match.", "error")
-                return render_template("superadmin/create_password.html", token=token)
+                return redirect(url_for("teacher_bp.create_password", token=token))
 
             if len(password) < 6:
                 flash("Password must be at least 6 characters.", "error")
-                return render_template("superadmin/create_password.html", token=token)
+                return redirect(url_for("teacher_bp.create_password", token=token))
 
             hashed_password = generate_password_hash(password)
-
             cur.execute("""
                 UPDATE teacher_accounts
                 SET password = %s,
-                    reset_token = NULL
+                    reset_token = NULL,
+                    token_expires_at = NULL
                 WHERE id = %s
             """, (hashed_password, account["id"]))
-
             conn.commit()
-            flash("Password created successfully. You can now log in.", "success")
+
+            # Success - redirect to index page
+            flash(f"✅ Password created successfully! Welcome {account['first_name']} {account['last_name']}! You can now log in.", "success")
             return redirect(url_for("teacher_bp.teachers"))
+
+        return render_template("superadmin/create_password.html",
+                             token=token,
+                             teacher_name=f"{account['first_name']} {account['last_name']}",
+                             email=account['email'])
 
     except Exception as e:
         if conn:
             conn.rollback()
         flash(f"Error: {str(e)}", "error")
-
+        return redirect(url_for("teacher_bp.teachers"))
     finally:
         if cur:
             cur.close()
         if conn:
             conn.close()
-
-    return render_template("superadmin/create_password.html", token=token)
 
 
 @teacher_bp.route("/teachers/test-email")
@@ -468,20 +632,22 @@ def test_email():
     test_to = request.args.get("email", "").strip()
 
     if not test_to:
-        flash("Please provide an email in the URL. Example: /teachers/test-email?email=your@email.com", "error")
+        flash("Please provide an email: /teachers/test-email?email=teacher@example.com", "error")
         return redirect(url_for("teacher_bp.teachers"))
 
-    sample_link = request.host_url.rstrip("/") + "/create-password/sample-token"
+    test_token = secrets.token_urlsafe(48)
+    base_url = os.getenv("BASE_URL", request.host_url.rstrip("/"))
+    sample_link = base_url + url_for("teacher_bp.create_password", token=test_token)
 
     try:
-        send_teacher_create_password_email(
+        send_teacher_invitation_email(
             to_email=test_to,
             first_name="Test",
             last_name="Teacher",
             reset_link=sample_link
         )
-        flash(f"Test email sent successfully to {test_to}", "success")
+        flash(f"✅ Test email sent successfully to {test_to}! Your SMTP is working correctly.", "success")
     except Exception as e:
-        flash(f"Failed to send test email: {str(e)}", "error")
+        flash(f"❌ Failed to send test email: {str(e)}. Please check your SMTP settings in .env", "error")
 
     return redirect(url_for("teacher_bp.teachers"))

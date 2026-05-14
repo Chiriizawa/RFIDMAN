@@ -75,25 +75,48 @@ def section():
                     flash("Year level must be 11 or 12.", "error")
                     return redirect(url_for("section_bp.section"))
 
-                # Duplicate check: same section_name + sub_name + year_level combo
+                # ── Duplicate check: same section_name + sub_name + year_level ──
                 cur.execute("""
                     SELECT id FROM sections
                     WHERE LOWER(section_name) = LOWER(%s)
+                      AND LOWER(COALESCE(sub_name, '')) = LOWER(COALESCE(%s, ''))
                       AND (
-                            (sub_name IS NULL AND %s IS NULL)
-                            OR LOWER(COALESCE(sub_name,'')) = LOWER(COALESCE(%s,''))
+                            (%s IS NULL AND year_level IS NULL)
+                            OR year_level = %s
                           )
-                      AND (year_level = %s OR (year_level IS NULL AND %s IS NULL))
                 """, (
                     section_name,
-                    sub_name, sub_name,
+                    sub_name,
                     year_level if year_level else None,
-                    year_level if year_level else None
+                    year_level if year_level else None,
                 ))
                 if cur.fetchone():
                     label = f"{section_name}-{sub_name}" if sub_name else section_name
                     flash(f'A section named "{label}" already exists in Grade {year_level or "—"}.', "error")
                     return redirect(url_for("section_bp.section"))
+
+                # ── Teacher uniqueness check ──
+                if teacher_id:
+                    cur.execute("""
+                        SELECT s.id, s.section_name, s.sub_name,
+                               CONCAT(t.last_name, ', ', t.first_name) AS teacher_name
+                        FROM sections s
+                        JOIN teachers t ON t.id = s.teacher_id
+                        WHERE s.teacher_id = %s
+                    """, (teacher_id,))
+                    existing = cur.fetchone()
+                    if existing:
+                        existing_label = (
+                            f"{existing['section_name']}-{existing['sub_name']}"
+                            if existing['sub_name']
+                            else existing['section_name']
+                        )
+                        flash(
+                            f'Teacher "{existing["teacher_name"]}" is already assigned to section '
+                            f'"{existing_label}". Each teacher can only handle one section.',
+                            "error"
+                        )
+                        return redirect(url_for("section_bp.section"))
 
                 teacher_id = int(teacher_id) if teacher_id else None
 
@@ -133,19 +156,19 @@ def section():
                     flash("Year level must be 11 or 12.", "error")
                     return redirect(url_for("section_bp.section"))
 
-                # Duplicate check (exclude self)
+                # ── Duplicate check (exclude self) ──
                 cur.execute("""
                     SELECT id FROM sections
                     WHERE LOWER(section_name) = LOWER(%s)
+                      AND LOWER(COALESCE(sub_name, '')) = LOWER(COALESCE(%s, ''))
                       AND (
-                            (sub_name IS NULL AND %s IS NULL)
-                            OR LOWER(COALESCE(sub_name,'')) = LOWER(COALESCE(%s,''))
+                            (%s IS NULL AND year_level IS NULL)
+                            OR year_level = %s
                           )
-                      AND (year_level = %s OR (year_level IS NULL AND %s IS NULL))
                       AND id != %s
                 """, (
                     section_name,
-                    sub_name, sub_name,
+                    sub_name,
                     year_level if year_level else None,
                     year_level if year_level else None,
                     section_id
@@ -154,6 +177,30 @@ def section():
                     label = f"{section_name}-{sub_name}" if sub_name else section_name
                     flash(f'A section named "{label}" already exists in Grade {year_level or "—"}.', "error")
                     return redirect(url_for("section_bp.section"))
+
+                # ── Teacher uniqueness check (exclude self) ──
+                if teacher_id:
+                    cur.execute("""
+                        SELECT s.id, s.section_name, s.sub_name,
+                               CONCAT(t.last_name, ', ', t.first_name) AS teacher_name
+                        FROM sections s
+                        JOIN teachers t ON t.id = s.teacher_id
+                        WHERE s.teacher_id = %s
+                          AND s.id != %s
+                    """, (teacher_id, section_id))
+                    existing = cur.fetchone()
+                    if existing:
+                        existing_label = (
+                            f"{existing['section_name']}-{existing['sub_name']}"
+                            if existing['sub_name']
+                            else existing['section_name']
+                        )
+                        flash(
+                            f'Teacher "{existing["teacher_name"]}" is already assigned to section '
+                            f'"{existing_label}". Each teacher can only handle one section.',
+                            "error"
+                        )
+                        return redirect(url_for("section_bp.section"))
 
                 teacher_id = int(teacher_id) if teacher_id else None
 
@@ -316,6 +363,14 @@ def section():
         """)
         teachers = cur.fetchall()
 
+        # Fetch teacher IDs already assigned to a section
+        # so the frontend can mark those options as unavailable
+        cur.execute("""
+            SELECT teacher_id FROM sections
+            WHERE teacher_id IS NOT NULL
+        """)
+        assigned_teacher_ids = {row["teacher_id"] for row in cur.fetchall()}
+
         cur.execute("""
             SELECT
                 s.id,
@@ -341,6 +396,7 @@ def section():
             "superadmin/section.html",
             sections=sections,
             teachers=teachers,
+            assigned_teacher_ids=list(assigned_teacher_ids),
             all_students=all_students,
             total_sections=total_sections,
             search=search
@@ -352,7 +408,8 @@ def section():
         flash(f"Database error: {str(e)}", "error")
         return render_template(
             "superadmin/section.html",
-            sections=[], teachers=[], all_students=[], total_sections=0, search=""
+            sections=[], teachers=[], assigned_teacher_ids=[],
+            all_students=[], total_sections=0, search=""
         )
 
     finally:
