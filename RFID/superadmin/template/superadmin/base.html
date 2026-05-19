@@ -21,7 +21,7 @@
 
         .nav-tab {
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            color: rgba(255, 255, 255, 0.85);
+            color: rgba(255, 255, 255, 0.75);
         }
 
         .nav-tab.active {
@@ -32,6 +32,28 @@
         .nav-tab:hover:not(.active) {
             background-color: rgba(255, 255, 255, 0.12);
             color: #ffffff;
+        }
+
+        /* Section label inside nav */
+        .nav-section-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.35);
+            padding: 10px 16px 4px;
+        }
+
+        /* Notification badge */
+        .nav-badge {
+            margin-left: auto;
+            background-color: #f97316;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 1px 7px;
+            border-radius: 999px;
+            line-height: 1.6;
         }
 
         body {
@@ -66,6 +88,19 @@
             position: relative;
             z-index: 1;
         }
+
+        /* Scrollbar inside sidebar */
+        aside::-webkit-scrollbar { width: 4px; }
+        aside::-webkit-scrollbar-track { background: transparent; }
+        aside::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+        /* Hide scrollbar on main content */
+        main::-webkit-scrollbar { display: none; }
+        main { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Hide scrollbar on body/html too */
+        html::-webkit-scrollbar { display: none; }
+        html { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 
@@ -77,134 +112,169 @@
         <aside class="header-gradient fixed left-0 top-0 h-screen w-72 text-white shadow-2xl z-50 flex flex-col">
 
             <!-- LOGO -->
-            <div class="px-6 py-6 border-b border-white/20">
-                <div class="flex items-center gap-x-3">
-                    <div class="w-14 h-14 bg-white rounded-xl flex items-center justify-center overflow-hidden shadow border border-white/40">
+            <div class="px-5 py-5 border-b border-white/20">
+                <div class="flex flex-col items-center text-center gap-y-3">
+                    <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center overflow-hidden shadow-lg border border-white/40 flex-shrink-0">
                         <img src="{{ url_for('static', filename='images/cropted.png') }}"
                              alt="School Logo"
                              class="w-full h-full object-cover">
                     </div>
-
                     <div>
-                        <h1 class="text-3xl font-semibold tracking-[-0.5px] leading-none">DMRMINHS</h1>
+                        <h1 class="text-sm font-bold leading-snug tracking-tight">Don Manuel Rivera Memorial Integrated National High School</h1>
+                        <p class="text-xs mt-1.5 font-medium" style="color: rgba(255,255,255,0.45);">Attendance System</p>
                     </div>
                 </div>
             </div>
 
             <!-- NAVIGATION -->
-            <nav class="flex-1 px-4 py-5 space-y-2 overflow-y-auto">
+            <nav class="flex-1 px-3 py-3 overflow-y-auto">
+
+                <!-- Overview group -->
+                <p class="nav-section-label">Overview</p>
 
                 <a href="{{ url_for('sadmin.index') }}"
-                   class="nav-tab {% if request.endpoint == 'sadmin.index' %}active{% endif %} flex items-center gap-x-3 px-4 py-3 rounded-2xl text-sm font-semibold">
-                    <i class="fa-solid fa-gauge w-5 text-center"></i>
+                   class="nav-tab {% if request.endpoint == 'sadmin.index' %}active{% endif %} flex items-center gap-x-3 px-4 py-2.5 rounded-xl text-sm font-medium mb-0.5">
+                    <i class="fa-solid fa-gauge w-4 text-center text-sm"></i>
                     <span>Dashboard</span>
                 </a>
 
+                <!-- Management group -->
+                <p class="nav-section-label mt-1">Management</p>
+
                 <a href="{{ url_for('sadmin.attendance') }}"
-                   class="nav-tab {% if request.endpoint == 'sadmin.attendance' %}active{% endif %} flex items-center gap-x-3 px-4 py-3 rounded-2xl text-sm font-semibold">
-                    <i class="fa-solid fa-layer-group w-5 text-center"></i>
+                   class="nav-tab {% if request.endpoint == 'sadmin.attendance' %}active{% endif %} flex items-center gap-x-3 px-4 py-2.5 rounded-xl text-sm font-medium mb-0.5">
+                    <i class="fa-solid fa-calendar-check w-4 text-center text-sm"></i>
                     <span>Attendance</span>
+                    {# Optional: show badge when there are alerts — replace 0 with your context var #}
+                    {# {% if attendance_alerts > 0 %}<span class="nav-badge">{{ attendance_alerts }}</span>{% endif %} #}
                 </a>
 
                 <a href="{{ url_for('sadmin.uid') }}"
-                   class="nav-tab {% if request.endpoint == 'sadmin.uid' %}active{% endif %} flex items-center gap-x-3 px-4 py-3 rounded-2xl text-sm font-semibold">
-                    <i class="fa-solid fa-id-card w-5 text-center"></i>
-                    <span>UID</span>
+                   class="nav-tab {% if request.endpoint == 'sadmin.uid' %}active{% endif %} flex items-center gap-x-3 px-4 py-2.5 rounded-xl text-sm font-medium mb-0.5">
+                    <i class="fa-solid fa-id-card w-4 text-center text-sm"></i>
+                    <span>UID / RFID</span>
                 </a>
 
                 <a href="{{ url_for('section_bp.section') }}"
-                   class="nav-tab {% if request.endpoint == 'section_bp.section' %}active{% endif %} flex items-center gap-x-3 px-4 py-3 rounded-2xl text-sm font-semibold">
-                    <i class="fa-solid fa-table-cells-large w-5 text-center"></i>
-                    <span>Section</span>
+                   class="nav-tab {% if request.endpoint == 'section_bp.section' %}active{% endif %} flex items-center gap-x-3 px-4 py-2.5 rounded-xl text-sm font-medium mb-0.5">
+                    <i class="fa-solid fa-table-cells-large w-4 text-center text-sm"></i>
+                    <span>Sections</span>
                 </a>
-                
+
                 <a href="{{ url_for('schedule.schedule') }}"
-                   class="nav-tab {% if request.endpoint == 'schedule.schedule' %}active{% endif %} flex items-center gap-x-3 px-4 py-3 rounded-2xl text-sm font-semibold">
-                    <i class="fa-solid fa-calendar-days w-5 text-center"></i>
+                   class="nav-tab {% if request.endpoint == 'schedule.schedule' %}active{% endif %} flex items-center gap-x-3 px-4 py-2.5 rounded-xl text-sm font-medium mb-0.5">
+                    <i class="fa-solid fa-calendar-days w-4 text-center text-sm"></i>
                     <span>Schedule</span>
                 </a>
 
                 <a href="{{ url_for('sregister.student') }}"
-                   class="nav-tab {% if request.endpoint == 'sregister.student' %}active{% endif %} flex items-center gap-x-3 px-4 py-3 rounded-2xl text-sm font-semibold">
-                    <i class="fa-solid fa-user-graduate w-5 text-center"></i>
+                   class="nav-tab {% if request.endpoint == 'sregister.student' %}active{% endif %} flex items-center gap-x-3 px-4 py-2.5 rounded-xl text-sm font-medium mb-0.5">
+                    <i class="fa-solid fa-user-graduate w-4 text-center text-sm"></i>
                     <span>Students</span>
                 </a>
 
                 <a href="{{ url_for('teacher_bp.teachers') }}"
-                   class="nav-tab {% if request.endpoint == 'teacher_bp.teachers' %}active{% endif %} flex items-center gap-x-3 px-4 py-3 rounded-2xl text-sm font-semibold">
-                    <i class="fa-solid fa-chalkboard-user w-5 text-center"></i>
+                   class="nav-tab {% if request.endpoint == 'teacher_bp.teachers' %}active{% endif %} flex items-center gap-x-3 px-4 py-2.5 rounded-xl text-sm font-medium mb-0.5">
+                    <i class="fa-solid fa-chalkboard-user w-4 text-center text-sm"></i>
                     <span>Teachers</span>
                 </a>
 
+                <!-- Analytics group -->
+                <p class="nav-section-label mt-1">Analytics</p>
+
                 <a href="{{ url_for('report_bp.reports') }}"
-                   class="nav-tab {% if request.endpoint == 'report_bp.reports' %}active{% endif %} flex items-center gap-x-3 px-4 py-3 rounded-2xl text-sm font-semibold">
-                    <i class="fa-solid fa-chart-bar w-5 text-center"></i>
-                    <span>Report</span>
+                   class="nav-tab {% if request.endpoint == 'report_bp.reports' %}active{% endif %} flex items-center gap-x-3 px-4 py-2.5 rounded-xl text-sm font-medium mb-0.5">
+                    <i class="fa-solid fa-chart-bar w-4 text-center text-sm"></i>
+                    <span>Reports</span>
                 </a>
 
             </nav>
 
-            <!-- PROFILE / DROPDOWN -->
-            <div class="px-4 py-5 border-t border-white/20 relative">
-                <button type="button"
-                    onclick="toggleDropdown()"
-                    class="w-full flex items-center justify-between gap-x-3 px-4 py-3 bg-white text-[#1e40af] rounded-2xl shadow-inner border border-white/30">
-
-                    <div class="flex items-center gap-x-3">
-                        <span class="w-10 h-10 flex items-center justify-center font-bold text-lg bg-[#1e40af] text-white rounded-xl">
-                            HD
-                        </span>
-
-                        <div class="text-left leading-tight">
-                            <p class="text-sm font-bold">Superadmin</p>
-                        </div>
-                    </div>
-
-                    <i class="fa-solid fa-chevron-down text-xs transition-transform duration-200" id="dropdownIcon"></i>
-                </button>
-
-                <div id="profileDropdown"
-                    class="hidden absolute left-4 right-4 bottom-20 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden z-50">
-
-                    <a href="{{ url_for('sadmin.backup_database') }}"
-                        class="flex items-center gap-x-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
-                        <i class="fa-solid fa-database text-[#1e40af] w-5 text-center"></i>
-                        Backup Database
-                    </a>
-
-                    <a href="{{ url_for('sadmin.logout') }}"
-                        class="flex items-center gap-x-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition border-t border-slate-100">
-                        <i class="fa-solid fa-right-from-bracket w-5 text-center"></i>
-                        Logout
-                    </a>
-
-                </div>
-            </div>
-
         </aside>
 
         <!-- PAGE CONTENT -->
-        <main class="page-content ml-72 w-[calc(100%-18rem)] min-h-screen">
-            {% block content %}{% endblock %}
+        <main class="page-content ml-72 w-[calc(100%-18rem)] min-h-screen flex flex-col">
+
+            <!-- TOP NAVBAR -->
+            <header class="sticky top-0 z-40 w-full bg-slate-900/80 backdrop-blur-md border-b border-white/10 flex items-center justify-end px-6 py-3">
+
+                <!-- Profile button -->
+                <div class="relative">
+                    <button type="button"
+                        id="topProfileBtn"
+                        onclick="toggleTopDropdown()"
+                        class="flex items-center gap-x-2.5 px-3 py-2 rounded-xl hover:bg-white/10 transition-all duration-200 group">
+
+                        <!-- Avatar -->
+                        <span class="w-9 h-9 flex items-center justify-center font-bold text-sm rounded-xl flex-shrink-0"
+                              style="background: linear-gradient(135deg, #1e40af, #3b82f6); color: #fff;">
+                            HD
+                        </span>
+
+                        <div class="text-left leading-tight hidden sm:block">
+                            <p class="text-sm font-semibold text-white">Superadmin</p>
+                            <p class="text-xs" style="color: rgba(255,255,255,0.45);">Administrator</p>
+                        </div>
+
+                        <i class="fa-solid fa-chevron-down text-xs text-white/50 transition-transform duration-200 group-hover:text-white/80" id="topDropdownIcon"></i>
+                    </button>
+
+                    <!-- Dropdown -->
+                    <div id="topProfileDropdown"
+                         class="hidden absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
+
+                        <!-- Profile info header -->
+                        <div class="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center gap-x-3">
+                            <span class="w-9 h-9 flex items-center justify-center font-bold text-sm rounded-xl flex-shrink-0"
+                                  style="background: linear-gradient(135deg, #1e40af, #3b82f6); color: #fff;">
+                                HD
+                            </span>
+                            <div class="leading-tight">
+                                <p class="text-sm font-bold text-slate-800">Superadmin</p>
+                                <p class="text-xs text-slate-400">Administrator</p>
+                            </div>
+                        </div>
+
+                        <a href="{{ url_for('sadmin.backup_database') }}"
+                            class="flex items-center gap-x-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
+                            <i class="fa-solid fa-database text-[#1e40af] w-4 text-center"></i>
+                            Backup Database
+                        </a>
+
+                        <a href="{{ url_for('sadmin.logout') }}"
+                            class="flex items-center gap-x-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition border-t border-slate-100">
+                            <i class="fa-solid fa-right-from-bracket w-4 text-center"></i>
+                            Logout
+                        </a>
+
+                    </div>
+                </div>
+
+            </header>
+
+            <!-- PAGE BODY -->
+            <div class="flex-1">
+                {% block content %}{% endblock %}
+            </div>
+
         </main>
 
     </div>
 
     <script>
-        function toggleDropdown() {
-            const dropdown = document.getElementById("profileDropdown");
-            const icon = document.getElementById("dropdownIcon");
-
+        function toggleTopDropdown() {
+            const dropdown = document.getElementById("topProfileDropdown");
+            const icon = document.getElementById("topDropdownIcon");
             dropdown.classList.toggle("hidden");
             icon.classList.toggle("rotate-180");
         }
 
         document.addEventListener("click", function(event) {
-            const dropdown = document.getElementById("profileDropdown");
-            const button = event.target.closest("button[onclick='toggleDropdown()']");
-            const icon = document.getElementById("dropdownIcon");
+            const dropdown = document.getElementById("topProfileDropdown");
+            const btn = document.getElementById("topProfileBtn");
+            const icon = document.getElementById("topDropdownIcon");
 
-            if (!button && dropdown && !dropdown.contains(event.target)) {
+            if (!btn.contains(event.target) && dropdown && !dropdown.contains(event.target)) {
                 dropdown.classList.add("hidden");
                 icon.classList.remove("rotate-180");
             }
