@@ -3,15 +3,34 @@
 {% block title %}Schedule Module{% endblock %}
 
 {% block content %}
+
+{#
+  ── Inject all existing schedules as a JSON data island ──
+  Shape per item:
+    id, day, time, room_id, section_id, teacher_id, subject
+  Used by JS to validate ALL conflicts before the form submits.
+#}
+<script id="existingSchedulesData" type="application/json">
+[{% for s in schedules %}
+  {
+    "id":         {{ s.id }},
+    "day":        {{ (s.day        or "") | tojson }},
+    "time":       {{ (s.time       or "") | tojson }},
+    "room_id":    {{ (s.room_id    or 0)  | tojson }},
+    "section_id": {{ (s.section_id or 0)  | tojson }},
+    "teacher_id": {{ (s.teacher_id or 0)  | tojson }},
+    "subject":    {{ (s.subject    or "") | tojson }}
+  }{% if not loop.last %},{% endif %}
+{% endfor %}]
+</script>
+
 <div class="min-h-screen px-4 py-8 md:px-8">
 
   <!-- ── Top Action Bar ── -->
   <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
-
-    <!-- LEFT: actions -->
     <div class="flex items-center gap-3 flex-wrap">
 
-      <!-- Bulk Add Schedule — BLUE -->
+      <!-- Add Schedule -->
       <button type="button" onclick="openModal('bulkScheduleModal')"
               class="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg text-white font-medium px-6 py-3 rounded-3xl">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -31,7 +50,7 @@
 
     </div>
 
-    <!-- RIGHT: search -->
+    <!-- Search -->
     <div class="relative">
       <div class="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -42,13 +61,10 @@
              placeholder="Search day, subject, section, room..."
              class="w-80 pl-11 pr-4 py-3 bg-white border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-3xl text-sm outline-none transition-all shadow-sm">
     </div>
-
   </div>
 
   <!-- ── Filter Bar ── -->
   <div class="flex flex-wrap items-center gap-3 mb-6">
-
-    <!-- Filter label -->
     <div class="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider mr-1">
       <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
@@ -63,16 +79,12 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
         </svg>
       </div>
-      <select id="sectionFilter" onchange="applyFilters()"
-              class="filter-select pl-9">
+      <select id="sectionFilter" onchange="applyFilters()" class="filter-select pl-9">
         <option value="">All Sections</option>
         {% for sec in sections %}
-        <option value="{{ sec.section_name }}">
-          {{ sec.section_name }}{% if sec.year_level %} — {{ sec.year_level }}{% endif %}
-        </option>
+        <option value="{{ sec.section_name }}">{{ sec.section_name }}{% if sec.year_level %} — {{ sec.year_level }}{% endif %}</option>
         {% endfor %}
       </select>
-      <!-- Active indicator dot -->
       <span id="sectionFilterDot" class="filter-active-dot hidden"></span>
     </div>
 
@@ -83,14 +95,12 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
         </svg>
       </div>
-      <select id="teacherFilter" onchange="applyFilters()"
-              class="filter-select pl-9">
+      <select id="teacherFilter" onchange="applyFilters()" class="filter-select pl-9">
         <option value="">All Teachers</option>
         {% for t in teachers %}
         <option value="{{ t.name }}">{{ t.name }}</option>
         {% endfor %}
       </select>
-      <!-- Active indicator dot -->
       <span id="teacherFilterDot" class="filter-active-dot hidden"></span>
     </div>
 
@@ -101,20 +111,14 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
         </svg>
       </div>
-      <select id="dayFilter" onchange="applyFilters()"
-              class="filter-select pl-9">
+      <select id="dayFilter" onchange="applyFilters()" class="filter-select pl-9">
         <option value="">All Days</option>
-        <option>Monday</option>
-        <option>Tuesday</option>
-        <option>Wednesday</option>
-        <option>Thursday</option>
-        <option>Friday</option>
-        <option>Saturday</option>
+        <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+        <option>Thursday</option><option>Friday</option><option>Saturday</option>
       </select>
       <span id="dayFilterDot" class="filter-active-dot hidden"></span>
     </div>
 
-    <!-- Clear filters button — only visible when a filter is active -->
     <button id="clearFiltersBtn" onclick="clearAllFilters()"
             class="hidden items-center gap-1.5 text-xs font-semibold text-red-500 hover:text-red-700
                    bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300
@@ -124,18 +128,11 @@
       </svg>
       Clear Filters
     </button>
-
-    <!-- Active filter count badge -->
-    <span id="activeFilterCount"
-          class="hidden text-xs font-bold bg-blue-600 text-white px-2.5 py-1 rounded-full">
-    </span>
-
+    <span id="activeFilterCount" class="hidden text-xs font-bold bg-blue-600 text-white px-2.5 py-1 rounded-full"></span>
   </div>
 
   <!-- ── Main Table Card ── -->
   <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border border-blue-100">
-
-    <!-- Blue Gradient Header -->
     <div class="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 px-8 py-6 flex items-center justify-between text-white">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center">
@@ -182,13 +179,9 @@
                 <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-2xl text-xs font-semibold">{{ s.day }}</span>
               </td>
               <td class="py-5 px-4 text-gray-700 font-medium align-top tabular-nums">
-                {% if s.time %}
-                  {{ s.time }}
-                {% elif s.time_in and s.time_out %}
-                  {{ s.time_in }} – {{ s.time_out }}
-                {% else %}
-                  —
-                {% endif %}
+                {% if s.time %}{{ s.time }}
+                {% elif s.time_in and s.time_out %}{{ s.time_in }} – {{ s.time_out }}
+                {% else %}—{% endif %}
               </td>
               <td class="py-5 px-4 font-semibold text-gray-900 align-top">{{ s.subject }}</td>
               <td class="py-5 px-4 text-gray-600 align-top font-medium">{{ s.section_name or '—' }}</td>
@@ -196,7 +189,6 @@
               <td class="py-5 px-4 text-gray-600 align-top">{{ s.room_name or '—' }}</td>
               <td class="py-5 px-4 align-top">
                 <div class="flex flex-wrap items-center gap-2">
-
                   <!-- View -->
                   <button type="button"
                     onclick='openViewScheduleModal({
@@ -214,7 +206,6 @@
                     </svg>
                     View
                   </button>
-
                   <!-- Edit -->
                   <button type="button"
                     onclick='openEditScheduleModal({
@@ -232,11 +223,9 @@
                     </svg>
                     Edit
                   </button>
-
                   <!-- Delete -->
                   <form method="POST" action="{{ url_for('schedule.delete_schedule', schedule_id=s.id) }}"
-                        onsubmit="return confirm('Delete this schedule?')"
-                        class="inline">
+                        onsubmit="return confirm('Delete this schedule?')" class="inline">
                     <button type="submit"
                             class="inline-flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-xs font-semibold px-3 py-2 rounded-2xl transition-all shadow-sm hover:shadow-md">
                       <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -245,7 +234,6 @@
                       Delete
                     </button>
                   </form>
-
                 </div>
               </td>
             </tr>
@@ -254,15 +242,12 @@
         </table>
       </div>
 
-      <!-- No results state (shown when filters return nothing) -->
+      <!-- No results state -->
       <div id="noFilterResults" class="hidden py-16 text-center">
         <div class="mx-auto w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center text-5xl mb-5">🔍</div>
         <h3 class="text-xl font-semibold text-gray-800 mb-1">No matching schedules</h3>
         <p class="text-gray-400 text-sm max-w-xs mx-auto mb-4">Try adjusting your filters or search term.</p>
-        <button onclick="clearAllFilters()"
-                class="text-sm text-blue-600 hover:text-blue-800 font-semibold underline underline-offset-2">
-          Clear all filters
-        </button>
+        <button onclick="clearAllFilters()" class="text-sm text-blue-600 hover:text-blue-800 font-semibold underline underline-offset-2">Clear all filters</button>
       </div>
 
       {% else %}
@@ -286,26 +271,18 @@
       {% for category, message in messages %}
       <div class="toast-item pointer-events-auto flex items-start gap-3 min-w-[280px] max-w-sm
                   px-4 py-3 rounded-2xl shadow-lg border text-sm font-medium
-                  {% if category == 'success' %}bg-white border-green-100 text-gray-800
-                  {% elif category == 'error' %}bg-white border-red-200 text-gray-800
-                  {% else %}bg-white border-blue-100 text-gray-800{% endif %}">
+                  {% if category == 'success' %}bg-white border-green-100{% elif category == 'error' %}bg-white border-red-200{% else %}bg-white border-blue-100{% endif %}">
         {% if category == 'success' %}
         <div class="flex-shrink-0 w-8 h-8 rounded-xl bg-green-500 flex items-center justify-center">
-          <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-          </svg>
+          <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
         </div>
         {% elif category == 'error' %}
         <div class="flex-shrink-0 w-8 h-8 rounded-xl bg-red-500 flex items-center justify-center">
-          <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
+          <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
         </div>
         {% else %}
         <div class="flex-shrink-0 w-8 h-8 rounded-xl bg-blue-500 flex items-center justify-center">
-          <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
+          <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
         {% endif %}
         <div class="flex-1 pt-0.5">
@@ -316,9 +293,7 @@
         </div>
         <button onclick="dismissToast(this.closest('.toast-item'))"
                 class="flex-shrink-0 w-6 h-6 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
-          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
       {% endfor %}
@@ -328,7 +303,44 @@
 
 
 <!-- ══════════════════════════════════
-     BULK ADD SCHEDULE MODAL — FULLY BLUE
+     CONFLICT ALERT MODAL
+     Appears on top of any open form modal
+══════════════════════════════════ -->
+<div id="conflictAlertModal" class="modal-overlay hidden conflict-overlay">
+  <div class="modal-panel animate-fadeIn" style="max-width:520px;">
+    <div class="modal-header" style="background: linear-gradient(135deg,#dc2626,#b91c1c);">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-white text-lg font-semibold">Conflicts Found</h2>
+          <p class="text-red-100 text-xs mt-0.5">Fix all issues before saving</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeModal('conflictAlertModal')" class="modal-close-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body p-6">
+      <div id="conflictAlertBody" class="space-y-3"></div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" onclick="closeModal('conflictAlertModal')"
+              class="px-7 py-2.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-semibold text-sm shadow-sm transition-colors">
+        ← Go Back &amp; Fix
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     BULK ADD SCHEDULE MODAL
 ══════════════════════════════════ -->
 <div id="bulkScheduleModal" class="modal-overlay hidden">
   <div class="modal-panel modal-panel-xl animate-fadeIn">
@@ -346,42 +358,37 @@
     <div class="modal-body">
       <form id="bulkScheduleForm" method="POST" action="{{ url_for('schedule.bulk_add_schedule') }}" class="p-8" novalidate>
 
-        <!-- ── Shared fields ── -->
+        <!-- Shared fields -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8 pb-8 border-b-2 border-blue-100">
-
           <div>
             <label class="form-label">Subject <span class="text-red-400">*</span></label>
             <input type="text" id="bulk_subject" name="subject" class="form-input" placeholder="e.g. Mathematics" autocomplete="off">
             <p class="field-error hidden" id="err_bulk_subject"></p>
           </div>
-
           <div>
             <label class="form-label">Section <span class="text-red-400">*</span></label>
             <select id="bulk_section_id" name="section_id" class="form-select">
               <option value="">Select section</option>
               {% for sec in sections %}
-              <option value="{{ sec.id }}">
-                {{ sec.section_name }}{% if sec.year_level %} — {{ sec.year_level }}{% endif %}
-              </option>
+              <option value="{{ sec.id }}">{{ sec.section_name }}{% if sec.year_level %} — {{ sec.year_level }}{% endif %}</option>
               {% endfor %}
             </select>
             <p class="field-error hidden" id="err_bulk_section"></p>
           </div>
-
           <div>
             <label class="form-label">Teacher</label>
-            <select id="bulk_teacher_id" name="teacher_id" class="form-select">
+            <select id="bulk_teacher_id" name="teacher_id" class="form-select" onchange="onBulkTeacherChange()">
               <option value="">Select teacher (optional)</option>
               {% for t in teachers %}
-              <option value="{{ t.id }}">{{ t.name }}</option>
+              <option value="{{ t.id }}" data-subjects="{{ (teacher_subjects_map.get(t.id, []) | tojson) | e }}">{{ t.name }}</option>
               {% endfor %}
             </select>
             <p class="field-error hidden" id="err_bulk_teacher"></p>
+            <div id="bulk_teacher_info" class="hidden mt-2 text-xs bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-blue-700"></div>
           </div>
-
         </div>
 
-        <!-- ── Day/Time rows ── -->
+        <!-- Day/Time rows -->
         <div class="mb-5 flex items-center justify-between">
           <div>
             <h3 class="text-sm font-semibold text-gray-800">Day &amp; Time Slots</h3>
@@ -396,23 +403,16 @@
           </button>
         </div>
 
-        <div id="bulkRowsContainer" class="space-y-3">
-          <!-- Rows injected by JS -->
-        </div>
+        <div id="bulkRowsContainer" class="space-y-3"></div>
 
-        <!-- Hidden template for a day/time row -->
         <template id="bulkRowTemplate">
           <div class="bulk-row grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_auto] gap-3 items-start bg-blue-50/60 border border-blue-100 rounded-2xl p-4">
             <div>
               <label class="form-label text-blue-800">Day <span class="text-red-400">*</span></label>
               <select name="days[]" class="form-select">
                 <option value="">Select day</option>
-                <option>Monday</option>
-                <option>Tuesday</option>
-                <option>Wednesday</option>
-                <option>Thursday</option>
-                <option>Friday</option>
-                <option>Saturday</option>
+                <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+                <option>Thursday</option><option>Friday</option><option>Saturday</option>
               </select>
               <p class="field-error hidden"></p>
             </div>
@@ -433,8 +433,7 @@
             </div>
             <div class="flex justify-end pt-7">
               <button type="button" onclick="removeBulkRow(this)"
-                      class="remove-row-btn w-9 h-9 rounded-xl bg-red-50 hover:bg-red-100 text-red-400 hover:text-red-600 flex items-center justify-center transition-colors"
-                      title="Remove this day">
+                      class="w-9 h-9 rounded-xl bg-red-50 hover:bg-red-100 text-red-400 hover:text-red-600 flex items-center justify-center transition-colors" title="Remove">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                 </svg>
@@ -453,7 +452,7 @@
     <div class="modal-footer">
       <div class="flex-1 text-xs text-gray-400 hidden sm:block" id="bulkRowCount">0 day(s) selected</div>
       <button type="button" onclick="closeModal('bulkScheduleModal')"
-              class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-800 font-medium text-sm transition-colors">Cancel</button>
+              class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-50 font-medium text-sm transition-colors">Cancel</button>
       <button type="button" onclick="submitBulkForm()"
               class="px-7 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition-colors">
         Save All Schedules
@@ -540,22 +539,21 @@
             <select id="edit_section_id" name="section_id" class="form-select">
               <option value="">Select section</option>
               {% for sec in sections %}
-              <option value="{{ sec.id }}">
-                {{ sec.section_name }}{% if sec.year_level %} — {{ sec.year_level }}{% endif %}
-              </option>
+              <option value="{{ sec.id }}">{{ sec.section_name }}{% if sec.year_level %} — {{ sec.year_level }}{% endif %}</option>
               {% endfor %}
             </select>
             <p class="field-error hidden" id="err_edit_section"></p>
           </div>
           <div>
             <label class="form-label">Teacher</label>
-            <select id="edit_teacher_id" name="teacher_id" class="form-select">
+            <select id="edit_teacher_id" name="teacher_id" class="form-select" onchange="onEditTeacherChange()">
               <option value="">Select teacher (optional)</option>
               {% for t in teachers %}
-              <option value="{{ t.id }}">{{ t.name }}</option>
+              <option value="{{ t.id }}" data-subjects="{{ (teacher_subjects_map.get(t.id, []) | tojson) | e }}">{{ t.name }}</option>
               {% endfor %}
             </select>
             <p class="field-error hidden" id="err_edit_teacher"></p>
+            <div id="edit_teacher_info" class="hidden mt-2 text-xs bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-amber-700"></div>
           </div>
           <div class="sm:col-span-2">
             <label class="form-label">Room <span class="text-red-400">*</span></label>
@@ -572,7 +570,7 @@
     </div>
     <div class="modal-footer">
       <button type="button" onclick="closeModal('editScheduleModal')"
-              class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-800 font-medium text-sm transition-colors">Cancel</button>
+              class="px-6 py-2.5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-50 font-medium text-sm transition-colors">Cancel</button>
       <button type="button" onclick="submitEditForm()"
               class="px-7 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-500 text-white font-medium text-sm shadow-sm transition-colors">Update Schedule</button>
     </div>
@@ -622,8 +620,7 @@
           </div>
           <form method="POST" action="{{ url_for('schedule.delete_room', room_id=r.id) }}"
                 onsubmit="return confirm('Delete room {{ r.room_name }}? This cannot be undone.')">
-            <button type="submit"
-                    class="text-red-400 hover:text-red-600 text-xs font-medium flex items-center gap-1 transition-colors">
+            <button type="submit" class="text-red-400 hover:text-red-600 text-xs font-medium flex items-center gap-1 transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
               </svg>
@@ -648,83 +645,395 @@
      SCRIPTS
 ══════════════════════════════════ -->
 <script>
-const MODAL_IDS = ['bulkScheduleModal','viewScheduleModal','editScheduleModal','roomsModal']
-const TOTAL_ROWS = document.querySelectorAll('.schedule-row').length
+/* ────────────────────────────────────────────────────────────────────────────
+   EXISTING SCHEDULES — injected from the Jinja JSON data island above.
+   Each entry: { id, day, time, room_id, section_id, teacher_id, subject }
+   Used for ALL client-side conflict checks so the user cannot re-input
+   a schedule that would violate any rule.
+──────────────────────────────────────────────────────────────────────────── */
+let EXISTING_SCHEDULES = []
+try {
+  const blob = document.getElementById('existingSchedulesData')
+  if (blob) EXISTING_SCHEDULES = JSON.parse(blob.textContent || '[]')
+} catch(e) { EXISTING_SCHEDULES = [] }
 
-/* ══════════════════════════════════
-   FILTER SYSTEM
-   All filters work together: search text + section + teacher + day
-══════════════════════════════════ */
+const MODAL_IDS    = ['bulkScheduleModal','viewScheduleModal','editScheduleModal','roomsModal','conflictAlertModal']
+const MAX_SUBJECTS = 2   // must match backend MAX_SUBJECTS_PER_TEACHER
 
-function applyFilters() {
-  const searchQ   = document.getElementById('searchInput').value.toLowerCase().trim()
-  const sectionQ  = document.getElementById('sectionFilter').value.toLowerCase().trim()
-  const teacherQ  = document.getElementById('teacherFilter').value.toLowerCase().trim()
-  const dayQ      = document.getElementById('dayFilter').value.toLowerCase().trim()
 
-  const rows = document.querySelectorAll('.schedule-row')
-  let visibleCount = 0
+/* ════════════════════════════════════════════════════════════════════════════
+   TIME UTILITIES
+════════════════════════════════════════════════════════════════════════════ */
 
-  rows.forEach(row => {
-    // data-* attributes hold lowercased values set in the template
-    const rowDay     = row.dataset.day     || ''
-    const rowSection = row.dataset.section || ''
-    const rowTeacher = row.dataset.teacher || ''
-    const rowSubject = row.dataset.subject || ''
-    const rowRoom    = row.dataset.room    || ''
-    const rowTime    = row.dataset.time    || ''
-
-    // Full-text search across all visible columns
-    const fullText = `${rowDay} ${rowTime} ${rowSubject} ${rowSection} ${rowTeacher} ${rowRoom}`
-    const matchesSearch  = !searchQ  || fullText.includes(searchQ)
-
-    // Dropdown filters — exact match against stored data values
-    const matchesSection = !sectionQ || rowSection.includes(sectionQ)
-    const matchesTeacher = !teacherQ || rowTeacher.includes(teacherQ)
-    const matchesDay     = !dayQ     || rowDay === dayQ
-
-    const visible = matchesSearch && matchesSection && matchesTeacher && matchesDay
-
-    row.style.display = visible ? '' : 'none'
-    if (visible) visibleCount++
-  })
-
-  // Update visible count in header badge
-  const countEl = document.getElementById('visibleCount')
-  if (countEl) countEl.textContent = visibleCount
-
-  // Show/hide the "no results" empty state
-  const noResults = document.getElementById('noFilterResults')
-  if (noResults) noResults.classList.toggle('hidden', visibleCount > 0)
-
-  // Update active filter indicators
-  updateFilterIndicators(sectionQ, teacherQ, dayQ)
+/** Parse "7:00 AM" → minutes-since-midnight integer, or null on failure. */
+function parseTimePart(raw) {
+  raw = (raw || '').trim().toUpperCase()
+  const m = raw.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/)
+  if (!m) return null
+  let h = parseInt(m[1], 10), min = parseInt(m[2], 10)
+  const p = m[3]
+  if (p === 'PM' && h !== 12) h += 12
+  if (p === 'AM' && h === 12) h = 0
+  if (h < 0 || h > 23 || min < 0 || min > 59) return null
+  return h * 60 + min
 }
 
-function updateFilterIndicators(sectionQ, teacherQ, dayQ) {
-  // Active dot on each dropdown
-  document.getElementById('sectionFilterDot')?.classList.toggle('hidden', !sectionQ)
-  document.getElementById('teacherFilterDot')?.classList.toggle('hidden', !teacherQ)
-  document.getElementById('dayFilterDot')?.classList.toggle('hidden', !dayQ)
+/**
+ * Parse a range string like "7:00 AM - 8:30 AM" → { start, end } (minutes).
+ * Handles:  "2:00 - 3:00 PM"  →  start=14:00, end=15:00
+ * Returns null on any parse failure or if end <= start.
+ */
+function parseTimeRange(str) {
+  if (!str) return null
+  str = str.trim()
+  for (const sep of [' - ', ' – ', ' to ', '-', '–']) {
+    const idx = str.indexOf(sep)
+    if (idx === -1) continue
+    const startRaw = str.slice(0, idx).trim()
+    const endRaw   = str.slice(idx + sep.length).trim()
+    const endPm    = (endRaw.match(/\b(AM|PM)\b/i) || [])[1]
+    const hasPm    = /\b(AM|PM)\b/i.test(startRaw)
+    const startStr = (!hasPm && endPm) ? `${startRaw} ${endPm}` : startRaw
+    const start    = parseTimePart(startStr)
+    const end      = parseTimePart(endRaw)
+    if (start !== null && end !== null && end > start) return { start, end }
+    break
+  }
+  return null
+}
 
-  // Count active filters
-  const activeCount = [sectionQ, teacherQ, dayQ].filter(Boolean).length
-  const badge = document.getElementById('activeFilterCount')
-  const clearBtn = document.getElementById('clearFiltersBtn')
+/** True if two [start,end) ranges overlap. */
+function rangesOverlap(a, b) {
+  return a.start < b.end && b.start < a.end
+}
 
-  if (badge) {
-    if (activeCount > 0) {
-      badge.textContent = `${activeCount} filter${activeCount > 1 ? 's' : ''} active`
-      badge.classList.remove('hidden')
-    } else {
-      badge.classList.add('hidden')
+/** Normalise time string for loose equality checks. */
+function normTime(t) {
+  return (t || '').replace(/\s+/g, ' ').trim().toUpperCase()
+}
+
+/**
+ * Returns true if `timeStr` overlaps with schedule entry `s`.
+ * Uses exact string match first (fast), then parsed-range overlap.
+ */
+function overlapsWithEntry(timeStr, s) {
+  if (normTime(s.time) === normTime(timeStr)) return true
+  const a = parseTimeRange(timeStr)
+  const b = parseTimeRange(s.time)
+  return !!(a && b && rangesOverlap(a, b))
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ★★★  MASTER CONFLICT CHECK  ★★★
+
+   ALL seven rules are checked here.  Returns an array of plain-text error
+   messages (HTML allowed).  Empty array = no conflicts.
+
+   Rules enforced:
+     1. Exact duplicate row           — same day + time + room + section + subject + teacher
+     2. Same day + time + room        — room double-booked
+     3. Same day + time + section     — section has two classes at once
+     4. Same day + time + teacher     — teacher in two places at once
+     5. Same subject + same section   — subject already assigned to section (any day/time)
+     6. Same subject + teacher + section — exact logical duplicate (different slot)
+     7. Teacher subject-count limit   — teacher already handles MAX_SUBJECTS distinct subjects
+
+   @param {object}  p
+     p.day        {string}
+     p.timeStr    {string}
+     p.roomId     {number|string}
+     p.sectionId  {number|string}
+     p.teacherId  {number|string|null}
+     p.subject    {string}
+     p.excludeId  {number|null}  — schedule id being EDITED (exclude from checks)
+
+   @returns {string[]}
+════════════════════════════════════════════════════════════════════════════ */
+function runAllConflictChecks({ day, timeStr, roomId, sectionId, teacherId, subject, excludeId = null }) {
+  const errors = []
+
+  const dayL      = (day     || '').toLowerCase()
+  const subjectL  = (subject || '').trim().toLowerCase()
+  const roomInt   = parseInt(roomId,    10) || 0
+  const secInt    = parseInt(sectionId, 10) || 0
+  const teachInt  = parseInt(teacherId, 10) || 0  // 0 = no teacher
+
+  for (const s of EXISTING_SCHEDULES) {
+    if (excludeId !== null && s.id === excludeId) continue   // skip self when editing
+
+    const sDay     = (s.day     || '').toLowerCase()
+    const sSubL    = (s.subject || '').trim().toLowerCase()
+    const sRoom    = parseInt(s.room_id,    10) || 0
+    const sSec     = parseInt(s.section_id, 10) || 0
+    const sTeach   = parseInt(s.teacher_id, 10) || 0
+    const sameDay  = sDay === dayL
+    const overlap  = sameDay && overlapsWithEntry(timeStr, s)
+
+    // ── Rule 1: Exact duplicate row ──────────────────────────────────────────
+    if (sameDay && normTime(s.time) === normTime(timeStr)
+        && sRoom === roomInt && sSec === secInt && sSubL === subjectL
+        && (teachInt === 0 || sTeach === teachInt)) {
+      errors.push(
+        `<strong>Exact duplicate:</strong> This schedule already exists — ` +
+        `<em>${s.subject}</em> on <strong>${s.day}</strong> at ${s.time} in the same room and section.`
+      )
+      continue   // no need to report more rules for this entry
+    }
+
+    // ── Rule 2: Room double-booked (same day + overlapping time + same room) ─
+    if (overlap && sRoom === roomInt && sRoom !== 0) {
+      errors.push(
+        `<strong>Room conflict:</strong> This room is already booked on <strong>${day}</strong> ` +
+        `at ${s.time} for "<em>${s.subject}</em>" (Section ID ${s.section_id}). ` +
+        `Please choose a different room or time slot.`
+      )
+    }
+
+    // ── Rule 3: Section already has a class at this time ─────────────────────
+    if (overlap && sSec === secInt && secInt !== 0) {
+      errors.push(
+        `<strong>Section conflict:</strong> This section already has a class on ` +
+        `<strong>${day}</strong> at ${s.time} ("<em>${s.subject}</em>"). ` +
+        `A section cannot attend two classes at the same time.`
+      )
+    }
+
+    // ── Rule 4: Teacher already teaching at this time ─────────────────────────
+    if (overlap && teachInt !== 0 && sTeach === teachInt) {
+      errors.push(
+        `<strong>Teacher conflict:</strong> This teacher already has "<em>${s.subject}</em>" ` +
+        `on <strong>${day}</strong> at ${s.time}. ` +
+        `A teacher cannot be in two places at the same time.`
+      )
+    }
+
+    // ── Rule 5: Same subject already assigned to this section (any slot) ─────
+    if (sSubL === subjectL && sSec === secInt && secInt !== 0) {
+      errors.push(
+        `<strong>Duplicate subject:</strong> "<em>${subject}</em>" is already assigned to this section ` +
+        `on <strong>${s.day}</strong> at ${s.time}. ` +
+        `Each subject may only appear once per section.`
+      )
+    }
+
+    // ── Rule 6: Same subject + teacher + section already exists ──────────────
+    if (sSubL === subjectL && teachInt !== 0 && sTeach === teachInt && sSec === secInt) {
+      errors.push(
+        `<strong>Duplicate assignment:</strong> This teacher is already teaching "<em>${subject}</em>" ` +
+        `to this section on <strong>${s.day}</strong> at ${s.time}. ` +
+        `Cannot add a duplicate assignment.`
+      )
     }
   }
 
-  if (clearBtn) {
-    clearBtn.classList.toggle('hidden', activeCount === 0)
-    clearBtn.classList.toggle('flex', activeCount > 0)
+  // ── Rule 7: Teacher subject-count limit (uses <select> data-subjects attr) ─
+  // Checked separately via validateTeacherSubjectLimit() in each form validator.
+
+  // De-duplicate identical messages before returning
+  return [...new Set(errors)]
+}
+
+/**
+ * Same as runAllConflictChecks but also accepts an intra-batch
+ * slots map so rows within the same bulk submission conflict with each other.
+ *
+ * batchRoomSlots   : { `${roomId}_${day}` : [{range,rowIdx}] }
+ * batchSecSlots    : { `${secId}_${day}`  : [{range,rowIdx}] }
+ * batchTeachSlots  : { `${teachId}_${day}`: [{range,rowIdx}] }
+ */
+function runBatchConflictChecks({
+  day, timeStr, roomId, sectionId, teacherId, subject,
+  rowIdx, batchRoomSlots, batchSecSlots, batchTeachSlots
+}) {
+  const errors = []
+  const parsed = parseTimeRange(timeStr)
+  if (!parsed) return errors   // format error already caught upstream
+
+  const roomInt  = parseInt(roomId,    10) || 0
+  const secInt   = parseInt(sectionId, 10) || 0
+  const teachInt = parseInt(teacherId, 10) || 0
+
+  // Helper: check a slot map and return the first conflicting row index, or -1
+  function slotConflict(map, key) {
+    if (!map[key]) return -1
+    for (const slot of map[key]) {
+      if (rangesOverlap(parsed, slot.range)) return slot.rowIdx
+    }
+    return -1
   }
+
+  // Intra-batch: room
+  if (roomInt) {
+    const key = `${roomInt}_${day}`
+    const hit = slotConflict(batchRoomSlots, key)
+    if (hit !== -1) {
+      errors.push(`<strong>Room conflict with Row ${hit + 1}:</strong> Same room is already used at an overlapping time on <strong>${day}</strong> within this submission.`)
+    } else {
+      if (!batchRoomSlots[key]) batchRoomSlots[key] = []
+      batchRoomSlots[key].push({ range: parsed, rowIdx })
+    }
+  }
+
+  // Intra-batch: section
+  if (secInt) {
+    const key = `${secInt}_${day}`
+    const hit = slotConflict(batchSecSlots, key)
+    if (hit !== -1) {
+      errors.push(`<strong>Section conflict with Row ${hit + 1}:</strong> This section already has a class at an overlapping time on <strong>${day}</strong> within this submission.`)
+    } else {
+      if (!batchSecSlots[key]) batchSecSlots[key] = []
+      batchSecSlots[key].push({ range: parsed, rowIdx })
+    }
+  }
+
+  // Intra-batch: teacher
+  if (teachInt) {
+    const key = `${teachInt}_${day}`
+    const hit = slotConflict(batchTeachSlots, key)
+    if (hit !== -1) {
+      errors.push(`<strong>Teacher conflict with Row ${hit + 1}:</strong> This teacher is already assigned at an overlapping time on <strong>${day}</strong> within this submission.`)
+    } else {
+      if (!batchTeachSlots[key]) batchTeachSlots[key] = []
+      batchTeachSlots[key].push({ range: parsed, rowIdx })
+    }
+  }
+
+  return errors
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   CONFLICT ALERT MODAL
+════════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Render and open the red conflict alert modal.
+ * @param {string[]} messages — array of HTML strings
+ */
+function showConflictAlert(messages) {
+  const body = document.getElementById('conflictAlertBody')
+  // Remove duplicate messages before rendering
+  const unique = [...new Set(messages)]
+  body.innerHTML = unique.map(msg => `
+    <div class="flex items-start gap-3 bg-red-50 border border-red-100 rounded-2xl px-4 py-3">
+      <div class="flex-shrink-0 mt-0.5 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
+        <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </div>
+      <p class="text-sm text-red-800 leading-relaxed">${msg}</p>
+    </div>
+  `).join('')
+  openModal('conflictAlertModal')
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   TEACHER SUBJECT-LIMIT HELPERS
+════════════════════════════════════════════════════════════════════════════ */
+
+function getTeacherSubjects(selectEl) {
+  const opt = selectEl.options[selectEl.selectedIndex]
+  if (!opt || !opt.value) return []
+  try { return JSON.parse(opt.getAttribute('data-subjects') || '[]') } catch { return [] }
+}
+
+/**
+ * Returns an error string if adding newSubject exceeds MAX_SUBJECTS,
+ * or null if OK.  currentSubject is the subject already on the row being
+ * edited — it doesn't count as a new slot.
+ */
+function validateTeacherSubjectLimit(selectEl, newSubject, currentSubject) {
+  if (!selectEl.value) return null
+  const existing    = getTeacherSubjects(selectEl)
+  const newL        = (newSubject || '').trim().toLowerCase()
+  if (!newL) return null
+  const existingL   = existing.map(s => s.trim().toLowerCase())
+  if (existingL.includes(newL)) return null
+  let effective     = existingL
+  if (currentSubject) {
+    const curL = currentSubject.trim().toLowerCase()
+    effective  = existingL.filter(s => s !== curL)
+  }
+  if (effective.length >= MAX_SUBJECTS) {
+    const shown = existing
+      .filter(s => !currentSubject || s.trim().toLowerCase() !== currentSubject.trim().toLowerCase())
+      .map(s => `"${s}"`).join(', ')
+    return `This teacher already handles the maximum of ${MAX_SUBJECTS} subject(s): ${shown}. Choose a different teacher or subject.`
+  }
+  return null
+}
+
+function updateTeacherInfoBadge(infoElId, selectEl) {
+  const badge = document.getElementById(infoElId)
+  if (!badge) return
+  if (!selectEl.value) { badge.classList.add('hidden'); badge.textContent = ''; return }
+  const subjects  = getTeacherSubjects(selectEl)
+  const remaining = MAX_SUBJECTS - subjects.length
+  const list      = subjects.map(s => `"${s}"`).join(', ')
+  if (subjects.length === 0) {
+    badge.textContent = `No subjects assigned yet (can handle up to ${MAX_SUBJECTS}).`
+  } else if (remaining <= 0) {
+    badge.textContent = `⚠️ Subject limit reached. Currently handles: ${list}.`
+  } else {
+    badge.textContent = `Handles ${subjects.length}/${MAX_SUBJECTS} subject(s): ${list}. Can accept ${remaining} more.`
+  }
+  badge.classList.remove('hidden')
+}
+
+function onBulkTeacherChange() {
+  const sel = document.getElementById('bulk_teacher_id')
+  updateTeacherInfoBadge('bulk_teacher_info', sel)
+  clearError('err_bulk_teacher')
+  sel.classList.remove('input-error')
+}
+function onEditTeacherChange() {
+  const sel = document.getElementById('edit_teacher_id')
+  updateTeacherInfoBadge('edit_teacher_info', sel)
+  clearError('err_edit_teacher')
+  sel.classList.remove('input-error')
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   FILTER SYSTEM
+════════════════════════════════════════════════════════════════════════════ */
+
+function applyFilters() {
+  const searchQ  = document.getElementById('searchInput').value.toLowerCase().trim()
+  const secQ     = document.getElementById('sectionFilter').value.toLowerCase().trim()
+  const teachQ   = document.getElementById('teacherFilter').value.toLowerCase().trim()
+  const dayQ     = document.getElementById('dayFilter').value.toLowerCase().trim()
+  const rows     = document.querySelectorAll('.schedule-row')
+  let visible    = 0
+
+  rows.forEach(row => {
+    const full = [row.dataset.day, row.dataset.time, row.dataset.subject,
+                  row.dataset.section, row.dataset.teacher, row.dataset.room].join(' ')
+    const ok = (!searchQ || full.includes(searchQ))
+            && (!secQ    || row.dataset.section.includes(secQ))
+            && (!teachQ  || row.dataset.teacher.includes(teachQ))
+            && (!dayQ    || row.dataset.day === dayQ)
+    row.style.display = ok ? '' : 'none'
+    if (ok) visible++
+  })
+
+  const cnt = document.getElementById('visibleCount')
+  if (cnt) cnt.textContent = visible
+  document.getElementById('noFilterResults')?.classList.toggle('hidden', visible > 0)
+  updateFilterIndicators(secQ, teachQ, dayQ)
+}
+
+function updateFilterIndicators(secQ, teachQ, dayQ) {
+  document.getElementById('sectionFilterDot')?.classList.toggle('hidden', !secQ)
+  document.getElementById('teacherFilterDot')?.classList.toggle('hidden', !teachQ)
+  document.getElementById('dayFilterDot')?.classList.toggle('hidden', !dayQ)
+  const n      = [secQ, teachQ, dayQ].filter(Boolean).length
+  const badge  = document.getElementById('activeFilterCount')
+  const clrBtn = document.getElementById('clearFiltersBtn')
+  if (badge)  { badge.textContent = `${n} filter${n !== 1 ? 's' : ''} active`; badge.classList.toggle('hidden', n === 0) }
+  if (clrBtn) { clrBtn.classList.toggle('hidden', n === 0); clrBtn.classList.toggle('flex', n > 0) }
 }
 
 function clearAllFilters() {
@@ -735,24 +1044,24 @@ function clearAllFilters() {
   applyFilters()
 }
 
-/* ── Modal helpers ── */
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MODAL HELPERS
+════════════════════════════════════════════════════════════════════════════ */
+
 function lockScroll()   { document.documentElement.classList.add('modal-open'); document.body.classList.add('modal-open') }
 function unlockScroll() {
   const anyOpen = MODAL_IDS.some(id => document.getElementById(id)?.classList.contains('is-open'))
   if (!anyOpen) { document.documentElement.classList.remove('modal-open'); document.body.classList.remove('modal-open') }
 }
-
 function openModal(id) {
-  const el = document.getElementById(id)
-  if (!el) return
+  const el = document.getElementById(id); if (!el) return
   el.classList.remove('hidden')
   requestAnimationFrame(() => el.classList.add('is-open'))
   lockScroll()
 }
-
 function closeModal(id) {
-  const el = document.getElementById(id)
-  if (!el) return
+  const el = document.getElementById(id); if (!el) return
   el.classList.remove('is-open')
   setTimeout(() => { if (!el.classList.contains('is-open')) { el.classList.add('hidden'); unlockScroll() } }, 180)
 }
@@ -769,7 +1078,9 @@ function openViewScheduleModal(s) {
 
 function openEditScheduleModal(s) {
   const form = document.getElementById('editScheduleForm')
-  form.action = `/schedule/update/${s.id}`
+  form.action                       = `/schedule/update/${s.id}`
+  form.dataset.originalSubject      = s.subject    || ''
+  form.dataset.editingId            = s.id         || ''
   document.getElementById('edit_day').value        = s.day        || ''
   document.getElementById('edit_time').value       = s.time       || ''
   document.getElementById('edit_subject').value    = s.subject    || ''
@@ -777,109 +1088,92 @@ function openEditScheduleModal(s) {
   document.getElementById('edit_teacher_id').value = s.teacher_id || ''
   document.getElementById('edit_room_id').value    = s.room_id    || ''
   clearAllErrors('editScheduleForm')
+  updateTeacherInfoBadge('edit_teacher_info', document.getElementById('edit_teacher_id'))
   openModal('editScheduleModal')
 }
 
+// Close on backdrop click
 MODAL_IDS.forEach(id => {
   document.getElementById(id)?.addEventListener('click', function(e) {
     if (e.target === this) closeModal(id)
   })
 })
+document.addEventListener('keydown', e => { if (e.key === 'Escape') MODAL_IDS.forEach(closeModal) })
 
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') MODAL_IDS.forEach(closeModal)
-})
 
-/* ══════════════════════════════════
-   VALIDATION HELPERS
-══════════════════════════════════ */
-
-function parseTimeRange(str) {
-  if (!str) return null
-  str = str.trim()
-  const parts = str.split(/\s*[-–]\s*/)
-  if (parts.length < 2) return null
-  const start = parseTime(parts[0].trim())
-  const end   = parseTime(parts[1].trim())
-  if (start === null || end === null) return null
-  if (end <= start) return null
-  return { start, end }
-}
-
-function parseTime(t) {
-  t = t.trim().toUpperCase()
-  const m = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/)
-  if (!m) return null
-  let h = parseInt(m[1], 10)
-  const min = parseInt(m[2], 10)
-  const period = m[3]
-  if (period === 'PM' && h !== 12) h += 12
-  if (period === 'AM' && h === 12) h = 0
-  if (h < 0 || h > 23 || min < 0 || min > 59) return null
-  return h * 60 + min
-}
-
-function timesOverlap(a, b) {
-  return a.start < b.end && b.start < a.end
-}
+/* ════════════════════════════════════════════════════════════════════════════
+   FORM VALIDATION HELPERS
+════════════════════════════════════════════════════════════════════════════ */
 
 function showFieldError(el, msg) {
   el.classList.add('input-error')
-  const errEl = el.closest('div')?.querySelector('.field-error')
-  if (errEl) { errEl.textContent = msg; errEl.classList.remove('hidden') }
+  const p = el.closest('div')?.querySelector('.field-error')
+  if (p) { p.textContent = msg; p.classList.remove('hidden') }
 }
-
 function clearFieldError(el) {
   el.classList.remove('input-error')
-  const errEl = el.closest('div')?.querySelector('.field-error')
-  if (errEl) { errEl.textContent = ''; errEl.classList.add('hidden') }
+  const p = el.closest('div')?.querySelector('.field-error')
+  if (p) { p.textContent = ''; p.classList.add('hidden') }
 }
-
 function clearAllErrors(formId) {
-  const form = document.getElementById(formId)
-  if (!form) return
-  form.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'))
-  form.querySelectorAll('.field-error').forEach(el => { el.textContent = ''; el.classList.add('hidden') })
+  const f = document.getElementById(formId); if (!f) return
+  f.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'))
+  f.querySelectorAll('.field-error').forEach(el => { el.textContent = ''; el.classList.add('hidden') })
 }
-
 function showError(elId, msg) {
-  const el = document.getElementById(elId)
-  if (!el) return
-  el.textContent = msg
-  el.classList.remove('hidden')
+  const el = document.getElementById(elId); if (!el) return
+  el.textContent = msg; el.classList.remove('hidden')
 }
-
 function clearError(elId) {
-  const el = document.getElementById(elId)
-  if (!el) return
-  el.textContent = ''
-  el.classList.add('hidden')
+  const el = document.getElementById(elId); if (!el) return
+  el.textContent = ''; el.classList.add('hidden')
 }
 
-/* ══════════════════════════════════
-   BULK SCHEDULE VALIDATION & SUBMIT
-══════════════════════════════════ */
+
+/* ════════════════════════════════════════════════════════════════════════════
+   BULK SCHEDULE — VALIDATE & SUBMIT
+════════════════════════════════════════════════════════════════════════════ */
 
 function validateBulkForm() {
-  let valid = true
   clearAllErrors('bulkScheduleForm')
+  let valid = true
+  const allConflictMessages = []
 
-  const subjectEl = document.getElementById('bulk_subject')
-  if (!subjectEl.value.trim()) {
+  const subjectEl  = document.getElementById('bulk_subject')
+  const sectionEl  = document.getElementById('bulk_section_id')
+  const teacherSel = document.getElementById('bulk_teacher_id')
+
+  const subject   = subjectEl.value.trim()
+  const sectionId = sectionEl.value
+  const teacherId = teacherSel.value || null
+
+  // ── Subject required ──
+  if (!subject) {
     showFieldError(subjectEl, 'Subject is required.')
     showError('err_bulk_subject', 'Subject is required.')
     valid = false
-  } else if (subjectEl.value.trim().length < 2) {
+  } else if (subject.length < 2) {
     showFieldError(subjectEl, 'Subject must be at least 2 characters.')
     showError('err_bulk_subject', 'Subject must be at least 2 characters.')
     valid = false
   }
 
-  const sectionEl = document.getElementById('bulk_section_id')
-  if (!sectionEl.value) {
+  // ── Section required ──
+  if (!sectionId) {
     showFieldError(sectionEl, 'Please select a section.')
     showError('err_bulk_section', 'Please select a section.')
     valid = false
+  }
+
+  // ── Teacher subject-count limit (Rule 7) ──
+  if (subject && teacherSel.value) {
+    const limitErr = validateTeacherSubjectLimit(teacherSel, subject, null)
+    if (limitErr) {
+      showFieldError(teacherSel, limitErr)
+      showError('err_bulk_teacher', limitErr)
+      allConflictMessages.push(`<strong>Teacher subject limit:</strong> ${limitErr}`)
+      valid = false
+    }
   }
 
   const rows = document.querySelectorAll('#bulkRowsContainer .bulk-row')
@@ -888,63 +1182,76 @@ function validateBulkForm() {
     valid = false
   }
 
-  const teacherScheduleMap = {}
-  const teacherId = document.getElementById('bulk_teacher_id').value
+  // Intra-batch slot trackers
+  const batchRoomSlots  = {}
+  const batchSecSlots   = {}
+  const batchTeachSlots = {}
 
   rows.forEach((row, i) => {
     const dayEl  = row.querySelector('select[name="days[]"]')
     const timeEl = row.querySelector('input[name="times[]"]')
     const roomEl = row.querySelector('select[name="room_ids[]"]')
-    let rowValid = true
 
-    if (!dayEl.value) {
-      showFieldError(dayEl, 'Please select a day.')
-      rowValid = false; valid = false
-    }
-
+    const day     = dayEl.value.trim()
     const timeStr = timeEl.value.trim()
+    const roomId  = roomEl.value
+
+    // Basic required checks per row
+    if (!day) {
+      showFieldError(dayEl, 'Please select a day.')
+      valid = false
+    }
     if (!timeStr) {
       showFieldError(timeEl, 'Time is required.')
-      rowValid = false; valid = false
-    } else {
-      const parsed = parseTimeRange(timeStr)
-      if (!parsed) {
-        showFieldError(timeEl, 'Invalid format. Use: 7:00 AM - 8:30 AM')
-        rowValid = false; valid = false
-      } else {
-        if (teacherId && dayEl.value) {
-          const key = `${teacherId}_${dayEl.value}`
-          if (!teacherScheduleMap[key]) teacherScheduleMap[key] = []
-          for (const existing of teacherScheduleMap[key]) {
-            if (timesOverlap(parsed, existing.range)) {
-              showFieldError(timeEl, `Time conflict with Row ${existing.rowIndex + 1} on ${dayEl.value}.`)
-              valid = false; rowValid = false
-              break
-            }
-          }
-          if (rowValid) teacherScheduleMap[key].push({ range: parsed, rowIndex: i })
-        }
-
-        if (rowValid && dayEl.value) {
-          rows.forEach((otherRow, j) => {
-            if (j >= i) return
-            const otherDay  = otherRow.querySelector('select[name="days[]"]').value
-            const otherTime = otherRow.querySelector('input[name="times[]"]').value.trim()
-            const otherRoom = otherRow.querySelector('select[name="room_ids[]"]').value
-            if (otherDay === dayEl.value && otherTime === timeStr && otherRoom === roomEl.value) {
-              showFieldError(dayEl, `Duplicate entry: same Day, Time, and Room as Row ${j + 1}.`)
-              valid = false
-            }
-          })
-        }
-      }
+      valid = false
+    } else if (!parseTimeRange(timeStr)) {
+      showFieldError(timeEl, 'Invalid format. Use: 7:00 AM - 8:30 AM')
+      valid = false
     }
-
-    if (!roomEl.value) {
+    if (!roomId) {
       showFieldError(roomEl, 'Please select a room.')
       valid = false
     }
+
+    // Skip deep checks if basics are missing
+    if (!day || !timeStr || !parseTimeRange(timeStr) || !roomId || !sectionId || !subject) return
+
+    // ── Intra-batch conflict checks ──
+    const batchErrs = runBatchConflictChecks({
+      day, timeStr, roomId, sectionId, teacherId, subject,
+      rowIdx: i, batchRoomSlots, batchSecSlots, batchTeachSlots
+    })
+    batchErrs.forEach(msg => {
+      const labelled = `<strong>Row ${i + 1} (${day} ${timeStr}):</strong> ${msg}`
+      showFieldError(timeEl, msg.replace(/<[^>]+>/g, ''))  // strip HTML for inline
+      allConflictMessages.push(labelled)
+      valid = false
+    })
+
+    // ── DB-level conflict checks (Rules 1–6) ──
+    const dbErrs = runAllConflictChecks({
+      day, timeStr, roomId, sectionId, teacherId, subject, excludeId: null
+    })
+    dbErrs.forEach(msg => {
+      const labelled = `<strong>Row ${i + 1} (${day}):</strong> ${msg}`
+      allConflictMessages.push(labelled)
+      valid = false
+      // Highlight relevant field based on error type
+      if (msg.includes('Room conflict'))    showFieldError(roomEl, msg.replace(/<[^>]+>/g, ''))
+      if (msg.includes('Section conflict')) showFieldError(dayEl,  msg.replace(/<[^>]+>/g, ''))
+      if (msg.includes('Teacher conflict')) showFieldError(timeEl, msg.replace(/<[^>]+>/g, ''))
+      if (msg.includes('Duplicate subject'))showFieldError(subjectEl, msg.replace(/<[^>]+>/g, ''))
+      if (msg.includes('Exact duplicate')) {
+        showFieldError(dayEl, msg.replace(/<[^>]+>/g, ''))
+        showFieldError(timeEl, msg.replace(/<[^>]+>/g, ''))
+        showFieldError(roomEl, msg.replace(/<[^>]+>/g, ''))
+      }
+    })
   })
+
+  if (allConflictMessages.length > 0) {
+    showConflictAlert(allConflictMessages)
+  }
 
   return valid
 }
@@ -953,60 +1260,103 @@ function submitBulkForm() {
   if (validateBulkForm()) document.getElementById('bulkScheduleForm').submit()
 }
 
-/* ══════════════════════════════════
-   EDIT SCHEDULE VALIDATION & SUBMIT
-══════════════════════════════════ */
+
+/* ════════════════════════════════════════════════════════════════════════════
+   EDIT SCHEDULE — VALIDATE & SUBMIT
+════════════════════════════════════════════════════════════════════════════ */
 
 function validateEditForm() {
-  let valid = true
   clearAllErrors('editScheduleForm')
+  let valid = true
+  const allConflictMessages = []
 
-  const dayEl     = document.getElementById('edit_day')
-  const timeEl    = document.getElementById('edit_time')
-  const subjectEl = document.getElementById('edit_subject')
-  const sectionEl = document.getElementById('edit_section_id')
-  const roomEl    = document.getElementById('edit_room_id')
+  const form       = document.getElementById('editScheduleForm')
+  const dayEl      = document.getElementById('edit_day')
+  const timeEl     = document.getElementById('edit_time')
+  const subjectEl  = document.getElementById('edit_subject')
+  const sectionEl  = document.getElementById('edit_section_id')
+  const roomEl     = document.getElementById('edit_room_id')
+  const teacherSel = document.getElementById('edit_teacher_id')
 
-  if (!dayEl.value) {
+  const originalSubject = form.dataset.originalSubject || ''
+  const editingId       = form.dataset.editingId ? parseInt(form.dataset.editingId, 10) : null
+
+  const day       = dayEl.value.trim()
+  const timeStr   = timeEl.value.trim()
+  const subject   = subjectEl.value.trim()
+  const sectionId = sectionEl.value
+  const roomId    = roomEl.value
+  const teacherId = teacherSel.value || null
+
+  // ── Required field checks ──
+  if (!day) {
     showFieldError(dayEl, 'Please select a day.')
     showError('err_edit_day', 'Please select a day.')
     valid = false
   }
-
-  const timeStr = timeEl.value.trim()
   if (!timeStr) {
     showFieldError(timeEl, 'Time is required.')
     showError('err_edit_time', 'Time is required.')
     valid = false
-  } else {
-    const parsed = parseTimeRange(timeStr)
-    if (!parsed) {
-      showFieldError(timeEl, 'Invalid format. Use: 7:00 AM - 8:30 AM')
-      showError('err_edit_time', 'Invalid time format. Use: 7:00 AM - 8:30 AM')
-      valid = false
-    }
+  } else if (!parseTimeRange(timeStr)) {
+    showFieldError(timeEl, 'Invalid format. Use: 7:00 AM - 8:30 AM')
+    showError('err_edit_time', 'Invalid time format.')
+    valid = false
   }
-
-  if (!subjectEl.value.trim()) {
+  if (!subject) {
     showFieldError(subjectEl, 'Subject is required.')
     showError('err_edit_subject', 'Subject is required.')
     valid = false
-  } else if (subjectEl.value.trim().length < 2) {
+  } else if (subject.length < 2) {
     showFieldError(subjectEl, 'Subject must be at least 2 characters.')
     showError('err_edit_subject', 'Subject must be at least 2 characters.')
     valid = false
   }
-
-  if (!sectionEl.value) {
+  if (!sectionId) {
     showFieldError(sectionEl, 'Please select a section.')
     showError('err_edit_section', 'Please select a section.')
     valid = false
   }
-
-  if (!roomEl.value) {
+  if (!roomId) {
     showFieldError(roomEl, 'Please select a room.')
     showError('err_edit_room', 'Please select a room.')
     valid = false
+  }
+
+  // ── Teacher subject-count limit (Rule 7) ──
+  if (subject && teacherSel.value) {
+    const limitErr = validateTeacherSubjectLimit(teacherSel, subject, originalSubject)
+    if (limitErr) {
+      showFieldError(teacherSel, limitErr)
+      showError('err_edit_teacher', limitErr)
+      allConflictMessages.push(`<strong>Teacher subject limit:</strong> ${limitErr}`)
+      valid = false
+    }
+  }
+
+  // ── Run Rules 1–6 against existing schedules (excluding self) ──
+  if (day && timeStr && parseTimeRange(timeStr) && roomId && subject && sectionId) {
+    const dbErrs = runAllConflictChecks({
+      day, timeStr, roomId, sectionId, teacherId, subject, excludeId: editingId
+    })
+    dbErrs.forEach(msg => {
+      allConflictMessages.push(msg)
+      valid = false
+      if (msg.includes('Room conflict'))     showFieldError(roomEl,    msg.replace(/<[^>]+>/g, ''))
+      if (msg.includes('Section conflict'))  showFieldError(dayEl,     msg.replace(/<[^>]+>/g, ''))
+      if (msg.includes('Teacher conflict'))  showFieldError(timeEl,    msg.replace(/<[^>]+>/g, ''))
+      if (msg.includes('Duplicate subject')) showFieldError(subjectEl, msg.replace(/<[^>]+>/g, ''))
+      if (msg.includes('Duplicate assignment')) showFieldError(teacherSel, msg.replace(/<[^>]+>/g, ''))
+      if (msg.includes('Exact duplicate')) {
+        showFieldError(dayEl,  msg.replace(/<[^>]+>/g, ''))
+        showFieldError(timeEl, msg.replace(/<[^>]+>/g, ''))
+        showFieldError(roomEl, msg.replace(/<[^>]+>/g, ''))
+      }
+    })
+  }
+
+  if (allConflictMessages.length > 0) {
+    showConflictAlert(allConflictMessages)
   }
 
   return valid
@@ -1016,71 +1366,62 @@ function submitEditForm() {
   if (validateEditForm()) document.getElementById('editScheduleForm').submit()
 }
 
-/* ══════════════════════════════════
+
+/* ════════════════════════════════════════════════════════════════════════════
    ADD ROOM VALIDATION
-══════════════════════════════════ */
+════════════════════════════════════════════════════════════════════════════ */
 
 function submitAddRoom() {
   const input = document.getElementById('room_name_input')
   clearFieldError(input)
   const val = input.value.trim()
-  if (!val) {
-    showFieldError(input, 'Room name is required.')
-    showError('err_room_name', 'Room name is required.')
-    return
-  }
-  if (val.length < 2) {
-    showFieldError(input, 'Room name must be at least 2 characters.')
-    showError('err_room_name', 'Room name must be at least 2 characters.')
-    return
-  }
-  if (val.length > 60) {
-    showFieldError(input, 'Room name must not exceed 60 characters.')
-    showError('err_room_name', 'Room name must not exceed 60 characters.')
-    return
-  }
+  if (!val) { showFieldError(input, 'Room name is required.'); showError('err_room_name', 'Room name is required.'); return }
+  if (val.length < 2) { showFieldError(input, 'Room name must be at least 2 characters.'); return }
+  if (val.length > 60) { showFieldError(input, 'Room name must not exceed 60 characters.'); return }
   document.getElementById('addRoomForm').submit()
 }
 
-/* ── Live error clear ── */
-document.addEventListener('input', function(e) {
-  if (e.target.matches('.form-input, .form-select')) clearFieldError(e.target)
-})
-document.addEventListener('change', function(e) {
-  if (e.target.matches('.form-select')) clearFieldError(e.target)
-})
 
-/* ── Bulk rows ── */
+/* ════════════════════════════════════════════════════════════════════════════
+   LIVE ERROR CLEARING
+════════════════════════════════════════════════════════════════════════════ */
+
+document.addEventListener('input',  e => { if (e.target.matches('.form-input, .form-select'))  clearFieldError(e.target) })
+document.addEventListener('change', e => { if (e.target.matches('.form-select')) clearFieldError(e.target) })
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   BULK ROW MANAGEMENT
+════════════════════════════════════════════════════════════════════════════ */
+
 function updateBulkRowCount() {
-  const count = document.querySelectorAll('#bulkRowsContainer .bulk-row').length
-  const counter = document.getElementById('bulkRowCount')
-  const warning = document.getElementById('noDaysWarning')
-  if (counter) counter.textContent = `${count} day(s) selected`
-  if (warning) warning.classList.toggle('hidden', count > 0)
+  const n   = document.querySelectorAll('#bulkRowsContainer .bulk-row').length
+  const ctr = document.getElementById('bulkRowCount')
+  const wrn = document.getElementById('noDaysWarning')
+  if (ctr) ctr.textContent = `${n} day(s) selected`
+  if (wrn) wrn.classList.toggle('hidden', n > 0)
 }
 
 function addBulkRow() {
-  const template  = document.getElementById('bulkRowTemplate')
-  const container = document.getElementById('bulkRowsContainer')
-  const clone     = template.content.cloneNode(true)
-  const row       = clone.querySelector('.bulk-row')
-  row.style.opacity   = '0'
-  row.style.transform = 'translateY(-8px)'
-  container.appendChild(clone)
+  const tpl = document.getElementById('bulkRowTemplate')
+  const con = document.getElementById('bulkRowsContainer')
+  const cl  = tpl.content.cloneNode(true)
+  const row = cl.querySelector('.bulk-row')
+  row.style.cssText = 'opacity:0;transform:translateY(-8px)'
+  con.appendChild(cl)
   requestAnimationFrame(() => {
-    const newRow = container.lastElementChild
-    newRow.style.transition = 'opacity .2s ease, transform .2s ease'
-    newRow.style.opacity    = '1'
-    newRow.style.transform  = 'translateY(0)'
+    const r = con.lastElementChild
+    r.style.transition = 'opacity .2s ease, transform .2s ease'
+    r.style.opacity    = '1'
+    r.style.transform  = 'translateY(0)'
   })
   updateBulkRowCount()
 }
 
 function removeBulkRow(btn) {
-  const row      = btn.closest('.bulk-row')
-  const container = document.getElementById('bulkRowsContainer')
-  const rows     = container.querySelectorAll('.bulk-row')
-  if (rows.length <= 1) {
+  const row = btn.closest('.bulk-row')
+  const con = document.getElementById('bulkRowsContainer')
+  if (con.querySelectorAll('.bulk-row').length <= 1) {
     row.style.transition  = 'border-color .15s ease'
     row.style.borderColor = '#fca5a5'
     setTimeout(() => { row.style.borderColor = '' }, 600)
@@ -1092,30 +1433,39 @@ function removeBulkRow(btn) {
   setTimeout(() => { row.remove(); updateBulkRowCount() }, 190)
 }
 
-/* ── Init ── */
-document.addEventListener('DOMContentLoaded', () => {
-  addBulkRow()
 
-  MODAL_IDS.forEach(id => {
-    const el = document.getElementById(id)
-    if (el && el.parentElement !== document.body) document.body.appendChild(el)
-  })
+/* ════════════════════════════════════════════════════════════════════════════
+   TOAST
+════════════════════════════════════════════════════════════════════════════ */
 
-  document.querySelectorAll('.toast-item').forEach((toast, i) => {
-    setTimeout(() => dismissToast(toast), 5000 + i * 300)
-  })
-
-  // Initialise visible count correctly
-  applyFilters()
-})
-
-/* ── Toast ── */
 function dismissToast(el) {
   el.style.transition = 'opacity .25s, transform .25s'
   el.style.opacity    = '0'
   el.style.transform  = 'translateX(20px)'
   setTimeout(() => el.remove(), 260)
 }
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════════════════════════════════════ */
+
+document.addEventListener('DOMContentLoaded', () => {
+  addBulkRow()
+
+  // Hoist all modals to <body> so they always render above everything
+  MODAL_IDS.forEach(id => {
+    const el = document.getElementById(id)
+    if (el && el.parentElement !== document.body) document.body.appendChild(el)
+  })
+
+  // Auto-dismiss toasts
+  document.querySelectorAll('.toast-item').forEach((t, i) => {
+    setTimeout(() => dismissToast(t), 5000 + i * 300)
+  })
+
+  applyFilters()
+})
 </script>
 
 
@@ -1128,192 +1478,155 @@ function dismissToast(el) {
 
   html.modal-open, body.modal-open { overflow: hidden !important; }
 
+  /* ── Toast ── */
   .toast-item { animation: toastSlideIn .3s cubic-bezier(.22,1,.36,1) both; }
   @keyframes toastSlideIn {
-    from { opacity: 0; transform: translateX(40px); }
-    to   { opacity: 1; transform: translateX(0); }
+    from { opacity:0; transform:translateX(40px); }
+    to   { opacity:1; transform:translateX(0); }
   }
 
   /* ── Filter dropdowns ── */
-  .filter-dropdown-wrap {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-  }
+  .filter-dropdown-wrap { position:relative; display:inline-flex; align-items:center; }
 
   .filter-select {
-    appearance: none;
-    -webkit-appearance: none;
-    padding: .6rem 2.25rem .6rem 2.25rem;
-    font-size: .8125rem;
-    font-weight: 500;
-    color: #374151;
-    background: #fff
-      url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")
-      no-repeat right .6rem center / 1.1rem;
-    border: 1.5px solid #e0e7ff;
-    border-radius: 9999px;
-    outline: none;
-    cursor: pointer;
-    min-width: 160px;
-    transition: border-color .2s, box-shadow .2s, background-color .2s;
-    white-space: nowrap;
+    appearance:none; -webkit-appearance:none;
+    padding:.6rem 2.25rem .6rem 2.25rem;
+    font-size:.8125rem; font-weight:500; color:#374151;
+    background:#fff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") no-repeat right .6rem center/1.1rem;
+    border:1.5px solid #e0e7ff; border-radius:9999px; outline:none; cursor:pointer;
+    min-width:160px; transition:border-color .2s, box-shadow .2s, background-color .2s;
   }
+  .filter-select:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.12); background-color:#f0f9ff; }
 
-  .filter-select:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59,130,246,.12);
-    background-color: #f0f9ff;
-  }
-
-  /* When a filter is active, give it a blue tint */
-  .filter-select:not([value=""]):not(:has(option[value=""]:checked)) {
-    border-color: #93c5fd;
-    background-color: #eff6ff;
-  }
-
-  /* Active indicator dot (injected via JS class toggle) */
   .filter-active-dot {
-    position: absolute;
-    top: 4px;
-    right: 28px;
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: #2563eb;
-    border: 1.5px solid #fff;
-    pointer-events: none;
+    position:absolute; top:4px; right:28px;
+    width:7px; height:7px; border-radius:50%;
+    background:#2563eb; border:1.5px solid #fff; pointer-events:none;
   }
 
+  /* ── Form elements ── */
   .form-label {
-    display: block; font-size: .8125rem; font-weight: 600;
-    color: #1f2937; margin-bottom: .6rem; letter-spacing: .02em;
+    display:block; font-size:.8125rem; font-weight:600;
+    color:#1f2937; margin-bottom:.6rem; letter-spacing:.02em;
   }
-  .form-input {
-    display: block; width: 100%; padding: .875rem 1rem;
-    font-size: .875rem; color: #111827; background: #fff;
-    border: 1.5px solid #e0e7ff; border-radius: 1rem;
-    outline: none; transition: border-color .2s, box-shadow .2s, background .2s;
-  }
-  .form-input:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59,130,246,.12);
-    background: #f0f9ff;
-  }
-  .form-input::placeholder { color: #9ca3af; }
 
-  .form-input.input-error {
-    border-color: #f87171 !important;
-    box-shadow: 0 0 0 3px rgba(248,113,113,.15) !important;
-    background: #fff5f5 !important;
+  .form-input {
+    display:block; width:100%; padding:.875rem 1rem;
+    font-size:.875rem; color:#111827; background:#fff;
+    border:1.5px solid #e0e7ff; border-radius:1rem; outline:none;
+    transition:border-color .2s, box-shadow .2s, background .2s;
   }
+  .form-input:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.12); background:#f0f9ff; }
+  .form-input::placeholder { color:#9ca3af; }
+
+  .form-select {
+    display:block; width:100%;
+    padding:.875rem 2.5rem .875rem 1rem; font-size:.875rem; color:#111827;
+    background:#fff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") no-repeat right .75rem center/1.25rem;
+    border:1.5px solid #e0e7ff; border-radius:1rem; outline:none;
+    appearance:none; -webkit-appearance:none;
+    transition:border-color .2s, box-shadow .2s, background .2s;
+  }
+  .form-select:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.12); background-color:#f0f9ff; }
+
+  .form-input.input-error,
   .form-select.input-error {
-    border-color: #f87171 !important;
-    box-shadow: 0 0 0 3px rgba(248,113,113,.15) !important;
-    background-color: #fff5f5 !important;
+    border-color:#f87171 !important;
+    box-shadow:0 0 0 3px rgba(248,113,113,.15) !important;
+    background:#fff5f5 !important;
   }
 
   .field-error {
-    display: block; font-size: .75rem; color: #dc2626;
-    margin-top: .35rem; margin-left: .25rem;
-    font-weight: 500; letter-spacing: .01em;
-    animation: errorFadeIn .18s ease;
+    display:block; font-size:.75rem; color:#dc2626;
+    margin-top:.35rem; margin-left:.25rem;
+    font-weight:500; letter-spacing:.01em;
+    animation:errorFadeIn .18s ease;
   }
   @keyframes errorFadeIn {
-    from { opacity: 0; transform: translateY(-4px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from { opacity:0; transform:translateY(-4px); }
+    to   { opacity:1; transform:translateY(0); }
   }
 
-  .form-select {
-    display: block; width: 100%;
-    padding: .875rem 2.5rem .875rem 1rem; font-size: .875rem; color: #111827;
-    background: #fff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") no-repeat right .75rem center / 1.25rem;
-    border: 1.5px solid #e0e7ff; border-radius: 1rem;
-    outline: none; appearance: none; -webkit-appearance: none;
-    transition: border-color .2s, box-shadow .2s, background .2s;
-  }
-  .form-select:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59,130,246,.12);
-    background-color: #f0f9ff;
-  }
-
+  /* ── View fields ── */
   .view-label {
-    display: block; font-size: .7rem; font-weight: 600;
-    text-transform: uppercase; letter-spacing: .06em;
-    color: #9ca3af; margin-bottom: .4rem;
+    display:block; font-size:.7rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:.06em;
+    color:#9ca3af; margin-bottom:.4rem;
   }
   .view-field {
-    background: #f9fafb; border: 1.5px solid #e5e7eb;
-    border-radius: .875rem; padding: .75rem 1rem;
-    font-size: .875rem; color: #1f2937; min-height: 2.75rem;
+    background:#f9fafb; border:1.5px solid #e5e7eb; border-radius:.875rem;
+    padding:.75rem 1rem; font-size:.875rem; color:#1f2937; min-height:2.75rem;
   }
 
+  /* ── Modals ── */
   .modal-overlay {
-    position: fixed; inset: 0; z-index: 2147483000;
-    display: flex; align-items: flex-start; justify-content: center;
-    padding: 24px 16px; overflow-y: auto; overflow-x: hidden;
-    background: rgba(17,24,39,.58);
-    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
-    isolation: isolate; opacity: 0; pointer-events: none;
-    transition: opacity .18s ease;
+    position:fixed; inset:0; z-index:2147483000;
+    display:flex; align-items:flex-start; justify-content:center;
+    padding:24px 16px; overflow-y:auto; overflow-x:hidden;
+    background:rgba(17,24,39,.58);
+    backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);
+    isolation:isolate; opacity:0; pointer-events:none;
+    transition:opacity .18s ease;
   }
-  .modal-overlay.is-open { opacity: 1; pointer-events: auto; }
+  .modal-overlay.is-open { opacity:1; pointer-events:auto; }
+
+  /* Conflict alert sits above everything else */
+  .conflict-overlay { z-index:2147484000 !important; }
 
   .modal-panel {
-    position: relative; z-index: 2147483001; width: 100%;
-    background: #fff; border-radius: 1.5rem;
-    box-shadow: 0 25px 50px -12px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.12);
-    overflow: hidden; display: flex; flex-direction: column;
-    margin: auto 0; max-height: calc(100vh - 48px);
-    transform: translateY(10px) scale(.985);
-    transition: transform .18s ease;
+    position:relative; z-index:2147483001; width:100%;
+    background:#fff; border-radius:1.5rem;
+    box-shadow:0 25px 50px -12px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.12);
+    overflow:hidden; display:flex; flex-direction:column;
+    margin:auto 0; max-height:calc(100vh - 48px);
+    transform:translateY(10px) scale(.985);
+    transition:transform .18s ease;
   }
-  .modal-overlay.is-open .modal-panel { transform: translateY(0) scale(1); }
-  .modal-panel-xl { max-width: 860px; }
-  .modal-panel-lg { max-width: 700px; }
-  .modal-panel-md { max-width: 560px; }
+  .modal-overlay.is-open .modal-panel { transform:translateY(0) scale(1); }
+  .modal-panel-xl { max-width:860px; }
+  .modal-panel-lg { max-width:700px; }
+  .modal-panel-md { max-width:560px; }
 
   .modal-header {
-    position: sticky; top: 0; z-index: 30; padding: 1.25rem 2rem;
-    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    position:sticky; top:0; z-index:30; padding:1.25rem 2rem;
+    display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
   }
-  .modal-body { overflow-y: auto; overflow-x: hidden; flex: 1 1 auto; }
+  .modal-body  { overflow-y:auto; overflow-x:hidden; flex:1 1 auto; }
   .modal-footer {
-    position: sticky; bottom: 0; z-index: 30; padding: 1.25rem 2rem;
-    border-top: 1px solid #f3f4f6; background: rgba(249,250,251,.96);
-    backdrop-filter: blur(6px); display: flex; align-items: center;
-    justify-content: flex-end; gap: .75rem; flex-shrink: 0;
+    position:sticky; bottom:0; z-index:30; padding:1.25rem 2rem;
+    border-top:1px solid #f3f4f6; background:rgba(249,250,251,.96);
+    backdrop-filter:blur(6px); display:flex; align-items:center;
+    justify-content:flex-end; gap:.75rem; flex-shrink:0;
   }
   .modal-close-btn {
-    width: 2.25rem; height: 2.25rem; border-radius: 9999px;
-    background: rgba(255,255,255,.2); color: #fff;
-    display: flex; align-items: center; justify-content: center;
-    transition: background-color .15s;
+    width:2.25rem; height:2.25rem; border-radius:9999px;
+    background:rgba(255,255,255,.2); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    transition:background-color .15s;
   }
-  .modal-close-btn:hover { background: rgba(255,255,255,.3); }
+  .modal-close-btn:hover { background:rgba(255,255,255,.3); }
 
   @keyframes fadeIn {
-    from { opacity: 0; transform: scale(.97) translateY(8px); }
-    to   { opacity: 1; transform: scale(1) translateY(0); }
+    from { opacity:0; transform:scale(.97) translateY(8px); }
+    to   { opacity:1; transform:scale(1) translateY(0); }
   }
-  .animate-fadeIn { animation: fadeIn .2s ease-out; }
+  .animate-fadeIn { animation:fadeIn .2s ease-out; }
 
-  .bulk-row .form-input  { border-color: #bfdbfe; }
-  .bulk-row .form-select { border-color: #bfdbfe; }
+  /* ── Bulk row styling ── */
+  .bulk-row .form-input  { border-color:#bfdbfe; }
+  .bulk-row .form-select { border-color:#bfdbfe; }
   .bulk-row .form-input:focus,
   .bulk-row .form-select:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59,130,246,.12);
-    background: #eff6ff;
+    border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.12); background:#eff6ff;
   }
-  .bulk-row .form-label { color: #1e40af; }
+  .bulk-row .form-label { color:#1e40af; }
 
-  @media (max-width: 640px) {
-    .modal-overlay { padding: 12px; align-items: stretch; }
-    .modal-panel   { max-height: calc(100vh - 24px); border-radius: 1.25rem; }
-    .modal-header, .modal-footer { padding-left: 1rem; padding-right: 1rem; }
-    .filter-select { min-width: 130px; font-size: .75rem; }
+  @media (max-width:640px) {
+    .modal-overlay { padding:12px; align-items:stretch; }
+    .modal-panel   { max-height:calc(100vh - 24px); border-radius:1.25rem; }
+    .modal-header,
+    .modal-footer  { padding-left:1rem; padding-right:1rem; }
+    .filter-select { min-width:130px; font-size:.75rem; }
   }
 </style>
 

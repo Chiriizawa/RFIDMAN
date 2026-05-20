@@ -336,7 +336,6 @@ def login():
             if username == admin_username and password == admin_password:
                 session["sadmin_logged_in"] = True
                 session["sadmin_username"]  = username
-                flash("Welcome back, Superadmin!", "success")
                 return redirect(url_for("sadmin.index"))
             else:
                 flash("Invalid username or password.", "danger")
@@ -355,7 +354,6 @@ def login():
             session["sadmin_logged_in"]  = True
             session["sadmin_username"]   = username
             session["sadmin_account_id"] = account["id"]
-            flash("Welcome back, Superadmin!", "success")
             return redirect(url_for("sadmin.index"))
         else:
             flash("Invalid username or password.", "danger")
@@ -1049,4 +1047,3 @@ def download_backup(backup_type):
     else:
         flash("Invalid backup type selected.", "error")
         return redirect(url_for("sadmin.backup_database"))
-

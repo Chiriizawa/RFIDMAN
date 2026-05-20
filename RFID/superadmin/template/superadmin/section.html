@@ -77,6 +77,13 @@
         letter-spacing: 0.04em;
     }
 
+    /* Disabled teacher option styling */
+    select option:disabled {
+        color: #94a3b8;
+        background-color: #f8fafc;
+        font-style: italic;
+    }
+
     /* Lock warning modal */
     @keyframes popIn {
         0%   { transform: scale(0.85); opacity: 0; }
@@ -245,17 +252,29 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Teacher</label>
-                    <select name="teacher_id"
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Adviser</label>
+                    <select name="teacher_id" id="add_teacher_id"
                             class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">No Teacher</option>
-                        {% for teacher in teachers %}
+                        {% set available_teachers = teachers | rejectattr('id', 'in', assigned_teacher_ids) | list %}
+                        {% set taken_teachers     = teachers | selectattr('id', 'in', assigned_teacher_ids) | list %}
+                        {% for teacher in available_teachers %}
                             <option value="{{ teacher.id }}">
                                 {{ teacher.last_name }}, {{ teacher.first_name }}
                                 {% if teacher.middle_name %} {{ teacher.middle_name }}{% endif %}
                             </option>
                         {% endfor %}
+                        {% for teacher in taken_teachers %}
+                            <option value="{{ teacher.id }}" disabled>
+                                {{ teacher.last_name }}, {{ teacher.first_name }}
+                                {% if teacher.middle_name %} {{ teacher.middle_name }}{% endif %}
+                            </option>
+                        {% endfor %}
                     </select>
+                    <p class="text-slate-400 text-xs mt-1 flex items-center gap-1">
+                        <i class="fa-solid fa-circle-info text-blue-400"></i>
+                        Only available teachers are selectable.
+                    </p>
                 </div>
             </div>
             <div class="flex justify-end gap-3 pt-2">
@@ -316,13 +335,25 @@
                     <select name="teacher_id" id="edit_teacher_id"
                             class="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">No Teacher</option>
-                        {% for teacher in teachers %}
-                            <option value="{{ teacher.id }}">
+                        {% set available_teachers = teachers | rejectattr('id', 'in', assigned_teacher_ids) | list %}
+                        {% set taken_teachers     = teachers | selectattr('id', 'in', assigned_teacher_ids) | list %}
+                        {% for teacher in available_teachers %}
+                            <option value="{{ teacher.id }}" data-assigned="false">
+                                {{ teacher.last_name }}, {{ teacher.first_name }}
+                                {% if teacher.middle_name %} {{ teacher.middle_name }}{% endif %}
+                            </option>
+                        {% endfor %}
+                        {% for teacher in taken_teachers %}
+                            <option value="{{ teacher.id }}" data-assigned="true" disabled>
                                 {{ teacher.last_name }}, {{ teacher.first_name }}
                                 {% if teacher.middle_name %} {{ teacher.middle_name }}{% endif %}
                             </option>
                         {% endfor %}
                     </select>
+                    <p class="text-slate-400 text-xs mt-1 flex items-center gap-1">
+                        <i class="fa-solid fa-circle-info text-blue-400"></i>
+                        Only available teachers are selectable.
+                    </p>
                 </div>
             </div>
             <div class="flex justify-end gap-3 pt-2">
@@ -485,9 +516,13 @@
 </div>
 
 <script>
+    // ─── Assigned teacher IDs from backend ───────────────────────
+    const assignedTeacherIds = new Set([
+        {% for tid in assigned_teacher_ids %}{{ tid }}{% if not loop.last %},{% endif %}{% endfor %}
+    ]);
+
     // ─── Validation ───────────────────────────────────────────────
     function isValidSectionName(n) { return /^[A-Za-z]{3,20}$/.test(n); }
-    // Block/sub name: letters, numbers, spaces allowed — 1-20 chars (optional)
     function isValidSubName(n) { return n === '' || /^[A-Za-z0-9 ]{1,20}$/.test(n); }
 
     function validateAddForm() {
@@ -586,21 +621,61 @@
     function showModal(id)  { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
     function hideModal(id)  { document.getElementById(id).classList.add('hidden');    document.getElementById(id).classList.remove('flex'); }
 
-    function openAddModal()    { showModal('addModal'); document.getElementById('add_section_name_error').classList.remove('show'); document.getElementById('add_sub_name_error').classList.remove('show'); }
+    function openAddModal() {
+        showModal('addModal');
+        document.getElementById('add_section_name_error').classList.remove('show');
+        document.getElementById('add_sub_name_error').classList.remove('show');
+        // Disable already-assigned teachers in the Add dropdown
+        refreshAddTeacherDropdown(null);
+    }
+
     function closeAddModal()   { hideModal('addModal'); }
     function closeEditModal()  { hideModal('editModal'); }
     function closeDeleteModal(){ hideModal('deleteModal'); }
 
-    // openEditModal now receives subName as 3rd argument (shifted from original)
+    // Add modal uses Jinja-rendered optgroups — no JS refresh needed
+    function refreshAddTeacherDropdown(currentTeacherId) { /* no-op */ }
+
+    /**
+     * openEditModal: receives the current teacher assigned to THIS section.
+     * That teacher should remain enabled in the dropdown; all others that are
+     * assigned to a DIFFERENT section are disabled.
+     */
     function openEditModal(id, sectionName, subName, yearLevel, teacherId) {
+        const currentTeacherId = teacherId ? parseInt(teacherId) : null;
+
         document.getElementById('edit_section_id').value   = id;
         document.getElementById('edit_section_name').value = sectionName;
         document.getElementById('edit_sub_name').value     = subName    || "";
         document.getElementById('edit_year_level').value   = yearLevel  || "";
-        document.getElementById('edit_teacher_id').value   = teacherId  || "";
+
+        // Refresh the edit dropdown, enabling the current section's teacher
+        refreshEditTeacherDropdown(currentTeacherId);
+
+        document.getElementById('edit_teacher_id').value = teacherId || "";
+
         showModal('editModal');
         document.getElementById('edit_section_name_error').classList.remove('show');
         document.getElementById('edit_sub_name_error').classList.remove('show');
+    }
+
+    /**
+     * Refresh the Edit modal teacher dropdown.
+     * The current section's own teacher is moved to Available and enabled.
+     * All others in the taken group stay disabled.
+     */
+    function refreshEditTeacherDropdown(currentTeacherId) {
+        const select = document.getElementById('edit_teacher_id');
+        Array.from(select.options).forEach(opt => {
+            if (!opt.value) return;
+            const tid = parseInt(opt.value);
+            if (tid === currentTeacherId) {
+                opt.disabled = false;
+                opt.dataset.assigned = 'false';
+            } else if (opt.dataset.assigned === 'true') {
+                opt.disabled = true;
+            }
+        });
     }
 
     function openDeleteModal(id, sectionName) {

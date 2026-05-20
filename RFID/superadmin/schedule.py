@@ -225,7 +225,7 @@ def check_room_conflict_db(cur, room_id: int, day: str, new_start: dtime,
 
 
 # ─────────────────────────────────────────────
-# ★ NEW: TEACHER SUBJECT LIMIT CHECK (MAX 2)
+# TEACHER SUBJECT LIMIT CHECK (MAX 2)
 # ─────────────────────────────────────────────
 
 MAX_SUBJECTS_PER_TEACHER = 2
@@ -289,6 +289,32 @@ def check_teacher_subject_limit_db(
         return {"current_subjects": display_subjects}
 
     return None
+
+
+# ─────────────────────────────────────────────
+# FETCH TEACHER SUBJECTS (for frontend validation)
+# ─────────────────────────────────────────────
+
+def get_teacher_subjects_map(cur) -> dict:
+    """
+    Returns a dict mapping teacher_id (int) → list of distinct subject strings
+    they currently handle. Used to pass subject data to the template so the
+    frontend can validate the 2-subject limit before submitting the form.
+
+    Example: { 1: ["Mathematics", "Science"], 3: ["English"] }
+    """
+    cur.execute("""
+        SELECT
+            teacher_id,
+            array_agg(DISTINCT subject ORDER BY subject) AS subjects
+        FROM schedules
+        WHERE teacher_id IS NOT NULL
+          AND subject IS NOT NULL
+          AND TRIM(subject) <> ''
+        GROUP BY teacher_id
+    """)
+    rows = cur.fetchall()
+    return {r["teacher_id"]: list(r["subjects"]) for r in rows}
 
 
 # ─────────────────────────────────────────────
@@ -390,12 +416,16 @@ def schedule():
         """)
         teachers = cur.fetchall()
 
+        # ── Fetch each teacher's current subjects for frontend validation ──
+        teacher_subjects_map = get_teacher_subjects_map(cur)
+
         return render_template(
             "superadmin/schedule.html",
             schedules=schedules,
             rooms=rooms,
             sections=sections,
             teachers=teachers,
+            teacher_subjects_map=teacher_subjects_map,
             total_schedules=len(schedules),
             search=search,
         )
@@ -405,6 +435,7 @@ def schedule():
         return render_template(
             "superadmin/schedule.html",
             schedules=[], rooms=[], sections=[], teachers=[],
+            teacher_subjects_map={},
             total_schedules=0, search="",
         )
     finally:
@@ -448,7 +479,7 @@ def bulk_add_schedule():
         teacher_id_int = int(teacher_id) if teacher_id else None
         section_id_int = int(section_id)
 
-        # ── ★ Teacher subject limit check (done once for the whole bulk) ──
+        # ── Teacher subject limit check (done once for the whole bulk) ──
         if teacher_id_int:
             subject_limit = check_teacher_subject_limit_db(cur, teacher_id_int, subject)
             if subject_limit:
@@ -668,7 +699,7 @@ def update_schedule(schedule_id):
 
         teacher_id = int(teacher_id_str) if teacher_id_str else None
 
-        # ── ★ Teacher subject limit check (exclude current schedule's own subject) ──
+        # ── Teacher subject limit check (exclude current schedule's own subject) ──
         if teacher_id:
             subject_limit = check_teacher_subject_limit_db(
                 cur, teacher_id, subject,
