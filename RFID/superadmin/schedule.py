@@ -5,6 +5,7 @@ from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 import os
 import re
+import random
 from datetime import datetime, time as dtime
 
 load_dotenv()
@@ -35,6 +36,42 @@ def get_db_connection():
     if not database_url:
         raise Exception("❌ DATABASE_URL not found in .env")
     return psycopg2.connect(database_url.strip(), sslmode="require")
+
+
+# ─────────────────────────────────────────────
+# CLASS ID GENERATOR
+# Generates a unique 4-digit numeric class_id
+# that does not already exist in the schedules table.
+# ─────────────────────────────────────────────
+
+def generate_class_id(cur) -> str:
+    """
+    Generate a unique 4-digit numeric string (0001–9999) as class_id.
+    Queries the DB to ensure no collision with existing class_ids.
+    Raises RuntimeError if no free slot is found after 200 attempts
+    (practically impossible unless the table has ~9999 rows).
+    """
+    max_attempts = 200
+    for _ in range(max_attempts):
+        candidate = str(random.randint(1000, 9999))
+        cur.execute(
+            "SELECT 1 FROM schedules WHERE class_id = %s LIMIT 1",
+            (candidate,)
+        )
+        if cur.fetchone() is None:
+            return candidate
+
+    # Fallback: find the smallest unused 4-digit id sequentially
+    cur.execute("SELECT class_id FROM schedules WHERE class_id IS NOT NULL")
+    used = {row["class_id"] for row in cur.fetchall()}
+    for n in range(1000, 10000):
+        candidate = str(n)
+        if candidate not in used:
+            return candidate
+
+    raise RuntimeError(
+        "Cannot generate a unique 4-digit class_id — all values are in use."
+    )
 
 
 # ─────────────────────────────────────────────
@@ -371,6 +408,7 @@ def schedule():
         query = """
             SELECT
                 sc.id,
+                sc.class_id,
                 sc.day,
                 sc.time,
                 sc.subject,
@@ -395,9 +433,10 @@ def schedule():
                     OR LOWER(COALESCE(sc.day,       '')) LIKE LOWER(%s)
                     OR LOWER(COALESCE(r.room_name,  '')) LIKE LOWER(%s)
                     OR LOWER(COALESCE(s.section_name,'')) LIKE LOWER(%s)
+                    OR LOWER(COALESCE(sc.class_id,  '')) LIKE LOWER(%s)
             """
             like = f"%{search}%"
-            params.extend([like, like, like, like])
+            params.extend([like, like, like, like, like])
 
         query += " ORDER BY sc.id ASC"
         cur.execute(query, params)
@@ -595,7 +634,7 @@ def bulk_add_schedule():
             flash("No valid schedules to add. Please check your input.", "error")
             return redirect(url_for("schedule.schedule"))
 
-        # ── Insert valid rows ──
+        # ── Insert valid rows (each gets its own unique class_id) ──
         inserted = 0
         skipped  = 0
 
@@ -612,10 +651,14 @@ def bulk_add_schedule():
                 skipped += 1
                 continue
 
+            # Generate a unique 4-digit class_id for this schedule row
+            class_id = generate_class_id(cur)
+
             cur.execute("""
-                INSERT INTO schedules (section_id, day, time, subject, room_id, teacher_id)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO schedules (class_id, section_id, day, time, subject, room_id, teacher_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
             """, (
+                class_id,
                 row["section_id"], row["day"], row["time"],
                 row["subject"],    row["room_id"], row["teacher_id"],
             ))
@@ -748,7 +791,7 @@ def update_schedule(schedule_id):
             )
             return redirect(url_for("schedule.schedule"))
 
-        # ── Perform update ──
+        # ── Perform update (class_id is NOT changed on edit — it stays fixed) ──
         cur.execute("""
             UPDATE schedules
             SET section_id = %s,
