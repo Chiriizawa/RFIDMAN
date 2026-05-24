@@ -53,10 +53,10 @@
             gap: 1rem;
         }
 
-        /* SIDEBAR - Desktop Only */
+        /* SIDEBAR - Always expanded, no hover */
         .sidebar {
-            width: 78px;
-            transition: width 0.3s ease;
+            width: 260px;
+            flex-shrink: 0;
             background: linear-gradient(180deg, #1e3a8a 0%, #1e1b4b 100%);
             box-shadow: 4px 0 24px rgba(0,0,0,0.5);
             border: 1px solid rgba(255,255,255,0.08);
@@ -65,10 +65,6 @@
             border-radius: 1.5rem;
             height: 100%;
             overflow: hidden;
-        }
-
-        .sidebar:hover { 
-            width: 260px; 
         }
 
         .sidebar-content {
@@ -94,24 +90,6 @@
             border-radius: 10px;
         }
 
-        .sidebar:not(:hover) .sidebar-content::-webkit-scrollbar {
-            width: 0px;
-        }
-
-        .sidebar:not(:hover) .sidebar-content {
-            scrollbar-width: none;
-        }
-
-        .sidebar-text {
-            opacity: 0;
-            white-space: nowrap;
-            transition: opacity 0.25s ease;
-        }
-        
-        .sidebar:hover .sidebar-text { 
-            opacity: 1; 
-        }
-
         .sidebar-logo {
             flex-shrink: 0;
             padding: 1.5rem 1rem 1rem 1rem;
@@ -119,7 +97,7 @@
         }
 
         .sidebar-logo .flex {
-            justify-content: center;
+            justify-content: flex-start;
         }
         
         .logo-container {
@@ -130,15 +108,9 @@
             justify-content: center;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             overflow: hidden;
-            transition: all 0.3s ease;
-            width: 56px;
-            height: 64px;
-            flex-shrink: 0;
-        }
-        
-        .sidebar:hover .logo-container {
             width: 70px;
             height: 80px;
+            flex-shrink: 0;
         }
         
         .logo-image {
@@ -146,15 +118,9 @@
             height: 100%;
             object-fit: contain;
             padding: 4px;
-            transition: all 0.3s ease;
         }
 
-        /* Remove text logo on desktop */
-        .logo-text {
-            display: none;
-        }
-
-        /* Mobile Header - Top Bar (shown only on mobile) */
+        /* Mobile Header */
         .mobile-header {
             display: none;
             position: fixed;
@@ -194,7 +160,7 @@
             object-fit: contain;
         }
 
-        /* Mobile Sidebar (slides from left) */
+        /* Mobile Sidebar */
         .mobile-sidebar {
             position: fixed;
             top: 0;
@@ -333,7 +299,7 @@
             display: block;
         }
 
-        /* Dropdown menu styles for desktop */
+        /* Dropdown styles for desktop */
         .dropdown-menu {
             display: none;
             margin-left: 2rem;
@@ -479,6 +445,18 @@
                 padding: 0.75rem;
             }
         }
+
+        /* Class ID badge style */
+        .class-id-badge {
+            background: rgba(250, 204, 21, 0.15);
+            border: 1px solid rgba(250, 204, 21, 0.3);
+            color: #facc15;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 999px;
+            letter-spacing: 0.05em;
+        }
     </style>
 
     <style>
@@ -493,6 +471,7 @@
     <div class="layout-wrapper">
         <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeMobileSidebar()"></div>
         
+        <!-- Mobile Header -->
         <div class="mobile-header">
             <button class="mobile-menu-btn" onclick="openMobileSidebar()">
                 <i class="fa-solid fa-bars"></i>
@@ -501,6 +480,7 @@
             <div style="width: 40px;"></div>
         </div>
 
+        <!-- Mobile Sidebar -->
         <div class="mobile-sidebar" id="mobileSidebar">
             <div class="mobile-sidebar-header">
                 <h2><i class="fa-solid fa-id-card text-yellow-400"></i> Menu</h2>
@@ -517,10 +497,12 @@
                     <i class="fa-solid fa-calendar-alt w-5"></i>
                     <span>My Schedule</span>
                 </a>
+
+                <!-- Mobile My Classes Dropdown -->
                 <div class="mobile-nav-item" id="mobileClassesDropdown">
                     <div class="mobile-dropdown-toggle" onclick="toggleMobileDropdown(event)">
                         <div class="flex items-center gap-3">
-                            <i class="fa-solid fa-layer-group w-5"></i>
+                            <i class="fa-solid fa-chalkboard-teacher w-5"></i>
                             <span>My Classes</span>
                         </div>
                         <i class="fa-solid fa-chevron-down text-xs"></i>
@@ -534,6 +516,7 @@
                         </div>
                     </div>
                 </div>
+
                 <a href="{{ url_for('admin_bp.teacher_profile') }}" class="mobile-nav-item {% if request.endpoint == 'admin_bp.teacher_profile' %}active{% endif %}">
                     <i class="fa-solid fa-user-tie w-5"></i>
                     <span>My Profile</span>
@@ -547,12 +530,14 @@
             </div>
         </div>
 
+        <!-- Desktop Sidebar -->
         <aside class="sidebar desktop-sidebar">
             <div class="sidebar-logo">
-                <div class="flex items-center gap-0 px-1">
+                <div class="flex items-center gap-3 px-1">
                     <div class="logo-container">
                         <img src="{{ url_for('static', filename='images/cropted.png') }}" alt="Logo" class="logo-image">
                     </div>
+                    <span style="color: white; font-size: 1.1rem; font-weight: 700; letter-spacing: 0.01em;">Tap & Know</span>
                 </div>
             </div>
 
@@ -562,23 +547,24 @@
                     class="nav-item flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium
                     {% if request.endpoint == 'admin_bp.index' %}active{% endif %}">
                         <i class="fa-solid fa-house w-5 text-center"></i>
-                        <span class="sidebar-text">Dashboard</span>
+                        <span>Dashboard</span>
                     </a>
 
                     <a href="{{ url_for('admin_bp.schedules') }}"
                     class="nav-item flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium
                     {% if request.endpoint == 'admin_bp.schedules' %}active{% endif %}">
                         <i class="fa-solid fa-calendar-alt w-5 text-center"></i>
-                        <span class="sidebar-text">My Schedule</span>
+                        <span>My Schedule</span>
                     </a>
 
+                    <!-- Desktop My Classes Dropdown -->
                     <div class="nav-item has-dropdown" id="myClassesDropdown">
                         <div class="flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-medium dropdown-toggle">
                             <div class="flex items-center gap-3">
-                                <i class="fa-solid fa-layer-group w-5 text-center"></i>
-                                <span class="sidebar-text">My Classes</span>
+                                <i class="fa-solid fa-chalkboard-teacher w-5 text-center"></i>
+                                <span>My Classes</span>
                             </div>
-                            <i class="fa-solid fa-chevron-down text-xs sidebar-text"></i>
+                            <i class="fa-solid fa-chevron-down text-xs"></i>
                         </div>
                         <div class="dropdown-menu" id="dropdownMenu">
                             <div id="dynamicClassesList">
@@ -594,7 +580,7 @@
                     class="nav-item flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium
                     {% if request.endpoint == 'admin_bp.teacher_profile' %}active{% endif %}">
                         <i class="fa-solid fa-user-tie w-5 text-center"></i>
-                        <span class="sidebar-text">My Profile</span>
+                        <span>My Profile</span>
                     </a>
                 </div>
             </div>
@@ -604,7 +590,7 @@
                 class="flex items-center gap-3 px-3 py-3 text-blue-300 hover:text-red-300
                 hover:bg-white/10 rounded-2xl transition-all font-medium">
                     <i class="fa-solid fa-right-from-bracket w-5 text-center"></i>
-                    <span class="sidebar-text">Logout</span>
+                    <span>Logout</span>
                 </a>
             </div>
         </aside>
@@ -631,124 +617,107 @@
             const menu = document.getElementById('mobileDropdownMenu');
             menu.classList.toggle('show');
         }
-        
-        async function loadMobileSidebarSections() {
-            try {
-                const response = await fetch('/admin/api/get_sections_for_sidebar');
-                const data = await response.json();
-                
-                const container = document.getElementById('mobileClassesList');
-                if (!container) return;
-                
-                if (data.success && data.sections && data.sections.length > 0) {
-                    container.innerHTML = '';
-                    
-                    data.sections.forEach(section => {
-                        const isActive = window.location.href.includes(`/class_section/${section.id}`);
-                        
-                        const link = document.createElement('a');
-                        link.href = `/admin/class_section/${section.id}`;
-                        link.className = 'mobile-dropdown-item';
-                        if (isActive) {
-                            link.classList.add('active');
-                        }
-                        link.innerHTML = `
-                            <i class="fa-solid fa-layer-group w-4 text-center"></i>
-                            <span>${escapeHtml(section.section_name)} - ${section.year_level}</span>
-                            <span class="text-xs ml-auto opacity-70">(${section.student_count})</span>
-                        `;
-                        container.appendChild(link);
-                    });
-                } else {
-                    container.innerHTML = `
-                        <div class="mobile-dropdown-item">
-                            <i class="fa-solid fa-info-circle"></i>
-                            <span>No sections found</span>
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                console.error('Error loading sections:', error);
-                const container = document.getElementById('mobileClassesList');
-                if (container) {
-                    container.innerHTML = `
-                        <div class="mobile-dropdown-item">
-                            <i class="fa-solid fa-exclamation-triangle"></i>
-                            <span>Error loading sections</span>
-                        </div>
-                    `;
-                }
-            }
-        }
-        
-        async function loadSidebarSections() {
-            try {
-                const response = await fetch('/admin/api/get_sections_for_sidebar');
-                const data = await response.json();
-                
-                const container = document.getElementById('dynamicClassesList');
-                if (!container) return;
-                
-                if (data.success && data.sections && data.sections.length > 0) {
-                    container.innerHTML = '';
-                    
-                    data.sections.forEach(section => {
-                        const isActive = window.location.href.includes(`/class_section/${section.id}`);
-                        
-                        const link = document.createElement('a');
-                        link.href = `/admin/class_section/${section.id}`;
-                        link.className = `dropdown-item text-sm font-medium ${isActive ? 'active' : ''}`;
-                        link.innerHTML = `
-                            <i class="fa-solid fa-layer-group w-4 text-center"></i>
-                            <span>${escapeHtml(section.section_name)} - ${section.year_level}</span>
-                            <span class="text-xs ml-auto opacity-70">(${section.student_count})</span>
-                        `;
-                        container.appendChild(link);
-                    });
-                } else {
-                    container.innerHTML = `
-                        <div class="dropdown-item text-sm">
-                            <i class="fa-solid fa-info-circle w-4 text-center"></i>
-                            <span>No sections found</span>
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                console.error('Error loading sections:', error);
-                const container = document.getElementById('dynamicClassesList');
-                if (container) {
-                    container.innerHTML = `
-                        <div class="dropdown-item text-sm">
-                            <i class="fa-solid fa-exclamation-triangle w-4 text-center"></i>
-                            <span>Error loading sections</span>
-                        </div>
-                    `;
-                }
-            }
-        }
-        
+
         function escapeHtml(text) {
             if (!text) return '';
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
-        
+
+        // =============================================
+        // LOAD CLASS IDs FROM SCHEDULES FOR SIDEBAR
+        // =============================================
+        async function loadSidebarClasses() {
+            try {
+                const response = await fetch('/admin/api/get_classes_for_sidebar');
+                const data = await response.json();
+
+                const desktopContainer = document.getElementById('dynamicClassesList');
+                const mobileContainer = document.getElementById('mobileClassesList');
+
+                if (data.success && data.classes && data.classes.length > 0) {
+
+                    // Build desktop items
+                    if (desktopContainer) {
+                        desktopContainer.innerHTML = '';
+                        data.classes.forEach(cls => {
+                            const currentUrl = window.location.href;
+                            const isActive = currentUrl.includes(`/class_section/${cls.section_id}`) ||
+                                             currentUrl.includes(`class_id=${cls.class_id}`);
+
+                            const link = document.createElement('a');
+                            link.href = `/admin/class_section/${cls.section_id}`;
+                            link.className = `dropdown-item text-sm font-medium ${isActive ? 'active' : ''}`;
+                            link.innerHTML = `
+                                <i class="fa-solid fa-chalkboard w-4 text-center"></i>
+                                <span>${escapeHtml(cls.subject)}</span>
+                                <span class="class-id-badge">#${cls.class_id}</span>
+                            `;
+                            desktopContainer.appendChild(link);
+                        });
+                    }
+
+                    // Build mobile items
+                    if (mobileContainer) {
+                        mobileContainer.innerHTML = '';
+                        data.classes.forEach(cls => {
+                            const currentUrl = window.location.href;
+                            const isActive = currentUrl.includes(`/class_section/${cls.section_id}`) ||
+                                             currentUrl.includes(`class_id=${cls.class_id}`);
+
+                            const link = document.createElement('a');
+                            link.href = `/admin/class_section/${cls.section_id}`;
+                            link.className = `mobile-dropdown-item ${isActive ? 'active' : ''}`;
+                            link.innerHTML = `
+                                <i class="fa-solid fa-chalkboard w-4 text-center"></i>
+                                <span>${escapeHtml(cls.subject)}</span>
+                                <span style="margin-left:auto; font-size:0.7rem; color:#facc15; font-weight:700;">#${cls.class_id}</span>
+                            `;
+                            mobileContainer.appendChild(link);
+                        });
+                    }
+
+                } else {
+                    const emptyMsg = `
+                        <div class="dropdown-item text-sm">
+                            <i class="fa-solid fa-info-circle w-4 text-center"></i>
+                            <span>No classes found</span>
+                        </div>`;
+                    const emptyMsgMobile = `
+                        <div class="mobile-dropdown-item">
+                            <i class="fa-solid fa-info-circle"></i>
+                            <span>No classes found</span>
+                        </div>`;
+                    if (desktopContainer) desktopContainer.innerHTML = emptyMsg;
+                    if (mobileContainer) mobileContainer.innerHTML = emptyMsgMobile;
+                }
+
+            } catch (error) {
+                console.error('Error loading classes:', error);
+                const desktopContainer = document.getElementById('dynamicClassesList');
+                const mobileContainer = document.getElementById('mobileClassesList');
+                const errMsg = `<div class="dropdown-item text-sm"><i class="fa-solid fa-exclamation-triangle w-4 text-center"></i><span>Error loading</span></div>`;
+                const errMsgMobile = `<div class="mobile-dropdown-item"><i class="fa-solid fa-exclamation-triangle"></i><span>Error loading</span></div>`;
+                if (desktopContainer) desktopContainer.innerHTML = errMsg;
+                if (mobileContainer) mobileContainer.innerHTML = errMsgMobile;
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
-            loadSidebarSections();
-            loadMobileSidebarSections();
-            
+            loadSidebarClasses();
+
             const dropdownToggle = document.querySelector('.dropdown-toggle');
             const dropdownMenu = document.getElementById('dropdownMenu');
             const dropdownContainer = document.getElementById('myClassesDropdown');
-            
+
+            // Auto-open if on a class page
             const isOnClassPage = window.location.href.includes('/class_section/');
-            
             if (isOnClassPage) {
                 if (dropdownMenu) dropdownMenu.classList.add('show');
                 if (dropdownContainer) dropdownContainer.classList.add('open');
             }
-            
+
             if (dropdownToggle && dropdownMenu) {
                 dropdownToggle.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -756,21 +725,21 @@
                     if (dropdownContainer) dropdownContainer.classList.toggle('open');
                 });
             }
-            
+
             document.addEventListener('click', function(event) {
                 if (dropdownContainer && !dropdownContainer.contains(event.target)) {
                     if (dropdownMenu) dropdownMenu.classList.remove('show');
                     if (dropdownContainer) dropdownContainer.classList.remove('open');
                 }
             });
-            
+
             document.querySelectorAll('.mobile-nav-item, .mobile-dropdown-item').forEach(item => {
                 item.addEventListener('click', () => {
                     setTimeout(closeMobileSidebar, 150);
                 });
             });
         });
-        
+
         let resizeTimer;
         window.addEventListener('resize', function() {
             clearTimeout(resizeTimer);

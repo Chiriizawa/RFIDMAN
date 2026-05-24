@@ -4,498 +4,448 @@
 
 {% block content %}
 <style>
-    /* Toast Notification Styles */
+    /* ===== TOAST ===== */
     .toast {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 9999;
-        min-width: 300px;
-        max-width: 450px;
-        padding: 16px 20px;
-        border-radius: 16px;
-        background: rgba(30, 58, 138, 0.95);
+        position: fixed; top: 20px; right: 20px; z-index: 9999;
+        min-width: 300px; max-width: 450px;
+        padding: 14px 18px; border-radius: 14px;
         backdrop-filter: blur(18px);
-        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        animation: slideInRight 0.3s ease;
-        border: 1px solid rgba(255,255,255,0.15);
+        box-shadow: 0 10px 40px rgba(0,0,0,.3);
+        display: flex; align-items: center; gap: 12px;
+        animation: slideInRight .3s ease;
+        border: 1px solid rgba(255,255,255,.15);
     }
-    
-    @keyframes slideInRight {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    
-    @keyframes slideOutRight {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100%); opacity: 0; }
-    }
-    
-    .toast.success { background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95)); }
-    .toast.error { background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95)); }
-    .toast.info { background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.95)); }
-    .toast.warning { background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95)); }
-    
-    .toast-icon { font-size: 24px; flex-shrink: 0; }
+    @keyframes slideInRight { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
+    @keyframes slideOutRight { from{transform:translateX(0);opacity:1} to{transform:translateX(110%);opacity:0} }
+    .toast.success { background: linear-gradient(135deg, rgba(16,185,129,.95), rgba(5,150,105,.95)); }
+    .toast.error   { background: linear-gradient(135deg, rgba(239,68,68,.95), rgba(220,38,38,.95)); }
+    .toast.info    { background: linear-gradient(135deg, rgba(59,130,246,.95), rgba(37,99,235,.95)); }
+    .toast.warning { background: linear-gradient(135deg, rgba(245,158,11,.95), rgba(217,119,6,.95)); }
+    .toast-icon    { font-size: 22px; flex-shrink: 0; }
     .toast-content { flex: 1; }
-    .toast-title { font-weight: 600; margin-bottom: 4px; font-size: 14px; color: white; }
-    .toast-message { font-size: 13px; opacity: 0.95; color: white; }
-    .toast-close { cursor: pointer; opacity: 0.7; font-size: 18px; color: white; }
+    .toast-title   { font-weight: 700; font-size: 13px; color: #fff; margin-bottom: 2px; }
+    .toast-msg     { font-size: 12px; color: rgba(255,255,255,.92); }
+    .toast-close   { cursor: pointer; font-size: 16px; color: #fff; opacity: .7; transition: opacity .2s; }
     .toast-close:hover { opacity: 1; }
-    
+
+    /* ===== LAYOUT ===== */
     .white-card {
-        background: white;
+        background: #fff;
         border-radius: 1.5rem;
         overflow: hidden;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        box-shadow: 0 20px 50px rgba(0,0,0,.1);
     }
-    
     .header-gradient {
         background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);
         padding: 1.5rem 2rem;
     }
-    
-    .text-accent {
-        color: #f59e0b;
-    }
-    
+    .text-accent { color: #f59e0b; }
+
+    /* ===== SCAN STATUS CARDS ===== */
     .status-card {
-        transition: all 0.3s ease;
-        cursor: pointer;
-        padding: 1.25rem;
+        transition: all .3s;
+        padding: 1.1rem 1.25rem;
         background: #f8fafc;
         border: 1px solid #e2e8f0;
         border-radius: 1rem;
+        cursor: default;
     }
-    
     .status-card:hover {
-        transform: translateY(-5px);
-        background: #f1f5f9;
+        transform: translateY(-4px);
         border-color: #f59e0b;
+        background: #f1f5f9;
     }
-    
-    .status-card p:first-child {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #64748b;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+    .status-card .sc-label {
+        font-size: .75rem; font-weight: 700; color: #64748b;
+        text-transform: uppercase; letter-spacing: .5px; margin-bottom: .4rem;
     }
-    
-    .status-card p:last-child {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: #1e293b;
-        margin-top: 0.5rem;
+    .status-card .sc-value {
+        font-size: .95rem; font-weight: 700; color: #1e293b;
     }
-    
+
+    /* ===== SUCCESS BANNER ===== */
     .success-banner {
         background: linear-gradient(135deg, #d1fae5, #a7f3d0);
         border: 1px solid #10b981;
-        animation: pulse 0.5s ease;
-        padding: 1.5rem;
-        border-radius: 1.5rem;
+        border-radius: 1.25rem;
+        padding: 1.25rem 1.5rem;
+        animation: bannerIn .4s ease;
     }
-    
-    @keyframes pulse {
-        0% { transform: scale(0.95); opacity: 0; }
-        100% { transform: scale(1); opacity: 1; }
+    @keyframes bannerIn {
+        from { opacity: 0; transform: scale(.97); }
+        to   { opacity: 1; transform: scale(1); }
     }
-    
-    .table-header {
-        background: #f8fafc;
-        border-bottom: 2px solid #e2e8f0;
-    }
-    
-    .table-header th {
-        color: #1e293b;
-        font-weight: 700;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        padding: 1rem 1rem;
-    }
-    
-    .table-row {
-        border-bottom: 1px solid #e2e8f0;
-        transition: all 0.2s ease;
-    }
-    
-    .table-row:hover {
-        background: #f8fafc;
-    }
-    
-    .table-row td {
-        padding: 1rem 0.75rem;
-        color: #1e293b;
-        vertical-align: middle;
-    }
-    
-    .uid-badge {
-        background: #fef3c7;
-        color: #92400e;
-        font-family: monospace;
-        font-weight: 700;
-        padding: 0.4rem 0.75rem;
-        border-radius: 0.5rem;
-        display: inline-block;
-        border: 1px solid #fbbf24;
-        font-size: 0.75rem;
-    }
-    
-    .present-badge {
-        background: #dcfce7;
-        color: #166534;
-        padding: 0.25rem 0.75rem;
-        border-radius: 0.5rem;
-        font-size: 0.7rem;
-        font-weight: 600;
-        display: inline-block;
-    }
-    
-    .absent-badge {
-        background: #fee2e2;
-        color: #991b1b;
-        padding: 0.25rem 0.75rem;
-        border-radius: 0.5rem;
-        font-size: 0.7rem;
-        font-weight: 600;
-        display: inline-block;
-    }
-    
+
+    /* ===== STAT CARDS ===== */
     .stat-card {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
         border-radius: 1rem;
-        padding: 1.25rem;
-        transition: all 0.3s ease;
+        padding: 1.1rem 1.25rem;
+        transition: all .3s;
     }
-    
     .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        transform: translateY(-4px);
+        box-shadow: 0 10px 25px rgba(0,0,0,.08);
     }
-    
-    .empty-state {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 1rem;
-        padding: 2rem;
-        text-align: center;
+
+    /* ===== TABLE ===== */
+    .table-header { background: #f8fafc; border-bottom: 2px solid #e2e8f0; }
+    .table-header th {
+        color: #1e293b; font-weight: 700; font-size: .8rem;
+        text-transform: uppercase; letter-spacing: .5px;
+        padding: .9rem 1rem; text-align: left;
     }
-    
-    /* Modal Styles */
-    .modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.5);
-        z-index: 1000;
-        justify-content: center;
-        align-items: center;
+    .table-row { border-bottom: 1px solid #e2e8f0; transition: background .2s; }
+    .table-row:hover { background: #f8fafc; }
+    .table-row td {
+        padding: .85rem .75rem; color: #1e293b;
+        vertical-align: middle; font-size: .88rem;
     }
-    
-    .modal.show {
-        display: flex;
+
+    /* ===== BADGES ===== */
+    .uid-badge {
+        background: #fef3c7; color: #92400e;
+        font-family: monospace; font-weight: 700;
+        padding: .3rem .65rem; border-radius: .5rem;
+        display: inline-flex; align-items: center; gap: .35rem;
+        border: 1px solid #fbbf24; font-size: .72rem;
     }
-    
-    .modal-content {
-        background: white;
-        border-radius: 1rem;
-        padding: 2rem;
-        max-width: 450px;
-        width: 90%;
-        max-height: 85vh;
-        overflow-y: auto;
+    .uid-badge.lost {
+        background: #fee2e2; color: #991b1b;
+        border-color: #ef4444;
+        text-decoration: line-through; opacity: .75;
     }
-    
-    .form-input {
-        width: 100%;
-        padding: 0.6rem 0.75rem;
-        border: 1px solid #e2e8f0;
-        border-radius: 0.5rem;
-        margin-bottom: 1rem;
-        font-size: 0.9rem;
+    .present-badge {
+        background: #dcfce7; color: #166534;
+        padding: .25rem .7rem; border-radius: .5rem;
+        font-size: .7rem; font-weight: 700;
+        display: inline-flex; align-items: center; gap: .25rem;
     }
-    
-    .form-input:focus {
-        outline: none;
-        border-color: #f59e0b;
-        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+    .absent-badge {
+        background: #fee2e2; color: #991b1b;
+        padding: .25rem .7rem; border-radius: .5rem;
+        font-size: .7rem; font-weight: 700;
+        display: inline-flex; align-items: center; gap: .25rem;
     }
-    
-    .btn-primary {
-        background: #f59e0b;
-        color: white;
-        font-weight: 600;
-        padding: 0.6rem 1.25rem;
-        border-radius: 0.5rem;
-        transition: all 0.2s;
-        cursor: pointer;
-        border: none;
-        font-size: 0.9rem;
-    }
-    
-    .btn-primary:hover {
-        background: #d97706;
-    }
-    
-    .btn-primary:disabled {
-        background: #cbd5e1;
-        cursor: not-allowed;
-    }
-    
-    .btn-secondary {
-        background: #e2e8f0;
-        color: #1e293b;
-        font-weight: 600;
-        padding: 0.6rem 1.25rem;
-        border-radius: 0.5rem;
-        transition: all 0.2s;
-        cursor: pointer;
-        border: none;
-        font-size: 0.9rem;
-    }
-    
-    .btn-secondary:hover {
-        background: #cbd5e1;
-    }
-    
+
+    /* ===== TOGGLE BUTTONS ===== */
     .btn-toggle {
-        background: #8b5cf6;
-        color: white;
-        padding: 0.35rem 0.9rem;
-        border-radius: 0.5rem;
-        font-size: 0.75rem;
-        font-weight: 600;
-        border: none;
-        cursor: pointer;
-        transition: all 0.2s;
-        white-space: nowrap;
+        padding: .3rem .85rem; border-radius: .5rem;
+        font-size: .73rem; font-weight: 700;
+        border: none; cursor: pointer;
+        transition: all .2s; white-space: nowrap;
+        display: inline-flex; align-items: center; gap: .3rem;
+        color: #fff;
     }
-    
-    .btn-toggle:hover {
-        background: #7c3aed;
-        transform: scale(1.02);
+    .btn-toggle:hover { transform: scale(1.03); }
+    .present-toggle { background: #10b981; }
+    .present-toggle:hover { background: #059669; }
+    .absent-toggle  { background: #ef4444; }
+    .absent-toggle:hover  { background: #dc2626; }
+
+    /* ===== MODAL ===== */
+    .modal {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,.5);
+        backdrop-filter: blur(4px);
+        z-index: 1000;
+        justify-content: center; align-items: center;
     }
-    
-    .btn-toggle.absent-toggle {
-        background: #ef4444;
+    .modal.show { display: flex; }
+    .modal-content {
+        background: #fff; border-radius: 1.25rem;
+        padding: 2rem; max-width: 440px; width: 90%;
+        max-height: 88vh; overflow-y: auto;
+        box-shadow: 0 25px 60px rgba(0,0,0,.2);
+        animation: modalIn .25s ease;
     }
-    
-    .btn-toggle.absent-toggle:hover {
-        background: #dc2626;
+    @keyframes modalIn {
+        from { opacity: 0; transform: scale(.95) translateY(8px); }
+        to   { opacity: 1; transform: scale(1)  translateY(0); }
     }
-    
-    .btn-toggle.present-toggle {
-        background: #10b981;
+
+    /* ===== BUTTONS ===== */
+    .btn-primary {
+        background: #f59e0b; color: #fff; font-weight: 700;
+        padding: .6rem 1.3rem; border-radius: .5rem;
+        transition: all .2s; cursor: pointer; border: none; font-size: .9rem;
     }
-    
-    .btn-toggle.present-toggle:hover {
-        background: #059669;
+    .btn-primary:hover { background: #d97706; }
+    .btn-primary:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+    .btn-secondary {
+        background: #e2e8f0; color: #1e293b; font-weight: 700;
+        padding: .6rem 1.3rem; border-radius: .5rem;
+        transition: all .2s; cursor: pointer; border: none; font-size: .9rem;
     }
-    
+    .btn-secondary:hover { background: #cbd5e1; }
+
+    .confirm-absent {
+        background: #ef4444 !important; color: #fff !important;
+        font-weight: 700 !important; padding: .6rem 1.3rem !important;
+        border-radius: .5rem !important; border: none !important;
+        cursor: pointer !important; font-size: .9rem !important;
+        transition: all .2s !important;
+    }
+    .confirm-absent:hover  { background: #dc2626 !important; }
+    .confirm-absent:disabled { background: #cbd5e1 !important; cursor: not-allowed !important; }
+
+    .confirm-present {
+        background: #10b981 !important; color: #fff !important;
+        font-weight: 700 !important; padding: .6rem 1.3rem !important;
+        border-radius: .5rem !important; border: none !important;
+        cursor: pointer !important; font-size: .9rem !important;
+        transition: all .2s !important;
+    }
+    .confirm-present:hover  { background: #059669 !important; }
+    .confirm-present:disabled { background: #cbd5e1 !important; cursor: not-allowed !important; }
+
+    /* ===== SEARCH ===== */
+    .search-wrap { position: relative; }
+    .search-wrap input {
+        width: 100%;
+        padding: .65rem 2.2rem .65rem 2.4rem;
+        border: 1px solid #e2e8f0; border-radius: 2rem;
+        font-size: .88rem; outline: none; background: #f8fafc;
+        transition: border-color .2s, box-shadow .2s;
+    }
+    .search-wrap input:focus {
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245,158,11,.12);
+        background: #fff;
+    }
+    .s-ico {
+        position: absolute; left: .85rem; top: 50%;
+        transform: translateY(-50%); color: #94a3b8;
+        font-size: .8rem; pointer-events: none;
+    }
+    .clear-btn {
+        position: absolute; right: .85rem; top: 50%;
+        transform: translateY(-50%); cursor: pointer;
+        color: #94a3b8; display: none; font-size: .8rem;
+    }
+    .clear-btn:hover { color: #ef4444; }
+
+    /* ===== SCAN PULSE ===== */
     @keyframes scanPulse {
-        0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
-        70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        0%   { box-shadow: 0 0 0 0   rgba(245,158,11,.5); }
+        70%  { box-shadow: 0 0 0 10px rgba(245,158,11,0); }
+        100% { box-shadow: 0 0 0 0   rgba(245,158,11,0); }
     }
-    
-    .scanning {
-        animation: scanPulse 1.5s infinite;
+    .scanning { animation: scanPulse 1.5s infinite; }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+        text-align: center; padding: 2.5rem 1rem; color: #94a3b8;
     }
-    
+    .empty-state i { font-size: 2rem; margin-bottom: .75rem; display: block; }
+
+    /* ===== RESPONSIVE ===== */
     @media (max-width: 768px) {
-        .table-header th, .table-row td { padding: 0.5rem; font-size: 0.7rem; }
         .header-gradient { padding: 1rem 1.25rem; }
-        .status-card { padding: 0.75rem; }
-        .stat-card { padding: 0.75rem; }
+        .status-card { padding: .75rem; }
+        .stat-card   { padding: .75rem; }
         .success-banner { padding: 1rem; }
-        .uid-badge { font-size: 0.65rem; padding: 0.2rem 0.5rem; }
-        .btn-toggle { padding: 0.25rem 0.6rem; font-size: 0.65rem; }
+        .table-header th, .table-row td { padding: .5rem; font-size: .7rem; }
+        .uid-badge  { font-size: .62rem; padding: .2rem .45rem; }
+        .btn-toggle { padding: .25rem .55rem; font-size: .65rem; }
     }
 </style>
 
 <div class="max-w-7xl mx-auto">
+<div class="white-card">
 
-    <div class="white-card">
-        <div class="header-gradient text-white">
-            <div class="flex items-center justify-between flex-wrap gap-4">
-                <div>
-                    <div class="flex items-center gap-3">
-                        <i class="fa-solid fa-chalkboard-user text-accent text-3xl"></i>
-                        <h1 class="text-2xl font-semibold">{{ section_info.name }}</h1>
-                    </div>
-                    <p class="text-white/80 mt-2 text-sm">
-                        <i class="fa-solid fa-user-tie mr-1"></i>
-                        Adviser: {{ section_info.adviser }} • 
-                        <i class="fa-solid fa-door-open ml-2 mr-1"></i>
-                        {{ section_info.room }}
-                    </p>
-                </div>
-                <div class="flex gap-3">
-                    <div class="text-right">
-                        <div class="text-accent text-sm font-medium">Today's Attendance</div>
-                        <div class="text-2xl font-bold" id="todayCount">{{ section_info.present_today }} / {{ section_info.total_students }}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="p-6">
-            <!-- RFID Scan Status Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div class="status-card">
-                    <p><i class="fa-solid fa-circle-info mr-1 text-accent"></i> Current Status</p>
-                    <p id="message"><i class="fa-regular fa-clock mr-2"></i>Waiting for scan...</p>
-                </div>
-                <div class="status-card">
-                    <p><i class="fa-solid fa-id-card mr-1 text-accent"></i> Scanned UID</p>
-                    <p id="uid" class="font-mono text-accent">—</p>
-                </div>
-                <div class="status-card">
-                    <p><i class="fa-solid fa-user-graduate mr-1 text-accent"></i> Student Name</p>
-                    <p id="name">—</p>
-                </div>
-                <div class="status-card">
-                    <p><i class="fa-regular fa-clock mr-1 text-accent"></i> Scan Time</p>
-                    <p id="time">—</p>
-                </div>
-            </div>
-
-            <!-- Success Banner -->
-            <div id="nameBanner" class="mt-6 hidden success-banner">
-                <div class="flex items-center gap-4">
-                    <div class="text-5xl animate-bounce">✅</div>
+    <!-- ===== HEADER ===== -->
+    <div class="header-gradient text-white">
+        <div class="flex items-start justify-between flex-wrap gap-4">
+            <div>
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-chalkboard-user text-accent text-3xl"></i>
                     <div>
-                        <p class="text-emerald-700 font-semibold uppercase tracking-widest text-xs">
-                            <i class="fa-solid fa-check-circle mr-1"></i>
-                            Student Successfully Detected
-                        </p>
-                        <p id="bannerName" class="text-2xl font-bold text-gray-800 mt-1">—</p>
-                        <p id="bannerTime" class="text-gray-600 text-sm mt-1">
-                            <i class="fa-regular fa-clock mr-1"></i>
-                            —
+                        <h1 class="text-2xl font-bold leading-tight">{{ section_info.name }}</h1>
+                        <p class="text-white/75 text-sm mt-0.5">
+                            <i class="fa-solid fa-user-tie mr-1"></i>Adviser: {{ section_info.adviser }}
+                            &nbsp;•&nbsp;
+                            <i class="fa-solid fa-door-open mr-1"></i>{{ section_info.room }}
                         </p>
                     </div>
                 </div>
             </div>
-
-            <!-- Statistics Cards -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 mb-6">
-                <div class="stat-card">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs text-gray-500 font-medium">Total Students</p>
-                            <p class="text-xl font-bold text-gray-800" id="totalStudents">{{ section_info.total_students }}</p>
-                        </div>
-                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <i class="fa-solid fa-users text-blue-600 text-sm"></i>
-                        </div>
-                    </div>
+            <div class="text-right">
+                <div class="text-accent text-xs font-semibold uppercase tracking-wider mb-1">
+                    Today's Attendance
                 </div>
-                
-                <div class="stat-card">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs text-gray-500 font-medium">Present Today</p>
-                            <p class="text-xl font-bold text-green-600" id="presentCount">{{ section_info.present_today }}</p>
-                        </div>
-                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                            <i class="fa-solid fa-check-circle text-green-600 text-sm"></i>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs text-gray-500 font-medium">Absent Today</p>
-                            <p class="text-xl font-bold text-red-600" id="absentCount">{{ section_info.total_students - section_info.present_today }}</p>
-                        </div>
-                        <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                            <i class="fa-solid fa-times-circle text-red-600 text-sm"></i>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs text-gray-500 font-medium">Attendance Rate</p>
-                            <p class="text-xl font-bold text-accent" id="attendanceRate">{{ "%.1f"|format(section_info.present_today / section_info.total_students * 100 if section_info.total_students > 0 else 0) }}%</p>
-                        </div>
-                        <div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-                            <i class="fa-solid fa-chart-line text-accent text-sm"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Students Table with Search Bar -->
-            <div class="mt-6">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                    <div>
-                        <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                            <i class="fa-solid fa-user-graduate text-accent"></i>
-                            Student List
-                        </h2>
-                        <span class="text-xs text-gray-500">(Click button to toggle attendance)</span>
-                    </div>
-                    
-                    <!-- Search Bar -->
-                    <div class="relative w-full sm:w-80">
-                        <input 
-                            type="text" 
-                            id="searchInput" 
-                            placeholder="Search by name or UID..." 
-                            class="w-full pl-11 pr-4 py-2.5 text-sm border border-gray-200 rounded-2xl focus:outline-none focus:border-amber-400 bg-white shadow-sm transition-all placeholder:text-gray-400"
-                        >
-                        <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-                    </div>
-                </div>
-                
-                <div class="overflow-x-auto">
-                    <table class="w-full min-w-[800px]">
-                        <thead>
-                            <tr class="table-header">
-                                <th class="text-left w-12">#</th>
-                                <th class="text-left">Student Name</th>
-                                <th class="text-left">UID</th>
-                                <th class="text-left">Status</th>
-                                <th class="text-left">Scan Time</th>
-                                <th class="text-left w-28">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="studentsTableBody">
-                            <!-- Populated by JavaScript -->
-                        </tbody>
-                    </table>
+                <div class="text-3xl font-extrabold" id="todayCount">
+                    {{ section_info.present_today }} / {{ section_info.total_students }}
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Toggle Attendance Modal -->
+    <div class="p-6 space-y-6">
+
+        <!-- ===== RFID SCAN STATUS CARDS ===== -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="status-card">
+                <div class="sc-label">
+                    <i class="fa-solid fa-circle-info text-amber-400 mr-1"></i>Current Status
+                </div>
+                <div class="sc-value text-sm" id="message">
+                    <i class="fa-regular fa-clock mr-1 text-slate-400"></i>Waiting for scan...
+                </div>
+            </div>
+            <div class="status-card">
+                <div class="sc-label">
+                    <i class="fa-solid fa-id-card text-amber-400 mr-1"></i>Scanned UID
+                </div>
+                <div class="sc-value font-mono text-amber-600" id="uid">—</div>
+            </div>
+            <div class="status-card">
+                <div class="sc-label">
+                    <i class="fa-solid fa-user-graduate text-amber-400 mr-1"></i>Student Name
+                </div>
+                <div class="sc-value text-sm" id="name">—</div>
+            </div>
+            <div class="status-card">
+                <div class="sc-label">
+                    <i class="fa-regular fa-clock text-amber-400 mr-1"></i>Scan Time
+                </div>
+                <div class="sc-value text-sm" id="time">—</div>
+            </div>
+        </div>
+
+        <!-- ===== SUCCESS BANNER ===== -->
+        <div id="nameBanner" class="success-banner hidden">
+            <div class="flex items-center gap-4">
+                <div class="text-4xl animate-bounce">✅</div>
+                <div>
+                    <p class="text-emerald-700 text-xs font-bold uppercase tracking-widest mb-0.5">
+                        <i class="fa-solid fa-check-circle mr-1"></i>Student Successfully Detected
+                    </p>
+                    <p id="bannerName" class="text-xl font-extrabold text-gray-800">—</p>
+                    <p id="bannerTime" class="text-gray-500 text-xs mt-0.5">
+                        <i class="fa-regular fa-clock mr-1"></i>—
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== STAT CARDS ===== -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 font-semibold mb-1">Total Students</p>
+                        <p class="text-xl font-extrabold text-blue-600" id="totalStudents">
+                            {{ section_info.total_students }}
+                        </p>
+                    </div>
+                    <div class="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fa-solid fa-users text-blue-600 text-sm"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 font-semibold mb-1">Present Today</p>
+                        <p class="text-xl font-extrabold text-emerald-600" id="presentCount">
+                            {{ section_info.present_today }}
+                        </p>
+                    </div>
+                    <div class="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center">
+                        <i class="fa-solid fa-check-circle text-emerald-600 text-sm"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 font-semibold mb-1">Absent Today</p>
+                        <p class="text-xl font-extrabold text-red-500" id="absentCount">
+                            {{ section_info.total_students - section_info.present_today }}
+                        </p>
+                    </div>
+                    <div class="w-9 h-9 bg-red-100 rounded-full flex items-center justify-center">
+                        <i class="fa-solid fa-times-circle text-red-500 text-sm"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 font-semibold mb-1">Attendance Rate</p>
+                        <p class="text-xl font-extrabold text-amber-500" id="attendanceRate">
+                            {{ "%.1f"|format(section_info.present_today / section_info.total_students * 100 if section_info.total_students > 0 else 0) }}%
+                        </p>
+                    </div>
+                    <div class="w-9 h-9 bg-amber-100 rounded-full flex items-center justify-center">
+                        <i class="fa-solid fa-chart-line text-amber-500 text-sm"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== STUDENT TABLE ===== -->
+        <div>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa-solid fa-user-graduate text-accent"></i>
+                        Student List
+                    </h2>
+                    <p class="text-xs text-gray-400 mt-0.5">
+                        Click the toggle button to manually update attendance
+                    </p>
+                </div>
+                <!-- Search -->
+                <div class="search-wrap w-full sm:w-72">
+                    <i class="fa-solid fa-magnifying-glass s-ico"></i>
+                    <input type="text" id="searchInput" placeholder="Search by name or UID...">
+                    <i class="fa-solid fa-times-circle clear-btn" id="clearBtn"></i>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border border-gray-100">
+                <table class="w-full min-w-[780px]">
+                    <thead>
+                        <tr class="table-header">
+                            <th class="w-12 text-center">#</th>
+                            <th>Student Name</th>
+                            <th>UID</th>
+                            <th>Status</th>
+                            <th>Scan Time</th>
+                            <th class="text-center w-32">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div><!-- /p-6 -->
+</div><!-- /white-card -->
+</div><!-- /max-w -->
+
+
+<!-- ===== TOGGLE ATTENDANCE MODAL ===== -->
 <div id="toggleAttendanceModal" class="modal">
     <div class="modal-content">
-        <h2 class="text-xl font-bold mb-4" id="modalTitle">
+        <h2 class="text-lg font-extrabold mb-1" id="modalTitle">
             <i class="fa-solid fa-user-check text-accent mr-2"></i>Toggle Attendance
         </h2>
-        <div class="text-center py-6">
-            <div class="text-6xl mb-4" id="modalIcon">🤔</div>
-            <p class="text-gray-700 mb-2" id="modalMessage">Are you sure you want to change attendance?</p>
-            <p class="text-sm text-gray-500 mb-4" id="studentNameDisplay">—</p>
+        <div class="text-center py-5">
+            <div class="text-6xl mb-3" id="modalIcon">🤔</div>
+            <p class="text-gray-600 mb-1 text-sm" id="modalMessage">Are you sure?</p>
+            <p class="text-base font-bold text-gray-800 mb-5" id="studentNameDisplay">—</p>
             <div class="flex gap-3 justify-center">
-                <button onclick="closeAttendanceModal()" class="btn-secondary">Cancel</button>
-                <button onclick="confirmToggleAttendance()" class="btn-primary" id="confirmBtn">Confirm</button>
+                <button onclick="closeAttendanceModal()" class="btn-secondary">
+                    <i class="fa-solid fa-times mr-1"></i>Cancel
+                </button>
+                <button onclick="confirmToggleAttendance()" id="confirmBtn" class="btn-primary">
+                    <i class="fa-solid fa-check mr-1"></i>Confirm
+                </button>
             </div>
         </div>
         <input type="hidden" id="toggleStudentId">
@@ -503,309 +453,382 @@
     </div>
 </div>
 
+
 <script>
-    let lastUID = '';
-    let bannerTimeout = null;
+(function () {
+    /* ── State ── */
     let studentsData = {{ students | tojson | safe }};
-    let sectionId = '{{ section }}';
-    
-    console.log("=== Class Section Loaded ===");
-    console.log("Section ID:", sectionId);
-    console.log("Students Data:", studentsData);
-    console.log("Total Students:", studentsData.length);
-    
-    function showToast(message, type = 'success', title = '') {
-        const titles = { success: '✓ Success!', error: '✗ Error!', info: 'ℹ Info', warning: '⚠ Warning' };
-        const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        toast.innerHTML = `<div class="toast-icon">${icons[type] || icons.success}</div><div class="toast-content"><div class="toast-title">${title || titles[type]}</div><div class="toast-message">${message}</div></div><div class="toast-close" onclick="this.parentElement.remove()">✕</div>`;
-        document.body.appendChild(toast);
-        setTimeout(() => { if (toast && toast.parentElement) { toast.style.animation = 'slideOutRight 0.3s ease'; setTimeout(() => toast.remove(), 300); } }, 3000);
+    const sectionId  = '{{ section }}';
+    let lastUID      = '';
+    let bannerTimer  = null;
+
+    console.log('[ClassSection] section:', sectionId, '| students:', studentsData.length);
+
+    /* ════════════════════════════════
+       TOAST
+    ════════════════════════════════ */
+    function showToast(msg, type = 'success', title = '') {
+        const icons  = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+        const titles = { success: 'Success!', error: 'Error!', info: 'Info', warning: 'Warning' };
+        const el = document.createElement('div');
+        el.className = `toast ${type}`;
+        el.innerHTML = `
+            <div class="toast-icon">${icons[type] || '✅'}</div>
+            <div class="toast-content">
+                <div class="toast-title">${title || titles[type]}</div>
+                <div class="toast-msg">${msg}</div>
+            </div>
+            <div class="toast-close" onclick="this.parentElement.remove()">✕</div>`;
+        document.body.appendChild(el);
+        setTimeout(() => {
+            if (!el.parentElement) return;
+            el.style.animation = 'slideOutRight .3s ease forwards';
+            setTimeout(() => el.remove(), 300);
+        }, 3500);
     }
-    
-    function renderStudentsTable() {
-        console.log("Rendering students table...");
+
+    /* ════════════════════════════════
+       HELPERS
+    ════════════════════════════════ */
+    function esc(t) {
+        if (!t) return '';
+        const d = document.createElement('div');
+        d.textContent = t;
+        return d.innerHTML;
+    }
+
+    function updateStats() {
+        const total   = studentsData.length;
+        const present = studentsData.filter(s => s.present_today).length;
+        const absent  = total - present;
+        const rate    = total > 0 ? (present / total * 100).toFixed(1) : '0.0';
+        document.getElementById('totalStudents').textContent  = total;
+        document.getElementById('presentCount').textContent   = present;
+        document.getElementById('absentCount').textContent    = absent;
+        document.getElementById('attendanceRate').textContent = rate + '%';
+        document.getElementById('todayCount').textContent     = `${present} / ${total}`;
+    }
+
+    /* ════════════════════════════════
+       RENDER TABLE
+    ════════════════════════════════ */
+    function renderTable(list) {
+        const src   = list !== undefined ? list : studentsData;
         const tbody = document.getElementById('studentsTableBody');
-        if (!studentsData || studentsData.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8"><div class="empty-state"><i class="fa-regular fa-user text-4xl text-gray-400 mb-3"></i><p class="text-gray-500">No students in this class</p></div></td></tr>`;
+
+        if (!src || src.length === 0) {
+            tbody.innerHTML = `
+                <tr><td colspan="6">
+                    <div class="empty-state">
+                        <i class="fa-regular fa-user"></i>
+                        <p class="font-semibold text-gray-500">No students found</p>
+                        <p class="text-sm mt-1">Try a different search term.</p>
+                    </div>
+                </td></tr>`;
             return;
         }
-        
-        tbody.innerHTML = studentsData.map((student, index) => `
+
+        tbody.innerHTML = src.map((s, i) => {
+            const uidDisplay = esc(s.uid_formatted || s.uid || '—');
+            const lostClass  = s.uid_lost ? ' lost' : '';
+            const lostIcon   = s.uid_lost ? '<i class="fa-solid fa-ban text-xs ml-1"></i>' : '';
+            const statusHtml = s.present_today
+                ? `<span class="present-badge">
+                       <i class="fa-solid fa-check-circle text-xs"></i>Present
+                   </span>`
+                : `<span class="absent-badge">
+                       <i class="fa-solid fa-times-circle text-xs"></i>Absent
+                   </span>`;
+            const timeHtml = s.present_today ? (esc(s.scan_time) || '—') : '—';
+            const btnCls   = s.present_today ? 'present-toggle' : 'absent-toggle';
+            const btnIco   = s.present_today ? 'fa-toggle-on'   : 'fa-toggle-off';
+            const btnLbl   = s.present_today ? 'Mark Absent'    : 'Mark Present';
+
+            return `
             <tr class="table-row">
-                <td class="font-medium text-center">${index + 1}</td>
-                <td class="font-medium">
+                <td class="text-center text-gray-400 font-medium">${i + 1}</td>
+                <td>
                     <div class="flex items-center gap-2">
-                        <div class="w-7 h-7 bg-amber-100 rounded-full flex items-center justify-center">
+                        <div class="w-7 h-7 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
                             <i class="fa-solid fa-user text-amber-600 text-xs"></i>
                         </div>
-                        <span>${escapeHtml(student.full_name)}</span>
+                        <span class="font-semibold">${esc(s.full_name)}</span>
                     </div>
                 </td>
-                <td><span class="uid-badge"><i class="fa-solid fa-id-card mr-1 text-xs"></i>${escapeHtml(student.uid)}</span></td>
-                <td id="status-${student.id}">
-                    ${student.present_today ? 
-                        '<span class="present-badge"><i class="fa-solid fa-check-circle text-xs mr-1"></i> Present</span>' : 
-                        '<span class="absent-badge"><i class="fa-solid fa-times-circle text-xs mr-1"></i> Absent</span>'}
+                <td>
+                    <span class="uid-badge${lostClass}">
+                        <i class="fa-solid fa-id-card text-xs"></i>
+                        ${uidDisplay}${lostIcon}
+                    </span>
                 </td>
-                <td id="time-${student.id}" class="text-sm">${student.present_today ? (student.scan_time || '—') : '—'}</td>
+                <td id="status-${s.id}">${statusHtml}</td>
+                <td id="time-${s.id}" class="text-sm text-gray-500">${timeHtml}</td>
                 <td class="text-center">
-                    <button onclick="openToggleModal(${student.id})" class="btn-toggle ${student.present_today ? 'present-toggle' : 'absent-toggle'}">
-                        <i class="fa-solid ${student.present_today ? 'fa-toggle-on' : 'fa-toggle-off'} mr-1"></i>
-                        ${student.present_today ? 'Mark Absent' : 'Mark Present'}
+                    <button id="btn-${s.id}"
+                            onclick="openToggleModal(${s.id})"
+                            class="btn-toggle ${btnCls}">
+                        <i class="fa-solid ${btnIco}"></i>${btnLbl}
                     </button>
                 </td>
-            </tr>
-        `).join('');
+            </tr>`;
+        }).join('');
     }
-    
-    function escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-    
-    function openToggleModal(studentId) {
-        const student = studentsData.find(s => s.id === studentId);
-        if (!student) return;
-        
-        document.getElementById('toggleStudentId').value = student.id;
-        document.getElementById('toggleCurrentStatus').value = student.present_today;
-        
-        const modalTitle = document.getElementById('modalTitle');
-        const modalIcon = document.getElementById('modalIcon');
-        const modalMessage = document.getElementById('modalMessage');
-        const studentNameDisplay = document.getElementById('studentNameDisplay');
-        const confirmBtn = document.getElementById('confirmBtn');
-        
-        studentNameDisplay.innerHTML = `<strong>${escapeHtml(student.full_name)}</strong>`;
-        
-        if (student.present_today) {
-            modalTitle.innerHTML = '<i class="fa-solid fa-user-slash text-red-500 mr-2"></i>Mark as Absent';
-            modalIcon.innerHTML = '❌';
-            modalMessage.innerHTML = 'Are you sure you want to mark this student as <strong class="text-red-600">ABSENT</strong>?';
-            confirmBtn.innerHTML = '<i class="fa-solid fa-times-circle mr-2"></i>Mark Absent';
-            confirmBtn.classList.remove('btn-primary');
-            confirmBtn.classList.add('bg-red-500', 'hover:bg-red-600', 'text-white');
+
+    /* ════════════════════════════════
+       SEARCH
+    ════════════════════════════════ */
+    const searchInput = document.getElementById('searchInput');
+    const clearBtn    = document.getElementById('clearBtn');
+
+    searchInput.addEventListener('input', function () {
+        const q = this.value.toLowerCase().trim();
+        clearBtn.style.display = q ? 'block' : 'none';
+        if (!q) { renderTable(); return; }
+        renderTable(studentsData.filter(s =>
+            (s.full_name     || '').toLowerCase().includes(q) ||
+            (s.uid           || '').toLowerCase().includes(q) ||
+            (s.uid_formatted || '').toLowerCase().includes(q)
+        ));
+    });
+
+    clearBtn.addEventListener('click', function () {
+        searchInput.value      = '';
+        clearBtn.style.display = 'none';
+        renderTable();
+        searchInput.focus();
+    });
+
+    /* ════════════════════════════════
+       TOGGLE MODAL — OPEN
+    ════════════════════════════════ */
+    window.openToggleModal = function (studentId) {
+        const s = studentsData.find(st => st.id === studentId);
+        if (!s) return;
+
+        document.getElementById('toggleStudentId').value     = s.id;
+        document.getElementById('toggleCurrentStatus').value = s.present_today;
+        document.getElementById('studentNameDisplay').innerHTML =
+            `<strong>${esc(s.full_name)}</strong>`;
+
+        const titleEl = document.getElementById('modalTitle');
+        const iconEl  = document.getElementById('modalIcon');
+        const msgEl   = document.getElementById('modalMessage');
+        const btn     = document.getElementById('confirmBtn');
+
+        if (s.present_today) {
+            titleEl.innerHTML  = '<i class="fa-solid fa-user-slash text-red-500 mr-2"></i>Mark as Absent';
+            iconEl.textContent = '❌';
+            msgEl.innerHTML    = 'Mark this student as <strong class="text-red-600">ABSENT</strong>?';
+            btn.className      = 'confirm-absent';
+            btn.innerHTML      = '<i class="fa-solid fa-times-circle mr-1"></i>Mark Absent';
         } else {
-            modalTitle.innerHTML = '<i class="fa-solid fa-user-check text-green-500 mr-2"></i>Mark as Present';
-            modalIcon.innerHTML = '✅';
-            modalMessage.innerHTML = 'Are you sure you want to mark this student as <strong class="text-green-600">PRESENT</strong>?';
-            confirmBtn.innerHTML = '<i class="fa-solid fa-check-circle mr-2"></i>Mark Present';
-            confirmBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
-            confirmBtn.classList.add('btn-primary');
+            titleEl.innerHTML  = '<i class="fa-solid fa-user-check text-green-500 mr-2"></i>Mark as Present';
+            iconEl.textContent = '✅';
+            msgEl.innerHTML    = 'Mark this student as <strong class="text-green-600">PRESENT</strong>?';
+            btn.className      = 'confirm-present';
+            btn.innerHTML      = '<i class="fa-solid fa-check-circle mr-1"></i>Mark Present';
         }
-        
+
+        btn.disabled = false;
         document.getElementById('toggleAttendanceModal').classList.add('show');
-    }
-    
-    function closeAttendanceModal() {
+    };
+
+    /* ════════════════════════════════
+       TOGGLE MODAL — CLOSE
+    ════════════════════════════════ */
+    window.closeAttendanceModal = function () {
         document.getElementById('toggleAttendanceModal').classList.remove('show');
-    }
-    
-    async function confirmToggleAttendance() {
+        const btn     = document.getElementById('confirmBtn');
+        btn.className = 'btn-primary';
+        btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Confirm';
+        btn.disabled  = false;
+    };
+
+    /* Close on backdrop click */
+    document.getElementById('toggleAttendanceModal').addEventListener('click', function (e) {
+        if (e.target === this) closeAttendanceModal();
+    });
+
+    /* ════════════════════════════════
+       TOGGLE MODAL — CONFIRM
+    ════════════════════════════════ */
+    window.confirmToggleAttendance = async function () {
         const studentId = document.getElementById('toggleStudentId').value;
-        const currentStatus = document.getElementById('toggleCurrentStatus').value === 'true';
-        const newStatus = !currentStatus;
-        
-        const confirmBtn = document.getElementById('confirmBtn');
-        confirmBtn.disabled = true;
-        confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Processing...';
-        
+        const curStatus = document.getElementById('toggleCurrentStatus').value === 'true';
+        const newStatus = !curStatus;
+        const btn       = document.getElementById('confirmBtn');
+        const origHtml  = btn.innerHTML;
+        const origCls   = btn.className;
+
+        btn.disabled  = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Processing...';
+
         try {
-            const response = await fetch(`/admin/toggle_attendance/${studentId}`, {
-                method: 'POST',
+            const res = await fetch(`/admin/toggle_attendance/${studentId}`, {
+                method : 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    present: newStatus,
-                    section_id: sectionId 
-                })
+                body   : JSON.stringify({ present: newStatus, section_id: sectionId })
             });
-            const data = await response.json();
-            
+            const data = await res.json();
+
             if (data.success) {
-                const student = studentsData.find(s => s.id == studentId);
-                if (student) {
-                    student.present_today = newStatus;
-                    if (newStatus) {
-                        student.scan_time = new Date().toLocaleTimeString();
-                    } else {
-                        student.scan_time = null;
-                    }
-                    
-                    const statusCell = document.getElementById(`status-${studentId}`);
-                    const timeCell = document.getElementById(`time-${studentId}`);
-                    
-                    if (statusCell) {
-                        statusCell.innerHTML = newStatus ? 
-                            '<span class="present-badge"><i class="fa-solid fa-check-circle text-xs mr-1"></i> Present</span>' : 
-                            '<span class="absent-badge"><i class="fa-solid fa-times-circle text-xs mr-1"></i> Absent</span>';
-                    }
-                    
-                    if (timeCell) {
-                        timeCell.innerHTML = newStatus ? (student.scan_time || new Date().toLocaleTimeString()) : '—';
-                    }
-                    
+                const s = studentsData.find(st => st.id == studentId);
+                if (s) {
+                    s.present_today = newStatus;
+                    s.scan_time     = newStatus ? new Date().toLocaleTimeString() : null;
+                    refreshRow(s);
                     updateStats();
+                    if (newStatus) showBanner(s.full_name, s.scan_time);
                     showToast(
-                        `${student.full_name} has been marked as ${newStatus ? 'PRESENT' : 'ABSENT'}`, 
-                        newStatus ? 'success' : 'warning', 
+                        `${s.full_name} marked as ${newStatus ? 'PRESENT' : 'ABSENT'}`,
+                        newStatus ? 'success' : 'warning',
                         'Attendance Updated'
                     );
-                    
-                    if (newStatus) {
-                        showNameBanner(student.full_name, new Date().toLocaleTimeString());
-                    }
-                    
-                    closeAttendanceModal();
-                    
-                    // Update the button without reloading the page
-                    const button = document.querySelector(`button[onclick="openToggleModal(${studentId})"]`);
-                    if (button) {
-                        button.className = `btn-toggle ${newStatus ? 'present-toggle' : 'absent-toggle'}`;
-                        button.innerHTML = `<i class="fa-solid ${newStatus ? 'fa-toggle-on' : 'fa-toggle-off'} mr-1"></i>${newStatus ? 'Mark Absent' : 'Mark Present'}`;
-                    }
                 }
+                closeAttendanceModal();
             } else {
-                showToast(data.message || 'Failed to update attendance', 'error', 'Error');
+                showToast(data.message || 'Failed to update attendance.', 'error', 'Error');
+                btn.disabled  = false;
+                btn.innerHTML = origHtml;
+                btn.className = origCls;
             }
-        } catch (error) {
-            console.error('Error toggling attendance:', error);
+        } catch (err) {
+            console.error(err);
             showToast('Network error. Please try again.', 'error', 'Connection Error');
-        } finally {
-            confirmBtn.disabled = false;
-            confirmBtn.innerHTML = '<i class="fa-solid fa-check-circle mr-2"></i>Confirm';
+            btn.disabled  = false;
+            btn.innerHTML = origHtml;
+            btn.className = origCls;
+        }
+    };
+
+    /* ════════════════════════════════
+       REFRESH SINGLE ROW
+    ════════════════════════════════ */
+    function refreshRow(s) {
+        const statusCell = document.getElementById(`status-${s.id}`);
+        const timeCell   = document.getElementById(`time-${s.id}`);
+        const rowBtn     = document.getElementById(`btn-${s.id}`);
+
+        if (statusCell) {
+            statusCell.innerHTML = s.present_today
+                ? `<span class="present-badge"><i class="fa-solid fa-check-circle text-xs"></i>Present</span>`
+                : `<span class="absent-badge"><i class="fa-solid fa-times-circle text-xs"></i>Absent</span>`;
+        }
+        if (timeCell) {
+            timeCell.textContent = s.present_today ? (s.scan_time || '—') : '—';
+        }
+        if (rowBtn) {
+            if (s.present_today) {
+                rowBtn.className = 'btn-toggle present-toggle';
+                rowBtn.innerHTML = '<i class="fa-solid fa-toggle-on"></i>Mark Absent';
+            } else {
+                rowBtn.className = 'btn-toggle absent-toggle';
+                rowBtn.innerHTML = '<i class="fa-solid fa-toggle-off"></i>Mark Present';
+            }
         }
     }
-    
-    function updateStats() {
-        const total = studentsData.length;
-        const present = studentsData.filter(s => s.present_today).length;
-        const absent = total - present;
-        const rate = total > 0 ? (present / total * 100).toFixed(1) : 0;
-        
-        document.getElementById('totalStudents').textContent = total;
-        document.getElementById('presentCount').textContent = present;
-        document.getElementById('absentCount').textContent = absent;
-        document.getElementById('attendanceRate').textContent = rate + '%';
-        document.getElementById('todayCount').textContent = `${present} / ${total}`;
+
+    /* ════════════════════════════════
+       SUCCESS BANNER
+    ════════════════════════════════ */
+    function showBanner(name, time) {
+        document.getElementById('bannerName').textContent = name || '—';
+        document.getElementById('bannerTime').innerHTML =
+            `<i class="fa-regular fa-clock mr-1"></i>${time || 'Just now'}`;
+        const b = document.getElementById('nameBanner');
+        b.classList.remove('hidden');
+        if (bannerTimer) clearTimeout(bannerTimer);
+        bannerTimer = setTimeout(() => b.classList.add('hidden'), 5000);
     }
-    
+
+    /* ════════════════════════════════
+       RFID POLLING  (every 1 second)
+    ════════════════════════════════ */
     async function fetchLatestScan() {
         try {
-            const response = await fetch('/admin/get_latest');
-            const data = await response.json();
-            
+            const res  = await fetch('/admin/get_latest');
+            const data = await res.json();
+
             const uidEl = document.getElementById('uid');
-            const nameEl = document.getElementById('name');
-            const timeEl = document.getElementById('time');
-            const messageEl = document.getElementById('message');
-            
+            const msgEl = document.getElementById('message');
+
+            /* Always update name + time display */
+            document.getElementById('name').textContent = data.name || '—';
+            document.getElementById('time').textContent = data.time || '—';
+
+            /* Status message */
+            msgEl.innerHTML = data.message
+                ? `<i class="fa-regular fa-clock mr-1 text-slate-400"></i>${data.message}`
+                : `<i class="fa-regular fa-clock mr-1 text-slate-400"></i>Waiting for scan...`;
+
+            /* Only act on a NEW uid */
             if (data.uid && data.uid !== lastUID) {
-                const scannedStudent = studentsData.find(s => s.uid === data.uid);
-                
-                if (scannedStudent) {
-                    uidEl.classList.add('scanning');
-                    setTimeout(() => uidEl.classList.remove('scanning'), 500);
-                    lastUID = data.uid;
-                    
-                    if (!scannedStudent.present_today) {
-                        scannedStudent.present_today = true;
-                        scannedStudent.scan_time = data.time || new Date().toLocaleTimeString();
-                        
-                        const statusCell = document.getElementById(`status-${scannedStudent.id}`);
-                        const timeCell = document.getElementById(`time-${scannedStudent.id}`);
-                        if (statusCell) {
-                            statusCell.innerHTML = '<span class="present-badge"><i class="fa-solid fa-check-circle text-xs mr-1"></i> Present</span>';
-                        }
-                        if (timeCell) {
-                            timeCell.innerHTML = data.time || new Date().toLocaleTimeString();
-                        }
-                        
+                lastUID = data.uid;
+                uidEl.textContent = data.uid;
+
+                /* Pulse animation */
+                uidEl.classList.add('scanning');
+                setTimeout(() => uidEl.classList.remove('scanning'), 1500);
+
+                /* Normalize for comparison — strip spaces */
+                const raw     = (data.uid || '').replace(/\s/g, '').toUpperCase();
+                const matched = studentsData.find(s =>
+                    s.uid && s.uid.replace(/\s/g, '').toUpperCase() === raw
+                );
+
+                if (matched) {
+                    if (matched.uid_lost) {
+                        /* Deactivated card */
+                        msgEl.innerHTML =
+                            `<i class="fa-solid fa-ban mr-1 text-red-400"></i>` +
+                            `Deactivated card — ${esc(matched.full_name)}`;
+                        showToast(
+                            `${matched.full_name}'s UID is deactivated.`,
+                            'warning', 'Deactivated Card'
+                        );
+                        setTimeout(() => {
+                            msgEl.innerHTML =
+                                `<i class="fa-regular fa-clock mr-1 text-slate-400"></i>Waiting for scan...`;
+                        }, 3000);
+
+                    } else if (!matched.present_today) {
+                        /* Mark present */
+                        matched.present_today = true;
+                        matched.scan_time     = data.time || new Date().toLocaleTimeString();
+                        refreshRow(matched);
                         updateStats();
-                        showNameBanner(scannedStudent.full_name, data.time);
-                        showToast(`${scannedStudent.full_name} has been detected`, 'success', 'New Scan');
-                        
-                        // Update the button without reloading
-                        const button = document.querySelector(`button[onclick="openToggleModal(${scannedStudent.id})"]`);
-                        if (button) {
-                            button.className = 'btn-toggle present-toggle';
-                            button.innerHTML = '<i class="fa-solid fa-toggle-on mr-1"></i>Mark Absent';
-                        }
+                        showBanner(matched.full_name, matched.scan_time);
+                        showToast(`${matched.full_name} has been detected`, 'success', 'New Scan');
                     }
+                    /* If already present — do nothing, avoid duplicate toast */
+
                 } else {
-                    messageEl.innerHTML = '<i class="fa-solid fa-exclamation-triangle mr-2"></i>Student not enrolled in this class';
+                    /* UID not in this section */
+                    msgEl.innerHTML =
+                        `<i class="fa-solid fa-triangle-exclamation mr-1 text-amber-400"></i>` +
+                        `Student not enrolled in this class`;
                     setTimeout(() => {
-                        messageEl.innerHTML = '<i class="fa-regular fa-clock mr-2"></i>Waiting for scan...';
+                        msgEl.innerHTML =
+                            `<i class="fa-regular fa-clock mr-1 text-slate-400"></i>Waiting for scan...`;
                     }, 3000);
                 }
-                
-                uidEl.innerHTML = data.uid || '—';
-                nameEl.innerHTML = data.name || '—';
-                timeEl.innerHTML = data.time || '—';
             }
-            
-            messageEl.innerHTML = data.message ? `<i class="fa-regular fa-clock mr-2"></i>${data.message}` : '<i class="fa-regular fa-clock mr-2"></i>Waiting for scan...';
-            
-        } catch (error) {
-            console.error('Error fetching latest scan:', error);
-            document.getElementById('message').innerHTML = '<i class="fa-solid fa-exclamation-triangle mr-2"></i>Connection lost...';
+
+        } catch (err) {
+            console.warn('Poll error:', err);
+            document.getElementById('message').innerHTML =
+                `<i class="fa-solid fa-triangle-exclamation mr-1 text-red-400"></i>Connection lost…`;
         }
     }
-    
-    function showNameBanner(name, time) {
-        const banner = document.getElementById('nameBanner');
-        document.getElementById('bannerName').textContent = name || 'No linked student';
-        document.getElementById('bannerTime').innerHTML = `<i class="fa-regular fa-clock mr-1"></i>${time || 'Just now'}`;
-        banner.classList.remove('hidden');
-        
-        if (bannerTimeout) clearTimeout(bannerTimeout);
-        bannerTimeout = setTimeout(() => banner.classList.add('hidden'), 5000);
-    }
-    
-    function filterStudentsTable() {
-        const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
-        const tbody = document.getElementById('studentsTableBody');
-        const rows = tbody.querySelectorAll('tr');
-        
-        rows.forEach(row => {
-            // Handle empty state row
-            if (row.querySelector('.empty-state')) {
-                row.style.display = searchTerm ? 'none' : '';
-                return;
-            }
-            
-            const nameCell = row.querySelector('td:nth-child(2)');
-            const uidCell = row.querySelector('td:nth-child(3)');
-            
-            if (!nameCell || !uidCell) {
-                row.style.display = '';
-                return;
-            }
-            
-            const nameText = nameCell.textContent.toLowerCase();
-            const uidText = uidCell.textContent.toLowerCase();
-            
-            if (searchTerm === '' || nameText.includes(searchTerm) || uidText.includes(searchTerm)) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-    }
-    
-    // Initialize
-    renderStudentsTable();
+
+    /* ════════════════════════════════
+       INIT
+    ════════════════════════════════ */
+    renderTable();
     updateStats();
     fetchLatestScan();
     setInterval(fetchLatestScan, 1000);
-    
-    // Search bar functionality
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.addEventListener('input', filterStudentsTable);
-    }
+
+})();
 </script>
 {% endblock %}

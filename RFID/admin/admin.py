@@ -737,9 +737,8 @@ def toggle_attendance(student_id):
         return jsonify({"success": False, "message": str(e)}), 500
 
 # =========================
-# TOGGLE LOST STATUS ROUTE (NEW)
+# TOGGLE LOST STATUS ROUTE
 # =========================
-# Add this new endpoint to your admin_bp routes
 @admin_bp.route('/toggle_lost_status/<int:student_id>', methods=['POST'])
 @login_required
 def toggle_lost_status(student_id):
@@ -750,7 +749,7 @@ def toggle_lost_status(student_id):
     
     try:
         data = request.get_json()
-        lost = data.get('lost', False)  # This should be boolean true/false
+        lost = data.get('lost', False)
         section_id = data.get('section_id')
         
         conn = get_db_connection()
@@ -759,7 +758,6 @@ def toggle_lost_status(student_id):
         
         cur = conn.cursor()
         
-        # Verify teacher owns this student through section
         cur.execute("""
             SELECT st.id, st.uid_lost
             FROM students st
@@ -773,7 +771,6 @@ def toggle_lost_status(student_id):
             conn.close()
             return jsonify({"success": False, "message": "Unauthorized or student not found"}), 403
         
-        # Update the lost status (boolean field)
         cur.execute("""
             UPDATE students 
             SET uid_lost = %s
@@ -794,7 +791,7 @@ def toggle_lost_status(student_id):
             return jsonify({
                 "success": True, 
                 "message": message,
-                "lost": lost  # Return the boolean value
+                "lost": lost
             })
         else:
             return jsonify({"success": False, "message": "Failed to update status"}), 500
@@ -802,6 +799,7 @@ def toggle_lost_status(student_id):
     except Exception as e:
         print(f"Toggle lost status error: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
+
 # =========================
 # SECTIONS MANAGEMENT
 # =========================
@@ -819,10 +817,9 @@ def sections_api():
         return jsonify({"success": False, "sections": []})
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        
         cur.execute("""
             SELECT 
-                s.id, s.section_name, s.year_level, s.teacher_id, s.created_at, s.schedule,
+                s.id, s.section_name, s.year_level, s.teacher_id, s.created_at,
                 t.first_name, t.last_name, t.email as teacher_email,
                 COUNT(st.id) as student_count
             FROM sections s
@@ -832,7 +829,6 @@ def sections_api():
             GROUP BY s.id, t.id, t.first_name, t.last_name, t.email
             ORDER BY s.section_name
         """, (teacher_id,))
-        
         sections = cur.fetchall()
         cur.close()
         conn.close()
@@ -847,7 +843,7 @@ def sections_api():
                 "last_name": section["last_name"],
                 "teacher_email": section["teacher_email"],
                 "student_count": section["student_count"] or 0,
-                "schedule": section["schedule"] or "",
+                "schedule": "—",
                 "created_at": section["created_at"].strftime("%Y-%m-%d") if section["created_at"] else None
             })
         return jsonify({"success": True, "sections": sections_list})
@@ -986,6 +982,58 @@ def api_get_sections_for_sidebar():
             conn.close()
         return jsonify({'success': False, 'sections': []})
 
+# =========================
+# NEW: GET CLASS IDs FOR SIDEBAR
+# =========================
+@admin_bp.route('/api/get_classes_for_sidebar')
+@login_required
+def api_get_classes_for_sidebar():
+    """Returns class IDs from the schedules table that belong to the logged-in teacher."""
+    teacher_id = session.get('teacher_id')
+    conn = get_connection()
+    if conn is None:
+        return jsonify({'success': False, 'classes': []})
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("""
+            SELECT 
+                sch.id,
+                sch.class_id,
+                sch.subject,
+                sch.section_id,
+                sch.day,
+                sch.time,
+                sec.section_name,
+                sec.year_level
+            FROM schedules sch
+            LEFT JOIN sections sec ON sec.id = sch.section_id
+            WHERE sch.teacher_id = %s
+            ORDER BY sch.subject ASC, sch.class_id ASC
+        """, (teacher_id,))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        classes_list = []
+        for row in rows:
+            classes_list.append({
+                'id': row['id'],
+                'class_id': row['class_id'],
+                'subject': row['subject'] or 'No Subject',
+                'section_id': row['section_id'],
+                'section_name': row['section_name'] or '—',
+                'year_level': row['year_level'] or '—',
+                'day': row['day'] or '—',
+                'time': row['time'] or '—',
+            })
+
+        return jsonify({'success': True, 'classes': classes_list})
+    except Exception as e:
+        print(f"API get classes for sidebar error: {e}")
+        if conn:
+            conn.close()
+        return jsonify({'success': False, 'classes': []})
+
 @admin_bp.route('/class_section/<section_id>')
 @login_required
 def class_section(section_id):
@@ -1018,7 +1066,6 @@ def class_section(section_id):
             flash('Section not found or unauthorized', 'error')
             return redirect(url_for('admin_bp.manage_sections'))
         
-        # Updated to include uid_lost
         cur.execute("""
             SELECT id, uid, uid_lost, first_name, middle_name, last_name, extension, contact_number, email, schedule, section_id, created_at
             FROM students WHERE section_id = %s ORDER BY last_name ASC, first_name ASC
@@ -1205,7 +1252,6 @@ def teacher_logout():
 # =========================
 # PROFILE IMAGE UPLOAD
 # =========================
-
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
 
@@ -1485,6 +1531,7 @@ def history_api():
             conn.close()
 
 print("[Admin] Module loaded successfully")
+
 @admin_bp.route('/api/get_students/<section_id>')
 @login_required
 def api_get_students(section_id):
@@ -1497,7 +1544,6 @@ def api_get_students(section_id):
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         
-        # Get section to verify ownership
         cur.execute("""
             SELECT id FROM sections 
             WHERE id = %s AND teacher_id = %s
@@ -1507,7 +1553,6 @@ def api_get_students(section_id):
             conn.close()
             return jsonify({"success": False, "message": "Unauthorized", "students": []})
         
-        # Get students
         cur.execute("""
             SELECT id, uid, uid_lost, first_name, middle_name, last_name, extension
             FROM students 
@@ -1524,7 +1569,6 @@ def api_get_students(section_id):
         for row in rows:
             full_name = build_full_name(row['first_name'], row['middle_name'], row['last_name'], row['extension'])
             
-            # Check attendance for today
             conn2 = get_connection()
             if conn2:
                 cur2 = conn2.cursor()
